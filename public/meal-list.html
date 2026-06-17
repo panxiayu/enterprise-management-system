@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报餐管理 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .container { width: 100% !important; max-width: 1200px !important; margin: 0 auto; padding: 20px 24px; box-sizing: border-box; overflow-x: auto; }
+
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 10px; width: 100%; box-sizing: border-box; }
+        .toolbar-left { display: flex; align-items: center; gap: 12px; }
+        .toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+
+        .btn { padding: 8px 14px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); color: white; box-shadow: 0 3px 10px rgba(59,130,246,0.3); }
+        .btn-primary:hover { box-shadow: 0 4px 14px rgba(59,130,246,0.4); transform: translateY(-1px); }
+        .btn-green { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; box-shadow: 0 3px 10px rgba(34,197,94,0.3); }
+        .btn-green:hover { box-shadow: 0 4px 14px rgba(34,197,94,0.4); transform: translateY(-1px); }
+        .btn-red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; box-shadow: 0 3px 10px rgba(239,68,68,0.3); }
+        .btn-red:hover { box-shadow: 0 4px 14px rgba(239,68,68,0.4); transform: translateY(-1px); }
+        .btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--border); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-orange { background: linear-gradient(135deg, #ff6b35 0%, #e63946 100%); color: white; box-shadow: 0 3px 10px rgba(255,107,53,0.3); }
+        .btn-orange:hover { box-shadow: 0 4px 14px rgba(255,107,53,0.4); transform: translateY(-1px); }
+        .temporary-badge { background: linear-gradient(135deg, #ff6b35, #e63946); color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+
+        .stats-grid { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .stat-card { flex: 1; min-width: 100px; background: var(--white); border-radius: var(--radius-lg); padding: 12px 14px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.6); cursor: pointer; transition: all 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 20px; font-weight: 700; color: var(--text); }
+
+        .meal-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .meal-card {
+            background: linear-gradient(145deg, #ffffff 0%, var(--white) 100%);
+            border-radius: var(--radius-lg);
+            padding: 0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(255,255,255,0.9);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            position: relative;
+        }
+        .meal-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 25px 30px -8px rgba(0, 0, 0, 0.12), 0 12px 12px -6px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.02);
+        }
+        .meal-card.temporary { border: 3px solid #22c55e; box-shadow: 0 4px 16px rgba(34,197,94,0.3); }
+        .meal-card.regular { }
+        .meal-card.ended { opacity: 0.7; }
+        .meal-header { padding: 16px 16px 0; background: linear-gradient(to bottom, rgba(0,0,0,0.02), transparent); }
+        .meal-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .meal-title { font-size: 18px; font-weight: 700; color: var(--text); }
+        .meal-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .meal-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+        .meal-checkbox { display: flex; width: 18px; height: 18px; border-radius: 4px; border: 2px solid #d1d5db; cursor: pointer; transition: all 0.2s; align-items: center; justify-content: center; }
+        .meal-checkbox:checked { background: #3b82f6; border-color: #3b82f6; }
+        .meal-checkbox:checked::after { content: '✓'; color: white; font-size: 12px; font-weight: bold; }
+        .meal-delete-batch.show { display: inline-flex; align-items: center; gap: 6px; }
+        .badge-active { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .badge-ended { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+                .meal-meta { font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; font-weight: 500; }
+        .meal-times { font-size: 12px; color: var(--text-muted); display: block; }
+        .meal-time-row { display: flex; justify-content: space-between; width: 100%; margin-bottom: 4px; }
+        .meal-time-label { width: 50px; }
+        .meal-time-value { width: 80px; text-align: center; }
+        .meal-time-label-right { width: 50px; text-align: right; }
+        .meal-time-value-right { width: 80px; text-align: right; }
+        .meal-meta-icon { width: 16px; height: 16px; opacity: 0.7; }
+        .meal-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: rgba(0,0,0,0.04); margin: 0; }
+        .meal-stat { background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%); padding: 16px 12px; text-align: center; }
+        .meal-stat-value { font-size: 24px; font-weight: 700; line-height: 1.1; }
+        .meal-stat-value.lunch { color: #f59e0b; }
+        .meal-stat-value.dinner { color: #3b82f6; }
+        .meal-stat-value.guest { color: #22c55e; }
+        .meal-stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .meal-stat-time { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .stats-updated { animation: statsFlash 1s ease-out; }
+        @keyframes statsFlash { 0% { background: rgba(34,197,94,0.3); } 100% { background: transparent; } }
+        .meal-footer { padding: 10px 16px; background: rgba(0,0,0,0.02); border-top: 1px solid var(--border); display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+        .meal-footer-icon { width: 14px; height: 14px; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px; padding: 16px 0; }
+        .page-btn { padding: 8px 16px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 14px; transition: all 0.2s; }
+        .page-btn:hover { background: var(--bg-input); }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-num { min-width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: var(--radius); cursor: pointer; font-size: 14px; background: var(--white); border: 1px solid var(--border); }
+        .page-num.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* 弹窗 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; overflow-y: auto; padding: 20px; }
+        .modal.show { display: flex; }
+        .modal-content { background: var(--white); border-radius: var(--radius-lg); padding: 20px; max-width: 900px; width: 100%; max-height: 95vh; overflow: hidden; box-shadow: var(--shadow-lg); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .modal-title { font-size: 18px; font-weight: 700; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+        .modal-close:hover { color: var(--text); }
+        .modal-footer { display: flex; gap: 12px; margin-top: 20px; }
+        .modal-footer .btn { flex: 1; }
+
+        /* 表单 */
+        .form-group { margin-bottom: 16px; }
+        .form-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; display: block; }
+        .form-control { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; background: var(--bg-input); color: var(--text); transition: all 0.2s; }
+        .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+        .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+        .meal-type-section { background: var(--bg-secondary); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 8px; }
+        .meal-type-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .meal-type-label { font-weight: 600; font-size: 14px; min-width: 80px; }
+        .meal-type-times { display: flex; align-items: center; gap: 6px; }
+        .meal-type-times input { width: 100px; padding: 6px 8px; font-size: 13px; }
+        .meal-type-times .time-sep { color: var(--text-muted); font-size: 12px; }
+        .meal-type-toggle { margin-left: auto; }
+        .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .3s; border-radius: 24px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        .toggle-switch input:checked + .toggle-slider { background-color: #22c55e; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        .time-row { display: flex; align-items: center; gap: 8px; }
+        .time-row input { width: 120px; }
+        .time-separator { color: var(--text-muted); }
+        .time-disabled { opacity: 0.5; pointer-events: none; }
+
+        /* Toast 提示 */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; }
+        .toast { background: rgba(239,68,68,0.95); color: white; padding: 14px 28px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+        /* 日历 */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .calendar-title { font-size: 16px; font-weight: 600; }
+        .calendar-nav { display: flex; gap: 8px; }
+        .calendar-nav button { padding: 6px 12px; border: 1px solid var(--border); background: var(--bg-secondary); border-radius: var(--radius); cursor: pointer; }
+        .calendar-body { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; width: 100%; margin-top: 5px; }
+        .calendar-weekday { text-align: center; font-size: 13px; font-weight: 600; color: #666; padding: 10px 0; background: #f8f9fa; border-radius: 8px; }
+        .calendar-day { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; min-height: 70px; background: #fff; box-sizing: border-box; display: flex; flex-direction: column; transition: all 0.2s; }
+        .calendar-day:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); transform: translateY(-1px); }
+        .calendar-day.other-month { opacity: 0.4; background: #fafafa; }
+        .calendar-day.today { border: 2px solid #3b82f6; background: #eff6ff; }
+        .calendar-day.today .day-number { color: #3b82f6; }
+        .calendar-day.has-data { cursor: pointer; }
+        .day-number { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #333; }
+        .day-stats { font-size: 11px; color: #666; flex: 1; margin-top: -7px; }
+        .day-stats div { margin-top: 4px; padding: 3px 6px; background: #f3f4f6; border-radius: 4px; }
+        .day-stats div.lunch { background: #fef3c7; color: #92400e; }
+        .day-stats div.dinner { background: #d1fae5; color: #065f46; }
+
+        .detail-section { margin-bottom: 16px; }
+        .detail-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .detail-value { font-size: 14px; color: var(--text); }
+
+        .meal-type-control { background: var(--bg-secondary); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .meal-type-info { font-weight: 600; }
+        .meal-type-time { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+        /* 临时报餐样式 */
+        .temp-applicant-row { animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .temp-add-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #4A90E2; background: #fff; color: #4A90E2; font-size: 20px; font-weight: bold; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
+        .temp-add-btn:hover { background: #4A90E2; color: #fff; }
+
+        @media (min-width: 768px) and (max-width: 1180px), (min-width: 768px) and (max-height: 820px) {
+            .container { padding: 16px !important; }
+            .toolbar { align-items: flex-start; flex-wrap: wrap; margin-bottom: 14px; }
+            .toolbar-right { width: 100%; justify-content: flex-start; }
+            .page-title { font-size: 20px; }
+            .stats-grid { gap: 8px; margin-bottom: 14px; }
+            .stat-card { padding: 10px 12px; }
+            .stat-value { font-size: 18px; }
+            .meal-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+            .meal-header { padding: 14px 14px 0; }
+            .meal-title { font-size: 16px; }
+            .meal-badge { font-size: 10px; padding: 3px 8px; }
+            .meal-meta { font-size: 13px; }
+            .meal-times { font-size: 11px; }
+            .meal-stat { padding: 12px 8px; }
+            .meal-stat-value { font-size: 20px; }
+            .meal-stat-label { font-size: 10px; }
+            .meal-footer { padding: 8px 12px; font-size: 11px; }
+            .pagination { gap: 6px; margin-top: 18px; flex-wrap: wrap; }
+            .calendar-weekday { font-size: 12px; padding: 8px 0; }
+            .calendar-day { min-height: 60px; padding: 8px; }
+            .day-number { font-size: 13px; }
+            .day-stats { font-size: 10px; }
+            .modal-content { max-height: 90vh; }
+        }
+
+        body.projector-mode .container { padding: 16px !important; }
+        body.projector-mode .toolbar { align-items: flex-start; flex-wrap: wrap; margin-bottom: 14px; }
+        body.projector-mode .toolbar-right { width: 100%; justify-content: flex-start; }
+        body.projector-mode .page-title { font-size: 20px; }
+        body.projector-mode .stats-grid { gap: 8px; margin-bottom: 14px; }
+        body.projector-mode .stat-card { padding: 10px 12px; }
+        body.projector-mode .stat-value { font-size: 18px; }
+        body.projector-mode .meal-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        body.projector-mode .meal-header { padding: 14px 14px 0; }
+        body.projector-mode .meal-title { font-size: 16px; }
+        body.projector-mode .meal-badge { font-size: 10px; padding: 3px 8px; }
+        body.projector-mode .meal-meta { font-size: 13px; }
+        body.projector-mode .meal-times { font-size: 11px; }
+        body.projector-mode .meal-stat { padding: 12px 8px; }
+        body.projector-mode .meal-stat-value { font-size: 20px; }
+        body.projector-mode .meal-stat-label { font-size: 10px; }
+        body.projector-mode .meal-footer { padding: 8px 12px; font-size: 11px; }
+        body.projector-mode .pagination { gap: 6px; margin-top: 18px; flex-wrap: wrap; }
+        body.projector-mode .calendar-weekday { font-size: 12px; padding: 8px 0; }
+        body.projector-mode .calendar-day { min-height: 60px; padding: 8px; }
+        body.projector-mode .day-number { font-size: 13px; }
+        body.projector-mode .day-stats { font-size: 10px; }
+        body.projector-mode .modal-content { max-height: 90vh; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <span class="page-title">报餐管理</span>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-secondary btn-sm" onclick="location.href='dashboard.html'">返回</button>
+                <button id="tempSignupBtn" class="btn btn-orange btn-sm" onclick="openTempSignupModal()" style="display:none;">+ 临时报餐</button>
+                <button class="btn btn-green btn-sm" onclick="openCreateModal('temporary')">+ 特殊报餐</button>
+                <button class="btn btn-primary btn-sm" onclick="openCreateModal('regular')">+ 常规报餐</button>
+                <button class="btn btn-red btn-sm meal-delete-batch" id="batchDeleteBtn" onclick="batchDeleteMeals()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    删除选中
+                </button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">加载中...</div>
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <p>暂无报餐活动</p>
+            <button class="btn btn-primary" onclick="openCreateModal('regular')">创建第一个报餐</button>
+        </div>
+        <div id="mealList"></div>
+        <div id="pagination" class="pagination" style="display: none;">
+            <button id="pagePrev" class="page-btn" onclick="changePage(-1)">上一页</button>
+            <div id="pageNumbers"></div>
+            <button id="pageNext" class="page-btn" onclick="changePage(1)">下一页</button>
+        </div>
+    </div>
+
+    <!-- 创建报餐弹窗 -->
+    <div id="createModal" class="modal">
+        <div class="modal-content" style="max-width: 560px; padding: 20px;">
+            <div class="modal-header">
+                <span class="modal-title" id="createModalTitle">创建常规报餐</span>
+                <button class="modal-close" onclick="closeCreateModal()">×</button>
+            </div>
+            <div id="createForm">
+                <input type="hidden" id="createIsTemporary" value="0">
+                <div class="form-group">
+                    <label class="form-label">报餐名称 *</label>
+                    <input type="text" class="form-control" id="createTitle" placeholder="例如：4月份工作餐">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">报餐日期范围 *</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="date" class="form-control" id="createStartDate" style="flex:1">
+                        <span>至</span>
+                        <input type="date" class="form-control" id="createEndDate" style="flex:1">
+                    </div>
+                </div>
+
+                <div style="font-weight:600;font-size:14px;color:var(--text-secondary);margin:16px 0 12px;text-transform:uppercase;">员工报餐时间段设置</div>
+                <div class="form-hint" style="margin-bottom:12px">设置每天的员工午餐和员工晚餐报餐时间段，超出时间员工无法报名</div>
+
+                <div class="meal-type-section" id="createLunchSection">
+                    <div class="meal-type-row">
+                        <span class="meal-type-label">🍱 午餐</span>
+                        <div class="meal-type-times" id="createLunchTimes">
+                            <input type="time" class="form-control" id="createLunchStart" value="08:00" disabled>
+                            <span class="time-sep">至</span>
+                            <input type="time" class="form-control" id="createLunchEnd" value="10:00" disabled>
+                        </div>
+                        <label class="toggle-switch meal-type-toggle">
+                            <input type="checkbox" id="createLunchEnabled" onchange="toggleCreateMeal('lunch', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="meal-type-section" id="createDinnerSection">
+                    <div class="meal-type-row">
+                        <span class="meal-type-label">🍚 晚餐</span>
+                        <div class="meal-type-times" id="createDinnerTimes">
+                            <input type="time" class="form-control" id="createDinnerStart" value="12:00">
+                            <span class="time-sep">至</span>
+                            <input type="time" class="form-control" id="createDinnerEnd" value="15:00">
+                        </div>
+                        <label class="toggle-switch meal-type-toggle">
+                            <input type="checkbox" id="createDinnerEnabled" checked onchange="toggleCreateMeal('dinner', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="font-weight:600;font-size:14px;color:var(--text-secondary);margin:16px 0 12px;text-transform:uppercase;">客餐报餐时间段设置</div>
+                <div class="form-hint" style="margin-bottom:12px">开启后，有客餐权限的人员可在设定时间段内申请客餐</div>
+
+                <div class="meal-type-section" id="createGuestLunchSection">
+                    <div class="meal-type-row">
+                        <span class="meal-type-label">🍱 客餐午餐</span>
+                        <div class="meal-type-times" id="createGuestLunchTimes">
+                            <input type="time" class="form-control" id="createGuestLunchStart" value="08:00">
+                            <span class="time-sep">至</span>
+                            <input type="time" class="form-control" id="createGuestLunchEnd" value="10:00">
+                        </div>
+                        <label class="toggle-switch meal-type-toggle">
+                            <input type="checkbox" id="createGuestLunchEnabled" checked onchange="toggleCreateMeal('guestLunch', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="meal-type-section" id="createGuestDinnerSection">
+                    <div class="meal-type-row">
+                        <span class="meal-type-label">🍚 客餐晚餐</span>
+                        <div class="meal-type-times" id="createGuestDinnerTimes">
+                            <input type="time" class="form-control" id="createGuestDinnerStart" value="12:00">
+                            <span class="time-sep">至</span>
+                            <input type="time" class="form-control" id="createGuestDinnerEnd" value="15:00">
+                        </div>
+                        <label class="toggle-switch meal-type-toggle">
+                            <input type="checkbox" id="createGuestDinnerEnabled" checked onchange="toggleCreateMeal('guestDinner', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="submitCreate()">创建</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情弹窗 -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content" style="max-width: 560px;">
+            <div class="modal-header">
+                <span class="modal-title" id="detailModalTitle">报餐详情</span>
+                <button class="modal-close" onclick="closeDetailModal()">×</button>
+            </div>
+            <div id="detailModalBody"></div>
+        </div>
+    </div>
+
+    <!-- 日历弹窗 -->
+    <div id="calendarModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title" id="calendarModalTitle">报餐月统计</span>
+                <button class="modal-close" onclick="closeCalendarModal()">×</button>
+            </div>
+            <div id="calendarModalBody" style="padding:0;"></div>
+        </div>
+    </div>
+
+    <!-- 日报详情弹窗 -->
+    <div id="dayDetailModal" class="modal">
+        <div class="modal-content" style="max-width:1500px;">
+            <div class="modal-header">
+                <span class="modal-title" id="dayDetailModalTitle">日报详情</span>
+                <button class="modal-close" onclick="closeDayDetailModal()">×</button>
+            </div>
+            <div id="dayDetailModalBody" style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;"></div>
+        </div>
+    </div>
+
+    <!-- 临时报餐弹窗 -->
+    <div id="tempSignupModal" class="modal">
+        <div class="modal-content" style="max-width: 520px; padding: 20px;">
+            <div class="modal-header">
+                <span class="modal-title" id="tempModalTitle">临时报餐</span>
+                <button class="modal-close" onclick="closeTempSignupModal()">×</button>
+            </div>
+            <div id="tempSignupForm">
+                <div class="meal-type-section" style="margin-bottom: 16px;">
+                    <div class="meal-type-row">
+                        <span class="meal-type-label">餐别</span>
+                    </div>
+                    <div id="tempMealTypeSection" style="display: flex; gap: 12px; margin-top: 12px;"></div>
+                    <div id="tempMealTypeHint" style="color: #ef4444; font-size: 12px; margin-top: 8px; display: none;"></div>
+                </div>
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label class="form-label" style="margin: 0;">申请人</label>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addTempApplicantRow()">+ 添加</button>
+                    </div>
+                    <div id="tempApplicantsList">
+                        <div class="temp-applicant-row" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                            <input type="text" class="form-control" placeholder="工号" data-field="empId" onblur="searchTempEmployee(this)" style="flex: 1;">
+                            <input type="text" class="form-control" placeholder="姓名" data-field="empName" onblur="searchTempEmployeeByName(this)" style="flex: 1;">
+                            <button type="button" onclick="removeTempApplicantRow(this)" style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #ef4444; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1;">−</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="tempGuestFields" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">客餐人数</label>
+                        <input type="number" class="form-control" id="tempGuestCount" placeholder="人数" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">客餐缘由</label>
+                        <input type="text" class="form-control" id="tempGuestReason" placeholder="请输入缘由">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeTempSignupModal()">取消</button>
+                    <button type="button" class="btn btn-orange" id="tempSubmitBtn" onclick="submitTempSignup()">确认提交</button>
+                </div>
+                <div id="tempTodaySection" style="display: none; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <div class="form-label" style="margin-bottom: 10px;">今日临时报餐 <span id="tempTodayCount" style="color: var(--text-muted); font-weight: normal;"></span></div>
+                    <div id="tempTodayList" style="max-height: 150px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/xlsx.full.min.js"></script>
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let token = '';
+        function showToast(msg) {
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.textContent = msg;
+            container.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
+        }
+
+        let currentActivityId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            token = window.AdminSession && window.AdminSession.requireValid
+                ? window.AdminSession.requireValid()
+                : (localStorage.getItem('adminToken') || localStorage.getItem('token') || '');
+            if (!token) {
+                return;
+            }
+            // 权限检查
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (!currentUser.can_manage_meal) { alert('无权限访问报餐系统'); window.location.href = 'dashboard.html'; return; }
+            // 临时报餐按钮：仅有报餐管理权限的用户可见
+            if (currentUser.can_manage_meal) {
+                document.getElementById('tempSignupBtn').style.display = 'inline-flex';
+            }
+            // 保存当前用户客餐权限（管理员默认有权限，普通员工按guest_meal_permission字段控制）
+            // 注意：admin用户的currentUser是users表记录，没有can_manage_meal，但meal-list页面已检查过can_manage_meal
+            // 临时报餐弹窗中，有报餐管理权限的管理员可以直接帮员工报客餐，不需要检查guest_meal_permission字段
+            window.currentUserGuestMealPermission = currentUser.guest_meal_permission || 0;
+            // 管理员或有客餐权限的员工显示客餐选项
+            if (currentUser.can_manage_meal || window.currentUserGuestMealPermission) {
+                window.canShowGuestMealOption = true;
+            } else {
+                window.canShowGuestMealOption = false;
+            }
+            // 刷新时清除所有选中状态
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('mealChecked_')) localStorage.removeItem(key);
+            });
+            initCreateForm();
+            loadMeals();
+            startAutoRefresh();
+        });
+
+        function initCreateForm() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('createStartDate').min = today;
+            document.getElementById('createEndDate').min = today;
+        }
+
+        function toggleCreateMeal(type, enabled) {
+            const typeNames = {
+              'lunch': 'Lunch',
+              'dinner': 'Dinner',
+              'guestLunch': 'GuestLunch',
+              'guestDinner': 'GuestDinner'
+            };
+            const timesDiv = document.getElementById('create' + typeNames[type] + 'Times');
+            if (timesDiv) {
+                timesDiv.style.display = 'flex';
+                timesDiv.querySelectorAll('input').forEach(i => i.disabled = !enabled);
+            }
+        }
+
+        document.getElementById('createStartDate').addEventListener('change', function() {
+            document.getElementById('createEndDate').min = this.value;
+            if (document.getElementById('createEndDate').value < this.value) {
+                document.getElementById('createEndDate').value = this.value;
+            }
+        });
+
+        function openCreateModal(type) {
+            const isTemporary = type === 'temporary' ? 1 : 0;
+            document.getElementById('createIsTemporary').value = isTemporary;
+            document.getElementById('createModalTitle').textContent = isTemporary ? '创建特殊报餐' : '创建常规报餐';
+
+            // 默认勾选：员工晚餐、客餐午餐、客餐晚餐
+            document.getElementById('createLunchEnabled').checked = false;
+            document.getElementById('createDinnerEnabled').checked = true;
+            document.getElementById('createGuestLunchEnabled').checked = true;
+            document.getElementById('createGuestDinnerEnabled').checked = true;
+
+            // 更新时间输入框禁用状态
+            toggleCreateMeal('lunch', false);
+            toggleCreateMeal('dinner', true);
+            toggleCreateMeal('guestLunch', true);
+            toggleCreateMeal('guestDinner', true);
+
+            document.getElementById('createModal').classList.add('show');
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('show');
+        }
+
+        function submitCreate() {
+            console.log('submitCreate called');
+            const title = document.getElementById('createTitle').value.trim();
+            const start_date = document.getElementById('createStartDate').value;
+            const end_date = document.getElementById('createEndDate').value;
+            const lunch_enabled = document.getElementById('createLunchEnabled').checked ? 1 : 0;
+            const dinner_enabled = document.getElementById('createDinnerEnabled').checked ? 1 : 0;
+            const lunch_signup_start = document.getElementById('createLunchStart').value;
+            const lunch_signup_end = document.getElementById('createLunchEnd').value;
+            const dinner_signup_start = document.getElementById('createDinnerStart').value;
+            const dinner_signup_end = document.getElementById('createDinnerEnd').value;
+            const is_temporary = parseInt(document.getElementById('createIsTemporary').value);
+
+            // 客餐字段
+            const guest_lunch_enabled = document.getElementById('createGuestLunchEnabled').checked ? 1 : 0;
+            const guest_lunch_start = document.getElementById('createGuestLunchStart').value;
+            const guest_lunch_end = document.getElementById('createGuestLunchEnd').value;
+            const guest_dinner_enabled = document.getElementById('createGuestDinnerEnabled').checked ? 1 : 0;
+            const guest_dinner_start = document.getElementById('createGuestDinnerStart').value;
+            const guest_dinner_end = document.getElementById('createGuestDinnerEnd').value;
+
+            console.log('表单值:', { title, start_date, end_date, is_temporary });
+
+            if (!title || !start_date || !end_date) {
+                alert('请填写必填项');
+                return;
+            }
+
+            if (new Date(end_date) < new Date(start_date)) {
+                alert('结束日期不能早于开始日期');
+                return;
+            }
+
+            const overlapping = window._cachedMeals?.find(m =>
+                m.is_temporary === is_temporary &&
+                m.start_date <= end_date &&
+                m.end_date >= start_date
+            );
+            if (overlapping) {
+                const typeName = is_temporary === 1 ? '特殊' : '常规';
+                alert(`${typeName}报餐 ${overlapping.start_date} - ${overlapping.end_date} 与 ${start_date} - ${end_date} 日期范围重叠，不可创建`);
+                return;
+            }
+
+            console.log('准备创建:', { title, start_date, end_date, is_temporary });
+            fetch(`${API_URL}/meal/create`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title, start_date, end_date,
+                    lunch_enabled, lunch_signup_start, lunch_signup_end,
+                    dinner_enabled, dinner_signup_start, dinner_signup_end,
+                    is_temporary,
+                    guest_lunch_enabled, guest_lunch_start, guest_lunch_end,
+                    guest_dinner_enabled, guest_dinner_start, guest_dinner_end
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('创建响应:', data);
+                if (data.code === 0) {
+                    closeCreateModal();
+                    loadMeals();
+                } else {
+                    alert('错误: ' + (data.msg || '创建失败'));
+                }
+            })
+            .catch(err => {
+                console.error('创建失败:', err);
+                alert('网络错误: ' + err.message);
+            });
+        }
+
+        const PAGE_SIZE = 12;
+        let currentPage = 1;
+        let _autoRefreshTimer = null;
+        let _lastStatsData = null;
+
+        function startAutoRefresh() {
+            if (_autoRefreshTimer) return;
+            _autoRefreshTimer = setInterval(() => {
+                loadMeals(true);
+            }, 30000);
+            document.addEventListener('visibilitychange', onVisibilityChange);
+        }
+
+        function stopAutoRefresh() {
+            if (_autoRefreshTimer) {
+                clearInterval(_autoRefreshTimer);
+                _autoRefreshTimer = null;
+            }
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+        }
+
+        function onVisibilityChange() {
+            if (document.hidden) return;
+            loadMeals(true);
+        }
+
+        function loadMeals(isSilent) {
+            if (!isSilent) document.getElementById('loading').style.display = 'block';
+            fetch(`${API_URL}/meal/all/statistics`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!isSilent) document.getElementById('loading').style.display = 'none';
+                if (data.code === 0) {
+                    const newData = data.data || [];
+                    if (isSilent && window._cachedMeals) {
+                        updateCardStats(window._cachedMeals, newData);
+                    }
+                    window._cachedMeals = newData;
+                    currentPage = 1;
+                    renderMealsPage();
+                }
+            })
+            .catch(err => {
+                if (!isSilent) document.getElementById('loading').style.display = 'none';
+                console.error(err);
+            });
+        }
+
+        function updateCardStats(oldData, newData) {
+            if (!oldData || !newData) return;
+            const oldMap = new Map(oldData.map(m => [m.id, m]));
+            newData.forEach(m => {
+                const old = oldMap.get(m.id);
+                if (!old) return;
+                const oldToday = old.todayStats;
+                const newToday = m.todayStats;
+                if (!oldToday || !newToday) return;
+                const changes = {
+                    lunch_employee: newToday.lunch_employee !== oldToday.lunch_employee,
+                    lunch_guest: newToday.lunch_guest !== oldToday.lunch_guest,
+                    dinner_employee: newToday.dinner_employee !== oldToday.dinner_employee,
+                    dinner_guest: newToday.dinner_guest !== oldToday.dinner_guest
+                };
+                if (Object.values(changes).some(Boolean)) {
+                    const card = document.querySelector(`[data-meal-id="${m.id}"] .meal-stat-value.lunch`);
+                    if (card) {
+                        const el = document.querySelector(`[data-meal-id="${m.id}"]`);
+                        if (el) el.classList.add('stats-updated');
+                        setTimeout(() => {
+                            if (el) el.classList.remove('stats-updated');
+                        }, 1000);
+                    }
+                }
+            });
+        }
+
+        function changePage(delta) {
+            const totalPages = Math.ceil(window._cachedMeals.length / PAGE_SIZE);
+            currentPage += delta;
+            if (currentPage < 1) currentPage = 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            renderMealsPage();
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderMealsPage();
+        }
+
+        function renderMealsPage() {
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            const pageMeals = window._cachedMeals.slice(start, end);
+            const totalPages = Math.ceil(window._cachedMeals.length / PAGE_SIZE);
+
+            renderMeals(pageMeals);
+
+            // 渲染分页控件
+            const pagination = document.getElementById('pagination');
+            const pageNumbers = document.getElementById('pageNumbers');
+            const pagePrev = document.getElementById('pagePrev');
+            const pageNext = document.getElementById('pageNext');
+
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'flex';
+            pagePrev.disabled = currentPage <= 1;
+            pageNext.disabled = currentPage >= totalPages;
+
+            // 渲染页码
+            let nums = '';
+            for (let i = 1; i <= totalPages; i++) {
+                nums += `<button class="page-num ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            pageNumbers.innerHTML = nums;
+        }
+
+        function renderMeals(meals) {
+            const list = document.getElementById('mealList');
+            if (meals.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+                list.innerHTML = '';
+                return;
+            }
+
+            document.getElementById('emptyState').style.display = 'none';
+
+            // 按月份+类型分组
+            // 常规报餐：按月份分组，每月一张卡片
+            // 特殊报餐：每个活动独立一张卡片，不叠加
+            const cardMap = new Map();
+            const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+            meals.forEach(m => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const startDate = new Date(m.start_date);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(m.end_date);
+                endDate.setHours(0, 0, 0, 0);
+                const todayStr = today.toISOString().slice(0, 10);
+
+                // 判断活动是否进行中（今天在活动日期范围内）
+                const isActiveToday = startDate <= today && today <= endDate;
+                // 判断活动是否已结束
+                const isEnded = endDate < today;
+
+                // 根据活动状态选择显示的统计数据
+                // 进行中：显示当天数据；已结束：显示整个活动周期总数
+                let displayTotals;
+                if (isEnded) {
+                    // 活动已结束，使用全部统计数据
+                    displayTotals = {
+                        lunch_employee: m.statistics.lunch?.employee || 0,
+                        lunch_guest: m.statistics.lunch?.guest || 0,
+                        dinner_employee: m.statistics.dinner?.employee || 0,
+                        dinner_guest: m.statistics.dinner?.guest || 0
+                    };
+                } else {
+                    // 活动进行中或未开始，使用当天统计数据
+                    displayTotals = {
+                        lunch_employee: m.todayStats?.lunch_employee || 0,
+                        lunch_guest: m.todayStats?.lunch_guest || 0,
+                        dinner_employee: m.todayStats?.dinner_employee || 0,
+                        dinner_guest: m.todayStats?.dinner_guest || 0
+                    };
+                }
+
+                // 特殊报餐：只显示当前日期在范围内的（未过期的）
+                // 已过期的特殊报餐（end_date < today）不显示
+                if (m.is_temporary === 1) {
+                    if (endDate < today) return; // 已过期不显示
+
+                    const cardKey = `temp_${m.id}`;
+                    cardMap.set(cardKey, {
+                        cardKey,
+                        monthKey: m.start_date.substring(0, 7),
+                        year: parseInt(m.start_date.substring(0, 4)),
+                        month: parseInt(m.start_date.substring(5, 7)),
+                        monthName: monthNames[parseInt(m.start_date.substring(5, 7)) - 1],
+                        type: 'temporary',
+                        isActiveToday,
+                        meals: [m],
+                        rangeStart: m.start_date,
+                        rangeEnd: m.end_date,
+                        totals: displayTotals
+                    });
+                } else {
+                    // 常规报餐：同一自然月合并为一张卡片
+                    const start = new Date(m.start_date);
+                    const monthKey = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+                    const cardKey = `reg_${monthKey}`;
+                    const existing = cardMap.get(cardKey);
+
+                    if (existing) {
+                        existing.meals.push(m);
+                        existing.isActiveToday = existing.isActiveToday || isActiveToday;
+                        existing.totals.lunch_employee += displayTotals.lunch_employee;
+                        existing.totals.lunch_guest += displayTotals.lunch_guest;
+                        existing.totals.dinner_employee += displayTotals.dinner_employee;
+                        existing.totals.dinner_guest += displayTotals.dinner_guest;
+                        if (m.start_date < existing.rangeStart) existing.rangeStart = m.start_date;
+                        if (m.end_date > existing.rangeEnd) existing.rangeEnd = m.end_date;
+                    } else {
+                        cardMap.set(cardKey, {
+                            cardKey,
+                            monthKey,
+                            year: start.getFullYear(),
+                            month: start.getMonth() + 1,
+                            monthName: monthNames[start.getMonth()],
+                            type: 'regular',
+                            isActiveToday,
+                            meals: [m],
+                            rangeStart: m.start_date,
+                            rangeEnd: m.end_date,
+                            totals: {
+                                lunch_employee: displayTotals.lunch_employee,
+                                lunch_guest: displayTotals.lunch_guest,
+                                dinner_employee: displayTotals.dinner_employee,
+                                dinner_guest: displayTotals.dinner_guest
+                            }
+                        });
+                    }
+                }
+            });
+
+            const cardList = Array.from(cardMap.values());
+
+            // 按日期排序（最新在前）
+            // 只有"当前日期在范围内"的特殊报餐才优先
+            // 未开始或已过期的特殊报餐不应该优先于常规报餐
+            cardList.sort((a, b) => {
+                if (a.monthKey !== b.monthKey) return b.monthKey.localeCompare(a.monthKey);
+                // 今天进行中的活动优先
+                if (a.isActiveToday !== b.isActiveToday) {
+                    return a.isActiveToday ? -1 : 1;
+                }
+                // 只有至少有一个是今天进行中时，才按类型排序（特殊优先）
+                if (a.isActiveToday || b.isActiveToday) {
+                    if (a.type !== b.type) return a.type === 'temporary' ? -1 : 1;
+                }
+                return 0;
+            });
+
+            let html = '<div class="meal-list">';
+            cardList.forEach(data => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isEnded = data.meals.every(m => new Date(m.end_date) < today);
+                const statusClass = isEnded ? 'badge-ended' : 'badge-active';
+                const statusText = isEnded ? '已结束' : '进行中';
+                const cardClass = data.type + (isEnded ? ' ended' : '');
+                const bestMeal = data.meals[0];
+
+                const startDate = data.rangeStart.slice(5).replace('-', '/');
+                const endDate = data.rangeEnd.slice(5).replace('-', '/');
+
+                // 特殊报餐显示活动名称，常规报餐显示月份
+                const cardTitle = data.type === 'temporary'
+                    ? `<span class="meal-title">${bestMeal.title || bestMeal.name || '特殊报餐'}</span>`
+                    : `<span class="meal-title">${data.year}年${data.monthName}</span>`;
+
+                // 特殊报餐不显示活动数量
+                const metaInfo = data.type === 'temporary'
+                    ? `<span>${startDate} - ${endDate}</span>`
+                    : `<span>${startDate} - ${endDate}</span><span>·</span><span>${data.meals.length}个活动</span>`;
+
+                // 已结束的卡片或有数据的卡片不显示复选框
+                const hasStats = (data.totals.lunch_employee + data.totals.lunch_guest + data.totals.dinner_employee + data.totals.dinner_guest) > 0;
+                const checkboxHtml = (!isEnded && !hasStats)
+                    ? `<input type="checkbox" class="meal-checkbox" value="${bestMeal.id}" ${localStorage.getItem('mealChecked_' + bestMeal.id) === 'true' ? 'checked' : ''} onclick="event.stopPropagation();toggleBatchDelete(this)">`
+                    : '';
+
+                html += `
+                <div class="meal-card ${cardClass}" data-meal-id="${bestMeal.id}">
+                    <div class="meal-header" onclick="openCalendarModal(${bestMeal.id}, '${data.year}', ${data.month})">
+                        <div class="meal-header-top">
+                            ${cardTitle}
+                            <div class="meal-badges">
+                                <span class="meal-badge ${statusClass}">${statusText}</span>
+                                ${checkboxHtml}
+                            </div>
+                        </div>
+                        <div class="meal-meta">
+                            <svg class="meal-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            ${metaInfo}
+                        </div>
+                        <div class="meal-times" style="font-size:12px;color:var(--text-muted);line-height:20px;">
+                            <div style="display:flex;justify-content:space-between;">
+                                <span>员工午 <span style="display:inline-block;width:70px">${bestMeal.lunch_enabled ? (bestMeal.lunch_signup_start || '') + '-' + (bestMeal.lunch_signup_end || '') : '-'}</span></span>
+                                <span>客餐午 <span style="display:inline-block;width:70px">${bestMeal.guest_lunch_enabled ? (bestMeal.guest_lunch_start || '') + '-' + (bestMeal.guest_lunch_end || '') : '-'}</span></span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;">
+                                <span>员工晚 <span style="display:inline-block;width:70px">${bestMeal.dinner_enabled ? (bestMeal.dinner_signup_start || '') + '-' + (bestMeal.dinner_signup_end || '') : '-'}</span></span>
+                                <span>客餐晚 <span style="display:inline-block;width:70px">${bestMeal.guest_dinner_enabled ? (bestMeal.guest_dinner_start || '') + '-' + (bestMeal.guest_dinner_end || '') : '-'}</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="meal-stats" onclick="openCalendarModal(${bestMeal.id}, '${data.year}', ${data.month})">
+                        <div class="meal-stat">
+                            <div class="meal-stat-value lunch">${data.totals.lunch_employee}</div>
+                            <div class="meal-stat-label">员工午</div>
+                        </div>
+                        <div class="meal-stat">
+                            <div class="meal-stat-value dinner">${data.totals.dinner_employee}</div>
+                            <div class="meal-stat-label">员工晚</div>
+                        </div>
+                        <div class="meal-stat">
+                            <div class="meal-stat-value guest">${data.totals.lunch_guest + data.totals.dinner_guest}</div>
+                            <div class="meal-stat-label">客餐</div>
+                        </div>
+                    </div>
+                    <div class="meal-footer" onclick="openCalendarModal(${bestMeal.id}, '${data.year}', ${data.month})">
+                        <svg class="meal-footer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        点击查看日历详情
+                    </div>
+                </div>
+                `;
+            });
+            html += '</div>';
+
+            list.innerHTML = html;
+        }
+
+        function openDetailModal(id) {
+            currentActivityId = id;
+            document.getElementById('loading').style.display = 'block';
+            fetch(`${API_URL}/meal/${id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                if (data.code === 0) {
+                    renderDetailModal(data.data);
+                    document.getElementById('detailModal').classList.add('show');
+                } else {
+                    showToast(data.msg || '加载失败');
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                showToast('加载失败');
+            });
+        }
+
+        function renderDetailModal(activity) {
+            document.getElementById('detailModalTitle').textContent = activity.title;
+
+            let html = `
+                <div class="detail-section">
+                    <div class="detail-label">报餐日期</div>
+                    <div class="detail-value">${activity.start_date} 至 ${activity.end_date}</div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-label" style="margin-bottom:8px">员工餐设置</div>
+                    <div class="meal-type-section">
+                        <div class="meal-type-row">
+                            <span class="meal-type-label">🍱 午餐</span>
+                            <div class="meal-type-times">
+                                <span style="color:var(--text-secondary);font-size:13px;">${activity.lunch_signup_start} - ${activity.lunch_signup_end}</span>
+                            </div>
+                            <label class="toggle-switch meal-type-toggle">
+                                <input type="checkbox" ${activity.lunch_enabled ? 'checked' : ''} onchange="toggleMeal('lunch', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="meal-type-section">
+                        <div class="meal-type-row">
+                            <span class="meal-type-label">🍚 晚餐</span>
+                            <div class="meal-type-times">
+                                <span style="color:var(--text-secondary);font-size:13px;">${activity.dinner_signup_start} - ${activity.dinner_signup_end}</span>
+                            </div>
+                            <label class="toggle-switch meal-type-toggle">
+                                <input type="checkbox" ${activity.dinner_enabled ? 'checked' : ''} onchange="toggleMeal('dinner', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-label" style="margin-bottom:8px">客餐设置</div>
+                    <div class="meal-type-section">
+                        <div class="meal-type-row">
+                            <span class="meal-type-label">🍱 客餐午餐</span>
+                            <div class="meal-type-times">
+                                <span style="color:var(--text-secondary);font-size:13px;">${activity.guest_lunch_start || '09:00'} - ${activity.guest_lunch_end || '10:30'}</span>
+                            </div>
+                            <label class="toggle-switch meal-type-toggle">
+                                <input type="checkbox" ${activity.guest_lunch_enabled ? 'checked' : ''} onchange="toggleMeal('guest_lunch', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="meal-type-section">
+                        <div class="meal-type-row">
+                            <span class="meal-type-label">🍚 客餐晚餐</span>
+                            <div class="meal-type-times">
+                                <span style="color:var(--text-secondary);font-size:13px;">${activity.guest_dinner_start || '14:00'} - ${activity.guest_dinner_end || '15:30'}</span>
+                            </div>
+                            <label class="toggle-switch meal-type-toggle">
+                                <input type="checkbox" ${activity.guest_dinner_enabled ? 'checked' : ''} onchange="toggleMeal('guest_dinner', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px;display:flex;gap:12px;">
+                    <button class="btn btn-primary" onclick="openCalendarModal(${activity.id});closeDetailModal();" style="flex:1">查看日历</button>
+                </div>
+            `;
+
+            document.getElementById('detailModalBody').innerHTML = html;
+        }
+
+        function toggleMeal(type, enabled) {
+            const fieldMap = {
+              'lunch': 'lunch_enabled',
+              'dinner': 'dinner_enabled',
+              'guest_lunch': 'guest_lunch_enabled',
+              'guest_dinner': 'guest_dinner_enabled'
+            };
+            fetch(`${API_URL}/meal/${currentActivityId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ [fieldMap[type]]: enabled ? 1 : 0 })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) {
+                    loadMeals();
+                }
+            })
+            .catch(err => showToast('更新失败'));
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+
+        function openCalendarModal(id, year, month) {
+            currentActivityId = id;
+            document.getElementById('loading').style.display = 'block';
+            fetch(`${API_URL}/meal/${id}/statistics?year=${year}&month=${month}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                if (data.code === 0) {
+                    renderCalendarModal(data.data, year, month);
+                    document.getElementById('calendarModal').classList.add('show');
+                } else {
+                    showToast(data.msg || '加载失败');
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                showToast('加载失败');
+            });
+        }
+
+        function renderCalendarModal(data, year, month) {
+            const activity = data.activity;
+            const dailyStats = data.dailyStats;
+            const dailyDetails = data.dailyDetails || {};
+            const dates = data.dates;
+            const totals = data.totals;
+
+            document.getElementById('calendarModalTitle').textContent = `${year} 年 ${month} 月 - 统计`;
+
+            const endDate = new Date(activity.end_date);
+            const today = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0');
+
+            // 使用传入的年月显示当月
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
+
+            let html = `
+                <div class="month-stats" style="display:flex;gap:16px;margin-top:-10px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+                    <div class="stat-mini-card" style="flex:1;background:linear-gradient(135deg,#fef3c7,#fde68a);padding:16px 20px;border-radius:12px;min-width:0;text-align:center;">
+                        <div style="font-size:12px;color:#92400e;font-weight:600;">午餐</div>
+                        <div style="font-size:24px;font-weight:700;color:#92400e;">${totals.lunch_employee}</div>
+                    </div>
+                    <div class="stat-mini-card" style="flex:1;background:linear-gradient(135deg,#dbeafe,#bfdbfe);padding:16px 20px;border-radius:12px;min-width:0;text-align:center;">
+                        <div style="font-size:12px;color:#1e40af;font-weight:600;">晚餐</div>
+                        <div style="font-size:24px;font-weight:700;color:#1e40af;">${totals.dinner_employee}</div>
+                    </div>
+                    <div class="stat-mini-card" style="flex:1;background:linear-gradient(135deg,#d1fae5,#a7f3d0);padding:16px 20px;border-radius:12px;min-width:0;text-align:center;">
+                        <div style="font-size:12px;color:#065f46;font-weight:600;">客餐</div>
+                        <div style="font-size:24px;font-weight:700;color:#065f46;">${totals.lunch_guest + totals.dinner_guest}</div>
+                    </div>
+                    <button onclick="exportMonthReport(${activity.id}, ${year}, ${month})" style="padding:10px 20px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;">导出月报表</button>
+                </div>
+
+                <div class="calendar-body">
+                    <div class="calendar-weekday">日</div>
+                    <div class="calendar-weekday">一</div>
+                    <div class="calendar-weekday">二</div>
+                    <div class="calendar-weekday">三</div>
+                    <div class="calendar-weekday">四</div>
+                    <div class="calendar-weekday">五</div>
+                    <div class="calendar-weekday">六</div>
+            `;
+
+            const startWeekday = firstDay.getDay();
+            for (let i = 0; i < startWeekday; i++) {
+                html += '<div class="calendar-day other-month"></div>';
+            }
+
+            for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                const isToday = dateStr === today;
+                const lunch = dailyStats[dateStr]?.lunch;
+                const dinner = dailyStats[dateStr]?.dinner;
+                const hasData = (lunch && (lunch.employee > 0 || lunch.guest > 0)) || (dinner && (dinner.employee > 0 || dinner.guest > 0));
+                const lunchDetail = dailyDetails[`${dateStr}_lunch`] || [];
+                const dinnerDetail = dailyDetails[`${dateStr}_dinner`] || [];
+
+                html += `
+                    <div class="calendar-day ${isToday ? 'today' : ''} ${hasData ? 'has-data' : ''}" ${hasData ? `onclick="showDayDetail('${dateStr}', ${activity.id}, ${year}, ${month})"` : ''}>
+                        <div class="day-number">${d.getDate()}</div>
+                        ${hasData ? `
+                            <div class="day-stats">
+                                <div style="background:#fef3c7;color:#92400e;">午餐:${(lunch?.employee||0)}</div>
+                                <div style="background:#dbeafe;color:#1e40af;">晚餐:${(dinner?.employee||0)}</div>
+                                <div style="background:#d1fae5;color:#065f46;">客餐:${(lunch?.guest||0)+(dinner?.guest||0)}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            html += '</div>'; // close calendar-body
+            document.getElementById('calendarModalBody').innerHTML = html;
+        }
+
+        function closeCalendarModal() {
+            document.getElementById('calendarModal').classList.remove('show');
+        }
+
+        function showDayDetail(dateStr, activityId, year, month) {
+            // 重新获取统计数据获取详情
+            fetch(`${API_URL}/meal/${activityId}/statistics?year=${year}&month=${month}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code !== 0) {
+                    showToast('获取数据失败');
+                    return;
+                }
+
+                const dailyDetails = data.data.dailyDetails || {};
+                const dailyStats = data.data.dailyStats || {};
+                const lunchDetail = dailyDetails[`${dateStr}_lunch`] || [];
+                const dinnerDetail = dailyDetails[`${dateStr}_dinner`] || [];
+                const lunchStats = dailyStats[dateStr]?.lunch;
+                const dinnerStats = dailyStats[dateStr]?.dinner;
+
+                document.getElementById('dayDetailModalTitle').textContent = `${dateStr} 报餐详情`;
+
+                // 员工餐 - 午餐
+                const lunchEmployees = lunchDetail.filter(p => p.count > 0);
+                let lunchEmpHtml = lunchEmployees.length > 0
+                    ? lunchEmployees.map(p => {
+                        const isTemp = p.is_temporary === 1;
+                        const bgStyle = isTemp
+                            ? 'background:linear-gradient(135deg,#ff6b35,#e63946);'
+                            : 'background:#fef3c7;';
+                        const textStyle = isTemp ? 'color:#fff;' : 'color:#92400e;';
+                        const tempBadge = isTemp ? '<span style="background:rgba(255,255,255,0.3);padding:1px 4px;border-radius:8px;font-size:9px;margin-right:4px;">临</span>' : '';
+                        return `<div style="${bgStyle}padding:4px 8px;border-radius:20px;font-size:11px;${textStyle}display:inline-flex;gap:4px;align-items:center;justify-content:center;min-width:100px;text-align:center;"><span style="font-weight:bold;">${tempBadge}${p.employee_id}</span><span>${p.name}</span></div>`;
+                    }).join('')
+                    : '<span style="color:#999;font-size:13px;">无</span>';
+
+                // 员工餐 - 晚餐
+                const dinnerEmployees = dinnerDetail.filter(p => p.count > 0);
+                let dinnerEmpHtml = dinnerEmployees.length > 0
+                    ? dinnerEmployees.map(p => {
+                        const isTemp = p.is_temporary === 1;
+                        const bgStyle = isTemp
+                            ? 'background:linear-gradient(135deg,#ff6b35,#e63946);'
+                            : 'background:#dbeafe;';
+                        const textStyle = isTemp ? 'color:#fff;' : 'color:#1e40af;';
+                        const tempBadge = isTemp ? '<span style="background:rgba(255,255,255,0.3);padding:1px 4px;border-radius:8px;font-size:9px;margin-right:4px;">临</span>' : '';
+                        return `<div style="${bgStyle}padding:4px 8px;border-radius:20px;font-size:11px;${textStyle}display:inline-flex;gap:4px;align-items:center;justify-content:center;min-width:100px;text-align:center;"><span style="font-weight:bold;">${tempBadge}${p.employee_id}</span><span>${p.name}</span></div>`;
+                    }).join('')
+                    : '<span style="color:#999;font-size:13px;">无</span>';
+
+                // 客餐统计（从dailyStats获取）
+                const lunchGuestTotal = lunchStats?.guest || 0;
+                const dinnerGuestTotal = dinnerStats?.guest || 0;
+
+                // 员工餐 - 上下布局，宽度铺满，人员多列均匀分布
+                let empHtml = `
+                    <div style="background:#fef9ee;padding:16px;border-radius:12px;margin-bottom:16px;width:100%;box-sizing:border-box;">
+                        <div style="margin-bottom:12px;">
+                            <div style="font-size:14px;color:#92400e;margin-bottom:8px;font-weight:600;">🍱 午餐 ${lunchEmployees.length}人</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start;">${lunchEmpHtml}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:14px;color:#1e40af;margin-bottom:8px;font-weight:600;">🍚 晚餐 ${dinnerEmployees.length}人</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start;">${dinnerEmpHtml}</div>
+                        </div>
+                    </div>
+                `;
+
+                // 客餐明细表 - 每行一个卡片，包裹文字
+                const guestDetails = data.data.guestDetails || {};
+                const lunchGuestList = guestDetails[`${dateStr}_lunch`] || [];
+                const dinnerGuestList = guestDetails[`${dateStr}_dinner`] || [];
+
+                let guestHtml = '';
+                if (lunchGuestList.length > 0 || dinnerGuestList.length > 0) {
+                    let lunchCards = '';
+                    let dinnerCards = '';
+
+                    // 午餐客餐卡片
+                    lunchGuestList.forEach(g => {
+                        const reason = g.reason || '-';
+                        const reporter = g.reporter_name ? `${g.reporter_id} ${g.reporter_name}` : '-';
+                        const isTemp = g.is_temporary === 1;
+                        const bgStyle = isTemp ? 'background:linear-gradient(135deg,#ff6b35,#e63946);border:none;' : 'background:#f0fdf4;border:1px solid #86efac;';
+                        const textStyle = isTemp ? 'color:#fff;' : 'color:#059669;';
+                        const tempBadge = isTemp ? '<span style="background:rgba(255,255,255,0.3);padding:1px 6px;border-radius:8px;font-size:10px;margin-right:4px;">临</span>' : '';
+                        lunchCards += `
+                            <div style="${bgStyle}border-radius:8px;padding:6px 10px;margin-bottom:6px;display:inline-flex;gap:8px;align-items:center;">
+                                <span style="font-size:13px;font-weight:bold;${textStyle}">${tempBadge}${reporter}</span>
+                                <span style="font-size:13px;font-weight:bold;${textStyle}">${g.count}人</span>
+                                <span style="font-size:13px;font-weight:bold;${textStyle}">${reason}</span>
+                            </div>
+                        `;
+                    });
+
+                    // 晚餐客餐卡片
+                    dinnerGuestList.forEach(g => {
+                        const reason = g.reason || '-';
+                        const reporter = g.reporter_name ? `${g.reporter_id} ${g.reporter_name}` : '-';
+                        const isTemp = g.is_temporary === 1;
+                        const bgStyle = isTemp ? 'background:linear-gradient(135deg,#ff6b35,#e63946);border:none;' : 'background:#f0fdf4;border:1px solid #86efac;';
+                        const textStyle = isTemp ? 'color:#fff;' : 'color:#059669;';
+                        const tempBadge = isTemp ? '<span style="background:rgba(255,255,255,0.3);padding:1px 6px;border-radius:8px;font-size:10px;margin-right:4px;">临</span>' : '';
+                        dinnerCards += `
+                            <div style="${bgStyle}border-radius:8px;padding:6px 10px;margin-bottom:6px;display:inline-flex;gap:8px;align-items:center;">
+                                <span style="font-size:13px;font-weight:bold;${textStyle}">${tempBadge}${reporter}</span>
+                                <span style="font-size:13px;font-weight:bold;${textStyle}">${g.count}人</span>
+                                <span style="font-size:13px;font-weight:bold;${textStyle}">${reason}</span>
+                            </div>
+                        `;
+                    });
+
+                    guestHtml = `
+                        <div style="background:#f0fdf4;padding:16px;border-radius:12px;width:100%;box-sizing:border-box;">
+                            <div style="margin-bottom:12px;">
+                                <div style="font-size:14px;color:#059669;margin-bottom:8px;font-weight:600;">👥 午餐客餐</div>
+                                <div>${lunchCards || '<span style="color:#bbb;font-size:12px;">暂无午餐客餐</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:14px;color:#059669;margin-bottom:8px;font-weight:600;">👥 晚餐客餐</div>
+                                <div>${dinnerCards || '<span style="color:#bbb;font-size:12px;">暂无晚餐客餐</span>'}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                let html = empHtml + guestHtml;
+
+                document.getElementById('dayDetailModalBody').innerHTML = html;
+                document.getElementById('dayDetailModal').classList.add('show');
+            })
+            .catch(err => showToast('获取数据失败'));
+        }
+
+        function closeDayDetailModal() {
+            document.getElementById('dayDetailModal').classList.remove('show');
+        }
+
+        function getCurrentMealType() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const timeValue = hours + minutes / 60;
+            // 有报餐管理权限或客餐权限才显示客餐选项
+            const canGuest = window.canShowGuestMealOption ? 1 : 0;
+
+            if (timeValue < 11) {
+                return { type: 'lunch', label: '午餐补报', canEmployee: true, canGuest: canGuest };
+            } else if (timeValue < 16.5) { // 16:30
+                return { type: 'dinner', label: '晚餐补报', canEmployee: true, canGuest: canGuest };
+            } else {
+                return { type: null, label: '已超过临时报餐时间', canEmployee: false, canGuest: false };
+            }
+        }
+
+        function openTempSignupModal() {
+            // 重置申请人列表
+            document.getElementById('tempApplicantsList').innerHTML = `
+                <div class="temp-applicant-row" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                    <input type="text" class="form-control" placeholder="工号" data-field="empId" onblur="searchTempEmployee(this)" style="flex: 1;">
+                    <input type="text" class="form-control" placeholder="姓名" data-field="empName" onblur="searchTempEmployeeByName(this)" style="flex: 1;">
+                    <button type="button" onclick="removeTempApplicantRow(this)" style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #ef4444; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1;">−</button>
+                </div>
+            `;
+
+            // 重置客餐字段
+            document.getElementById('tempGuestCount').value = '1';
+            document.getElementById('tempGuestReason').value = '';
+            document.getElementById('tempGuestFields').style.display = 'none';
+
+            // 根据时间显示餐别选项
+            const mealType = getCurrentMealType();
+            const section = document.getElementById('tempMealTypeSection');
+            const hint = document.getElementById('tempMealTypeHint');
+            const submitBtn = document.getElementById('tempSubmitBtn');
+
+            if (mealType.type) {
+                let html = '';
+                if (mealType.canEmployee) {
+                    html += `
+                        <button type="button" class="btn temp-meal-btn" onclick="selectTempMealType('${mealType.type}')" id="btnTempEmployee" data-type="${mealType.type}" style="flex:1; justify-content: center; padding: 12px 20px; background: var(--white); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius);">
+                            ${mealType.label}
+                        </button>
+                    `;
+                }
+                if (mealType.canGuest) {
+                    html += `
+                        <button type="button" class="btn temp-meal-btn" onclick="selectTempMealType('guest_${mealType.type}')" id="btnTempGuest" data-type="guest_${mealType.type}" style="flex:1; justify-content: center; padding: 12px 20px; background: var(--white); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius);">
+                            客餐${mealType.type === 'lunch' ? '午餐' : '晚餐'}
+                        </button>
+                    `;
+                }
+                section.innerHTML = '<div style="display: flex; gap: 12px;">' + html + '</div>';
+                // Default select first button
+                selectTempMealType(mealType.canEmployee ? mealType.type : 'guest_' + mealType.type);
+                hint.style.display = 'none';
+                submitBtn.disabled = false;
+            } else {
+                section.innerHTML = '';
+                hint.textContent = '已超过临时报餐时间（午餐11:00前，晚餐16:30前）';
+                hint.style.display = 'block';
+                submitBtn.disabled = true;
+            }
+
+            document.getElementById('tempSignupModal').classList.add('show');
+            loadTodayTempSignups();
+        }
+
+        async function loadTodayTempSignups() {
+            try {
+                const res = await fetch(API_URL + '/meal/temporary-signups/today', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                const section = document.getElementById('tempTodaySection');
+                const list = document.getElementById('tempTodayList');
+                const count = document.getElementById('tempTodayCount');
+
+                if (data.code === 0 && data.data && data.data.length > 0) {
+                    section.style.display = 'block';
+                    count.textContent = data.data.length + '人';
+                    list.innerHTML = data.data.map(r => {
+                        const mealLabel = r.meal_type === 'lunch' ? '午餐' : '晚餐';
+                        const typeLabel = r.employee_count > 0 ? '员工' : '客餐';
+                        return `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-weight: 600;">${r.name || '未知'}</span>
+                                    <span style="color: var(--text-muted); font-size: 12px;">${r.employee_id || ''}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="temporary-badge">${typeLabel}${mealLabel}</span>
+                                    <button onclick="cancelTempSignup(${r.id})" style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid #ef4444; background: #fff; color: #ef4444; font-size: 14px; cursor: pointer;">×</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    section.style.display = 'none';
+                }
+            } catch (err) {
+                console.error('加载临时报餐记录失败', err);
+            }
+        }
+
+        async function cancelTempSignup(id) {
+            if (!confirm('确认取消该临时报餐？')) return;
+            try {
+                const res = await fetch(API_URL + '/meal/temporary-signups/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.code === 0) {
+                    showToast('已取消');
+                    loadTodayTempSignups();
+                    loadMeals();
+                } else {
+                    showToast(data.msg || '取消失败');
+                }
+            } catch (err) {
+                showToast('网络错误');
+            }
+        }
+
+        function closeTempSignupModal() {
+            document.getElementById('tempSignupModal').classList.remove('show');
+        }
+
+        function addTempApplicantRow() {
+            const list = document.getElementById('tempApplicantsList');
+            const row = document.createElement('div');
+            row.className = 'temp-applicant-row';
+            row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; align-items: center;';
+            row.innerHTML = `
+                <input type="text" class="form-control" placeholder="工号" data-field="empId" onblur="searchTempEmployee(this)" style="flex: 1;">
+                <input type="text" class="form-control" placeholder="姓名" data-field="empName" onblur="searchTempEmployeeByName(this)" style="flex: 1;">
+                <button type="button" onclick="removeTempApplicantRow(this)" style="width: 28px; height: 28px; border-radius: 50%; border: none; background: #ef4444; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; flex-shrink: 0; line-height: 1;">−</button>
+            `;
+            list.appendChild(row);
+            row.querySelector('[data-field="empId"]').focus();
+        }
+
+        function removeTempApplicantRow(btn) {
+            const rows = document.querySelectorAll('.temp-applicant-row');
+            if (rows.length > 1) {
+                btn.parentElement.remove();
+            } else {
+                showToast('至少保留一行');
+            }
+        }
+
+        function searchTempEmployee(input) {
+            const empId = input.value.trim();
+            if (!empId) return;
+            const row = input.closest('.temp-applicant-row');
+            const nameInput = row.querySelector('[data-field="empName"]');
+
+            fetch(`${API_URL}/auth/search-staff?keyword=${encodeURIComponent(empId)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0 && data.data && data.data.length > 0) {
+                    const staff = data.data.find(s => s.employee_id === empId) || data.data[0];
+                    if (staff && staff.name) {
+                        nameInput.value = staff.name;
+                    }
+                }
+            })
+            .catch(err => console.error('搜索员工失败:', err));
+        }
+
+        function searchTempEmployeeByName(input) {
+            const name = input.value.trim();
+            if (!name) return;
+            const row = input.closest('.temp-applicant-row');
+            const empIdInput = row.querySelector('[data-field="empId"]');
+
+            fetch(`${API_URL}/auth/search-staff?keyword=${encodeURIComponent(name)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0 && data.data && data.data.length > 0) {
+                    const staff = data.data.find(s => s.name === name) || data.data[0];
+                    if (staff && staff.employee_id) {
+                        empIdInput.value = staff.employee_id;
+                    }
+                }
+            })
+            .catch(err => console.error('搜索员工失败:', err));
+        }
+
+        function toggleTempGuest() {
+            const selected = document.querySelector('input[name="tempMealType"]:checked');
+            const isGuest = selected && selected.value.startsWith('guest_');
+            document.getElementById('tempGuestFields').style.display = isGuest ? 'block' : 'none';
+        }
+
+        function selectTempMealType(type) {
+            // Reset all buttons to default gray style
+            document.querySelectorAll('.temp-meal-btn').forEach(btn => {
+                btn.style.background = 'var(--white)';
+                btn.style.border = '1px solid var(--border)';
+                btn.style.color = 'var(--text)';
+                btn.style.boxShadow = 'none';
+                btn.style.transform = 'none';
+            });
+            // Highlight selected button with animation
+            const btn = document.querySelector(`[data-type="${type}"]`);
+            if (btn) {
+                btn.style.transition = 'all 0.3s ease';
+                if (type.startsWith('guest_')) {
+                    btn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+                    btn.style.color = '#fff';
+                    btn.style.boxShadow = '0 3px 10px rgba(34,197,94,0.3)';
+                    btn.style.transform = 'scale(1.02)';
+                } else {
+                    btn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)';
+                    btn.style.color = '#fff';
+                    btn.style.boxShadow = '0 3px 10px rgba(59,130,246,0.3)';
+                    btn.style.transform = 'scale(1.02)';
+                }
+            }
+            // Toggle guest fields with smooth animation
+            const guestFields = document.getElementById('tempGuestFields');
+            const isGuest = type.startsWith('guest_');
+            if (isGuest) {
+                guestFields.style.display = 'block';
+                guestFields.style.maxHeight = '0';
+                guestFields.style.overflow = 'hidden';
+                guestFields.style.transition = 'max-height 0.3s ease, opacity 0.25s ease';
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        guestFields.style.maxHeight = '150px';
+                        guestFields.style.opacity = '1';
+                    });
+                });
+            } else {
+                guestFields.style.maxHeight = '150px';
+                guestFields.style.transition = 'max-height 0.3s ease, opacity 0.2s ease';
+                guestFields.style.opacity = '0';
+                setTimeout(() => {
+                    guestFields.style.maxHeight = '0';
+                    setTimeout(() => {
+                        guestFields.style.display = 'none';
+                    }, 300);
+                }, 50);
+            }
+        }
+
+        function submitTempSignup() {
+            // 收集申请人
+            const applicants = [];
+            document.querySelectorAll('.temp-applicant-row').forEach(row => {
+                const empId = row.querySelector('[data-field="empId"]').value.trim();
+                const empName = row.querySelector('[data-field="empName"]').value.trim();
+                if (empId) {
+                    applicants.push({ employee_id: empId, employee_name: empName });
+                }
+            });
+
+            if (applicants.length === 0) {
+                showToast('请至少添加一个申请人');
+                return;
+            }
+
+            const selected = document.querySelector('input[name="tempMealType"]:checked');
+            if (!selected) {
+                showToast('请选择餐别');
+                return;
+            }
+
+            const mealTypeValue = selected.value;
+            const isGuest = mealTypeValue.startsWith('guest_');
+            const meal_type = isGuest ? mealTypeValue.replace('guest_', '') : mealTypeValue;
+
+            let guest_count = 0;
+            let reason = '';
+
+            if (isGuest) {
+                guest_count = parseInt(document.getElementById('tempGuestCount').value) || 0;
+                reason = document.getElementById('tempGuestReason').value.trim();
+                if (!reason) {
+                    showToast('请填写客餐缘由');
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('tempSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+
+            fetch(`${API_URL}/meal/temporary-signup`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    applicants,
+                    meal_type,
+                    guest_count,
+                    reason
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) {
+                    closeTempSignupModal();
+                    showToast(`临时报餐成功（${data.data?.count || applicants.length}人）`);
+                    loadMeals();
+                } else {
+                    showToast(data.msg || '提交失败');
+                }
+            })
+            .catch(err => {
+                console.error('提交失败:', err);
+                showToast('网络错误');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.textContent = '提交';
+            });
+        }
+
+        function deleteMeal(id, title, isEnded, hasStats) {
+            if (isEnded) {
+                showToast('已结束的报餐活动无法删除');
+                return;
+            }
+            if (hasStats) {
+                showToast('该活动已有报餐数据，无法删除');
+                return;
+            }
+            if (!confirm(`确定删除报餐活动"${title}"吗？`)) return;
+            fetch(`${API_URL}/meal/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) {
+                    localStorage.removeItem('mealChecked_' + id);
+                    loadMeals();
+                } else {
+                    showToast(data.msg || '删除失败');
+                }
+            })
+            .catch(err => showToast('删除失败'));
+        }
+
+        function toggleBatchDelete(checkbox) {
+            const id = checkbox.value;
+            if (checkbox.checked) {
+                localStorage.setItem('mealChecked_' + id, 'true');
+            } else {
+                localStorage.removeItem('mealChecked_' + id);
+            }
+            const checkboxes = document.querySelectorAll('.meal-checkbox:checked');
+            const batchBtn = document.getElementById('batchDeleteBtn');
+            if (checkboxes.length > 0) {
+                batchBtn.classList.add('show');
+            } else {
+                batchBtn.classList.remove('show');
+            }
+        }
+
+        function batchDeleteMeals() {
+            const checkboxes = document.querySelectorAll('.meal-checkbox:checked');
+            if (checkboxes.length === 0) return;
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+
+            // 检查是否有关联报餐数据的活动
+            const cached = window._cachedMeals || [];
+            const hasStats = ids.some(id => {
+                const meal = cached.find(m => m.id == id);
+                if (!meal) return false;
+                const stats = meal.todayStats || meal.statistics || {};
+                const lunchEmp = stats.lunch_employee || 0;
+                const lunchGuest = stats.lunch_guest || 0;
+                const dinnerEmp = stats.dinner_employee || 0;
+                const dinnerGuest = stats.dinner_guest || 0;
+                return (lunchEmp + lunchGuest + dinnerEmp + dinnerGuest) > 0;
+            });
+
+            if (hasStats) {
+                showToast('所选活动中包含已有报餐数据的活动，无法删除');
+                return;
+            }
+
+            if (!confirm(`确定删除选中的 ${ids.length} 个报餐活动吗？`)) return;
+            Promise.all(ids.map(id =>
+                fetch(`${API_URL}/meal/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(res => res.json())
+            )).then(results => {
+                const failed = results.filter(r => r.code !== 0);
+                if (failed.length === 0) {
+                                        ids.forEach(id => localStorage.removeItem('mealChecked_' + id));
+                } else {
+                    showToast('部分删除失败');
+                }
+                document.getElementById('batchDeleteBtn').classList.remove('show');
+                loadMeals();
+            }).catch(err => showToast('删除失败'));
+        }
+
+        function exportMonthReport(activityId, year, month) {
+            // 获取该月统计数据
+            fetch(`${API_URL}/meal/${activityId}/statistics?year=${year}&month=${month}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code !== 0) {
+                    showToast('获取数据失败');
+                    return;
+                }
+
+                const activity = data.data.activity;
+                const dailyStats = data.data.dailyStats;
+                const dailyDetails = data.data.dailyDetails || {};
+
+                // 生成当月日期（使用本地时间）
+                const firstDay = new Date(year, month - 1, 1);
+                const lastDay = new Date(year, month, 0);
+                const monthStr = `${year}年${month}月`;
+
+                // 获取该月所有日期（使用本地时间避免UTC偏移问题）
+                const dates = [];
+                for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    dates.push(`${y}-${m}-${day}`);
+                }
+
+                // 收集有数据的日期列（只导出有报名的日期）
+                const validDateCols = [];
+                dates.forEach(dateStr => {
+                    const lunch = dailyStats[dateStr]?.lunch;
+                    const dinner = dailyStats[dateStr]?.dinner;
+                    const hasLunch = lunch && (lunch.people > 0 || lunch.employee > 0 || lunch.guest > 0);
+                    const hasDinner = dinner && (dinner.people > 0 || dinner.employee > 0 || dinner.guest > 0);
+
+                    if (hasLunch || hasDinner) {
+                        validDateCols.push({ date: dateStr, hasLunch, hasDinner, lunch, dinner });
+                    }
+                });
+
+                // 收集所有有报名的人员
+                const employeeMap = {};
+                dates.forEach(dateStr => {
+                    const lunchDetail = dailyDetails[`${dateStr}_lunch`] || [];
+                    const dinnerDetail = dailyDetails[`${dateStr}_dinner`] || [];
+
+                    lunchDetail.forEach(p => {
+                        if (!employeeMap[p.employee_id]) {
+                            employeeMap[p.employee_id] = {
+                                name: p.name,
+                                department: p.department || '',
+                                team: p.team || '',
+                                position: p.position || '',
+                                lunch: {},
+                                dinner: {}
+                            };
+                        }
+                        employeeMap[p.employee_id].lunch[dateStr] = p.count;
+                    });
+
+                    dinnerDetail.forEach(p => {
+                        if (!employeeMap[p.employee_id]) {
+                            employeeMap[p.employee_id] = {
+                                name: p.name,
+                                department: p.department || '',
+                                team: p.team || '',
+                                position: p.position || '',
+                                lunch: {},
+                                dinner: {}
+                            };
+                        }
+                        employeeMap[p.employee_id].dinner[dateStr] = p.count;
+                    });
+                });
+
+                // 构建表头（与模板格式一致）
+                // 序号 | 部门 | 班组 | 职位 | 姓名 | 日期列...
+                const header = ['序号', '部门', '班组', '职位', '姓名'];
+                validDateCols.forEach(col => {
+                    const day = col.date.slice(5);  // 04-13
+                    header.push(day + '午餐', day + '晚餐');
+                });
+                header.push('员工餐合计', '客餐合计');
+
+                // 构建数据
+                const wsData = [header];
+
+                // 按工号排序，添加数据行
+                let seq = 1;
+                Object.keys(employeeMap).sort().forEach(empId => {
+                    const emp = employeeMap[empId];
+                    let lunchTotal = 0, guestTotal = 0;
+                    const row = [seq++, emp.department, emp.team, emp.position, emp.name];  // 序号,部门,班组,职位,姓名
+
+                    validDateCols.forEach(col => {
+                        if (col.hasLunch) {
+                            const val = emp.lunch[col.date] ? 1 : 0;  // 1表示报名，0表示未报
+                            row.push(val);
+                            lunchTotal += val;
+                        } else {
+                            row.push('');
+                        }
+                        if (col.hasDinner) {
+                            const val = emp.dinner[col.date] ? 1 : 0;  // 1表示报名，0表示未报
+                            row.push(val);
+                            guestTotal += val;
+                        } else {
+                            row.push('');
+                        }
+                    });
+
+                    row.push(lunchTotal, guestTotal);
+                    wsData.push(row);
+                });
+
+                // 合计行（人数）
+                let totalEmp = 0, totalGuest = 0;
+                const sumRow = ['', '', '', '', '合计'];
+                validDateCols.forEach(col => {
+                    if (col.hasLunch) {
+                        sumRow.push(col.lunch?.people || 0);
+                        totalEmp += col.lunch?.people || 0;
+                    } else {
+                        sumRow.push('');
+                    }
+                    if (col.hasDinner) {
+                        sumRow.push(col.dinner?.people || 0);
+                        totalGuest += col.dinner?.people || 0;
+                    } else {
+                        sumRow.push('');
+                    }
+                });
+                sumRow.push(totalEmp, totalGuest);
+                wsData.push(sumRow);
+
+                // 创建工作表
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+                // 设置列宽
+                const colWidths = [
+                    { wch: 8 },   // 姓名
+                    { wch: 10 },  // 部门
+                    { wch: 10 },  // 班组
+                    { wch: 10 },  // 职位
+                    { wch: 8 },   // 序号
+                ];
+                validDateCols.forEach(() => {
+                    colWidths.push({ wch: 8 }, { wch: 8 });
+                });
+                colWidths.push({ wch: 10 }, { wch: 10 });
+                ws['!cols'] = colWidths;
+
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, `${month}月报餐`);
+
+                // 下载
+                XLSX.writeFile(wb, `${year}年${month}月报表数据统计.xlsx`);
+            })
+            .catch(err => showToast('导出失败'));
+        }
+
+        document.getElementById('createModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCreateModal();
+        });
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) closeDetailModal();
+        });
+        document.getElementById('calendarModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCalendarModal();
+        });
+        document.getElementById('dayDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) closeDayDetailModal();
+        });
+        document.getElementById('tempSignupModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTempSignupModal();
+        });
+    </script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

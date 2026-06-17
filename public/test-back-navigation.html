@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>返回检测测试</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; }
+        .info { background: #f0f7ff; padding: 15px; border-radius: 10px; margin: 10px 0; }
+        .result { font-size: 18px; font-weight: bold; margin: 10px 0; }
+        .success { color: green; }
+        .fail { color: red; }
+        button { padding: 10px 20px; font-size: 16px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h2>performance.navigation 返回检测测试</h2>
+
+    <div class="info">
+        <p><strong>当前 navigation.type:</strong> <span id="navType">检测中...</span></p>
+        <p><strong>说明:</strong></p>
+        <ul>
+            <li>0 = TYPE_NAVIGATE (正常访问)</li>
+            <li>1 = TYPE_RELOAD (刷新)</li>
+            <li>2 = TYPE_BACK_FORWARD (返回按钮)</li>
+        </ul>
+    </div>
+
+    <div id="result" class="result">等待检测...</div>
+
+    <h3>测试步骤</h3>
+    <p>1. 先访问其他页面（如百度），然后点击返回按钮回到此页</p>
+    <p>2. 如果显示 "会跳转" = 检测成功</p>
+    <p>3. 如果显示 "不会跳转" = 正常行为</p>
+
+    <hr>
+
+    <h3>手动测试链接</h3>
+    <a href="https://www.baidu.com" target="_blank">打开百度</a>
+    <br><br>
+    <button onclick="location.href='mobile-training-list.html'">返回培训列表</button>
+
+    <script>
+        // 检测结果
+        let navType = null;
+        let isBackForward = false;
+
+        // 新版 API
+        if (performance.getEntriesByType && performance.getEntriesByType("navigation")[0]) {
+            navType = performance.getEntriesByType("navigation")[0].type;
+        }
+        // 旧版 API
+        if (navType === null && performance.navigation) {
+            navType = performance.navigation.type;
+        }
+
+        document.getElementById('navType').textContent = navType;
+
+        // 判断是否从返回进入
+        if (navType === 'back_forward' || navType === 2) {
+            isBackForward = true;
+        }
+
+        const resultEl = document.getElementById('result');
+        if (isBackForward) {
+            resultEl.textContent = '检测到返回操作！即将跳转到培训列表...';
+            resultEl.className = 'result success';
+            // 延迟跳转，让用户看到结果
+            setTimeout(() => {
+                location.href = 'mobile-training-list.html';
+            }, 1000);
+        } else {
+            resultEl.textContent = '正常访问，不会跳转';
+            resultEl.className = 'result fail';
+        }
+    </script>
+</body>
+</html>

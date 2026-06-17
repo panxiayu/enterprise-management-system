@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>6S曝光详情 - 兴利汽车模具</title>
+<style>
+* {margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root {--bg:#F0F7FF;--card:#fff;--border:#D6E9FF;--primary:#4A90E2;--secondary:#65B3FF;--accent:#22C58D;--text:#1D2B5A;--text-soft:#5B72A9;--radius:22px;--shadow:0 8px 24px rgba(74,144,226,0.12);--shadow-hover:0 12px 32px rgba(74,144,226,0.18);--transition:0.3s;--green:#22c55e;--orange:#ff9500;--red:#ff3b30}
+body {font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;background:var(--bg);color:var(--text);padding-bottom:100px;padding-top:20px}
+.container {max-width:480px;margin:0 auto;padding:0 16px}
+@media (min-width: 768px) {
+    .container {max-width:680px;padding:0 24px}
+}
+@media (min-width: 1024px) {
+    .container {max-width:800px}
+}
+.card {background:var(--card);border-radius:var(--radius);padding:20px 24px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow);transition:var(--transition)}
+.card:hover {box-shadow:var(--shadow-hover)}
+.row {display:flex;padding:14px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+.row:last-child {border-bottom:none}
+.label {font-size:14px;color:var(--text-soft);width:80px;flex-shrink:0}
+.value {font-size:14px;color:var(--text);flex:1;word-break:break-all}
+.badge {display:inline-flex;align-items:center;padding:4px 10px;border-radius:10px;font-size:12px;font-weight:600}
+.badge-blue {background:rgba(74,144,226,0.12);color:var(--primary)}
+.badge-orange {background:rgba(255,149,0,0.12);color:var(--orange)}
+.badge-green {background:rgba(34,197,94,0.12);color:var(--green)}
+.badge-red {background:rgba(255,59,48,0.12);color:var(--red)}
+.img-section {background:var(--card);border-radius:var(--radius);padding:20px 24px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.img-section-title {font-size:15px;font-weight:600;margin-bottom:12px}
+.img-grid {display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.img-item {position:relative;border-radius:12px;overflow:hidden;background:#f0f0f0}
+.img-item img {width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:pointer}
+.img-placeholder {border:2px dashed #ccc;border-radius:12px;display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;background:#fafafa}
+.img-placeholder .placeholder-text {color:#bbb;font-size:14px;cursor:pointer}
+.btn-secondary {display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;border:none;border-radius:14px;font-size:15px;font-weight:600;cursor:pointer;transition:.3s;background:rgba(0,0,0,0.06);color:var(--text-soft);flex:1}
+.img-label {position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.6);color:#fff;padding:4px 8px;border-radius:6px;font-size:11px}
+.img-viewer-overlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;justify-content:center;align-items:center;flex-direction:column}
+.img-viewer-overlay.show {display:flex}
+.img-viewer-overlay img {max-width:95%;max-height:85vh;object-fit:contain;border-radius:4px}
+.img-viewer-overlay .close-btn {position:absolute;top:60px;right:20px;width:40px;height:40px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}
+.img-viewer-overlay .viewer-label {color:rgba(255,255,255,0.6);font-size:13px;margin-top:12px}
+.loading {text-align:center;padding:60px 20px;color:var(--text-soft)}
+.loading::after {content:"";display:inline-block;width:18px;height:18px;border:2px solid var(--primary);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;margin-left:10px;vertical-align:middle}
+@keyframes spin {to {transform:rotate(360deg)}}
+.upload-area {border:2px dashed rgba(0,0,0,0.12);border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:.3s;background:rgba(0,0,0,0.02)}
+.upload-area:hover {border-color:var(--primary)}
+.upload-area.has-img {border-style:solid;border-color:var(--green)}
+.upload-area input[type=file] {display:none}
+.upload-area img {max-width:100%;max-height:200px;border-radius:8px}
+.btn {display:block;width:100%;padding:14px;border-radius:12px;font-size:16px;font-weight:600;border:none;cursor:pointer;transition:.3s;text-align:center;margin-top:8px}
+.btn:active {transform:scale(0.98)}
+.btn:disabled {opacity:0.5}
+.btn-primary {background:var(--primary);color:#fff}
+
+.btn-row {display:flex;gap:12px;margin-top:12px}
+.ios-btn {flex:1;padding:14px;border-radius:12px;font-size:17px;font-weight:600;border:none;cursor:pointer;transition:var(--transition)}
+.ios-btn:active {transform:scale(0.98)}
+.ios-btn-secondary {background:rgba(0,0,0,0.06);color:var(--text-soft)}
+.ios-btn-primary {background:linear-gradient(135deg, #4A90E2 0%, #65B3FF 100%);color:#fff;box-shadow:0 4px 12px rgba(74,144,226,0.3)}
+.ios-btn-success {background:linear-gradient(135deg, #22C58D 0%, #34D399 100%);color:#fff;box-shadow:0 4px 12px rgba(34,197,94,0.3)}
+.ios-btn:disabled {opacity:0.5;cursor:not-allowed}
+
+</style>
+</head>
+<body>
+<div class="container">
+<div id="loading" class="loading">加载中</div>
+<div id="content" style="display:none">
+<div class="card">
+<div class="row"><span class="label">项目编号</span><span class="value" id="projectCode"></span></div>
+<div class="row"><span class="label">区域</span><span class="value" id="area"></span></div>
+<div class="row"><span class="label">责任人</span><span class="value" id="personCharge"></span></div>
+<div class="row"><span class="label">状态</span><span class="value" id="statusBadge"></span></div>
+<div class="row"><span class="label">检查日期</span><span class="value" id="checkDate"></span></div>
+<div class="row"><span class="label">截止时间</span><span class="value" id="deadline"></span></div>
+<div class="row" style="display:block"><span class="label" style="margin-bottom:8px">问题描述</span><div class="value" id="description" style="line-height:1.6"></div></div>
+</div>
+<div class="img-section"><div class="img-section-title">照片</div><div class="img-grid" id="imageGrid"></div></div>
+<div class="card" id="reviewInfoCard" style="display:none">
+<div class="img-section-title" style="margin-bottom:8px">审核信息</div><div id="reviewInfo"></div>
+<div style="margin-top:12px"><div style="font-size:13px;color:var(--text-soft);margin-bottom:4px">操作记录</div><div id="reviewLogs"></div></div>
+</div>
+<div id="actionCard" style="display:none;padding:0;margin:0">
+<div id="actionContent"></div>
+</div>
+</div></div>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="reviewModal">
+<div class="modal-box">
+<div class="modal-title">审核操作</div>
+<textarea class="modal-textarea" id="reviewComment" placeholder="请输入审核理由&#10;（驳回必须填写理由）"></textarea>
+<div class="modal-btn-row">
+<button class="modal-btn" style="background:rgba(0,0,0,0.06);color:var(--text-soft)" onclick="closeReviewModal()">取消</button>
+<button class="modal-btn" id="reviewApproveBtn" style="background:var(--green);color:#fff" onclick="doReview(&#39;approved&#39;)">审核通过</button>
+<button class="modal-btn" id="reviewRejectBtn" style="background:var(--red);color:#fff" onclick="doReview(&#39;rejected&#39;)">驳回整改</button>
+</div>
+</div>
+</div>
+<input type="file" accept="image/*" id="placeholderUpload" style="display:none" onchange="handlePlaceholderUpload(this)">
+<div class="img-viewer-overlay" id="imgViewer" onclick="closeImgViewer()">
+  <img id="viewerImg" src="">
+  <div class="viewer-label" id="viewerLabel"></div>
+</div>
+<script>
+const API=window.location.origin+"/api";
+let token=localStorage.getItem("employee_token");
+console.log('PAGE LOADED');
+let currentRecord=null;
+let isAdmin=false;
+let staffInfo={};
+if(!token){window.location.href="index.html"}
+try{staffInfo=JSON.parse(localStorage.getItem("employee_info")||"{}")}catch(e){}
+const viewMode=getParam("source")||"";
+const isAdminView=viewMode==="admin";
+if(viewMode==="task"){document.getElementById("reviewModal").style.display="none";}
+function getParam(name){return new URLSearchParams(window.location.search).get(name)}
+function showToast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2000)}
+function statusBadge(r){
+  const rs=r.review_status;
+  if(rs==="approved") return '<span class="badge badge-green">\u2705 \u5df2\u901a\u8fc7</span>';
+  if(rs==="rejected") return '<span class="badge badge-red">\u274c \u5df2\u9a73\u56de</span>';
+  if(rs==="submitted") return '<span class="badge badge-blue">\u23f3 \u5f85\u5ba1\u6838</span>';
+  if(r.status==="fixed") return '<span class="badge badge-green">\u2705 \u5df2\u8fbe\u6807</span>';
+  return '<span class="badge badge-orange">\u23f3 \u5f85\u6574\u6539</span>';
+}
+async function loadRecord(){
+  try{
+    const id=getParam("id");
+    if(!id){showToast("参数错误");return}
+    const res=await fetch(API+"/6s/"+id,{headers:{"Authorization":"Bearer "+token}});
+    const d=await res.json();
+    if(d.code!==0){showToast(d.msg);return}
+    currentRecord=d.data;
+    renderRecord();
+  }catch(e){showToast("加载失败")}
+}
+function renderRecord(){
+  const r=currentRecord;
+  document.getElementById("loading").style.display="none";
+  document.getElementById("content").style.display="";
+  document.getElementById("projectCode").textContent=r.project_code||"-";
+  document.getElementById("area").textContent=r.area||"-";
+  document.getElementById("personCharge").textContent=r.person_charge||r.assigned_name||"-";
+  document.getElementById("statusBadge").innerHTML=statusBadge(r);
+  document.getElementById("checkDate").textContent=r.check_date||"-";
+  document.getElementById("deadline").textContent=r.deadline||"-";
+  // 创建时间已移除
+  document.getElementById("description").textContent=r.description||"无";
+  let imgs="";
+  if(r.before_image) imgs+="<div class=\'img-item\'><img src=\'/uploads/6s/"+r.before_image+"\' alt=\'整改前\' onclick=\'openImgViewer(this.src,\"整改前\")\'><span class=\'img-label\'>整改前</span></div>";
+  if(r.after_image) imgs+="<div class=\'img-item\'><img src=\'/uploads/6s/"+r.after_image+"\' alt=\'整改后\' onclick=\'openImgViewer(this.src,\"整改后\")\'><span class=\'img-label\'>整改后</span></div>";
+  if(!r.after_image && r.before_image) imgs+="<div class=\'img-item img-placeholder\' onclick=\'document.getElementById(\"placeholderUpload\").click()\'><div class=\'placeholder-text\'>📷 整改后</div></div>";
+  if(!imgs) imgs="<div style=\'text-align:center;color:var(--text-soft);grid-column:1/-1;padding:20px;\'>暂无照片</div>";
+  document.getElementById("imageGrid").innerHTML=imgs;
+  const ri=document.getElementById("reviewInfo");
+  const rs=r.review_status;
+  if(rs==="approved"){
+    ri.innerHTML="<div class=\'row\'><span class=\'label\'>审核结果</span><span class=\'value\' style=\'color:var(--green)\'>审核通过</span></div>"+(r.review_comment?"<div class=\'row\'><span class=\'label\'>审核意见</span><span class=\'value\'>"+r.review_comment+"</span></div>":"")+(r.reviewed_at?"<div class=\'row\'><span class=\'label\'>审核时间</span><span class=\'value\'>"+r.reviewed_at.substring(0,16)+"</span></div>":"");
+    document.getElementById("reviewInfoCard").style.display="";
+  }else if(rs==="rejected"){
+    ri.innerHTML="<div class=\'row\'><span class=\'label\'>驳回理由</span><span class=\'value\' style=\'color:var(--red)\'>"+(r.reject_reason||r.review_comment||"未填写")+"</span></div>"+(r.reviewed_at?"<div class=\'row\'><span class=\'label\'>驳回时间</span><span class=\'value\'>"+r.reviewed_at.substring(0,16)+"</span></div>":"");
+    document.getElementById("reviewInfoCard").style.display="";
+  }
+  if(r.logs&&r.logs.length>0){
+    let logs="";
+    r.logs.forEach(l=>{const am={"approved":"审核通过","rejected":"驳回","submit":"提交整改"};logs+="<div class=\'review-log\'><span class=\'act\'>"+(am[l.action]||l.action)+"</span>"+(l.comment?"："+l.comment:"")+" <span class=\'time\'>"+(l.created_at?l.created_at.substring(0,16):"")+"</span></div>";});
+    document.getElementById("reviewLogs").innerHTML=logs;
+    document.getElementById("reviewInfoCard").style.display="";
+  }
+  renderActions();
+}
+function renderActions(){
+  const r=currentRecord;
+  const ac=document.getElementById("actionContent");
+  const isResp=r.assigned_to&&String(r.assigned_to)===String(staffInfo.id);
+  const hasSPerm=staffInfo.s6_permission===1;
+  // console.log(" DEBUG renderActions:, {isResp, hasSPerm, isAdmin, review_status: rs, assigned_to: r.assigned_to, staffId: staffInfo.id});
+  isAdmin=isAdminView;
+  const rs=r.review_status;
+  const canSubmitExisting=r.after_image&&rs!=="submitted"&&rs!=="approved";
+  let html="";
+  // 显示驳回理由（责任人可见）
+  if(isResp&&rs==="rejected"&&(r.reject_reason||r.review_comment)){
+    html+="<div style='background:rgba(255,59,48,0.08);padding:14px 16px;border-radius:12px;margin-bottom:12px;font-size:14px;color:var(--red);border-left:4px solid var(--red)'>❌ 驳回理由："+(r.reject_reason||r.review_comment||"未填写")+"</div>";
+  }
+  if(isAdmin){
+    if(!r.after_image||rs==="rejected"){
+      html+="<div style=\'margin-bottom:12px\'><div style=\'font-size:14px;font-weight:600;margin-bottom:8px;\'>上传整改后照片</div><div class=\'upload-area\' id=\'adminUpload\' onclick=\"document.getElementById(\'adminFileInput\').click()\"><input type=\'file\' accept=\'image/*\' id=\'adminFileInput\' onchange=\'handleAdminUpload(this)\'>"
+      +"<div id=\'adminUploadPlaceholder\'>📷 点击选择整改后照片</div><img id=\'adminPreview\' style=\'display:none\'></div>"
+      +"<button class=\'btn btn-primary\' id=\'uploadAfterBtn\' onclick=\'uploadAfterImage()\'>上传照片</button></div>";
+    }
+    if(rs==="submitted"){
+      html+="<div class='btn-row'><button class='ios-btn ios-btn-secondary' onclick='history.back()'>返回</button><button class='ios-btn ios-btn-primary' onclick='openReviewModal()'>审核</button></div>";
+    }else if(canSubmitExisting){
+      html+="<div class='btn-row'><button class='ios-btn ios-btn-secondary' onclick='history.back()'>返回</button><button class='ios-btn ios-btn-primary' id='submitExistingBtn' onclick='submitExistingRectification()'>提交</button></div>";
+    }
+  }
+  if(isResp&&!isAdmin){
+    if(canSubmitExisting){
+      if(rs==="rejected"){html+="<div style=\'background:rgba(255,59,48,0.06);padding:12px;border-radius:10px;margin-bottom:12px;font-size:13px;color:var(--red)\'>❌ 驳回理由："+(r.reject_reason||r.review_comment||"未填写")+"</div>";}
+      html+="<div class='btn-row'><button class='ios-btn ios-btn-secondary' onclick='history.back()'>返回</button><button class='ios-btn ios-btn-primary' id='submitExistingBtn' onclick='submitExistingRectification()'>提交</button></div>";
+    }else if(!rs||rs==" pending||rs==ejected){
+      if(rs==="rejected"){html+="<div style=\'background:rgba(255,59,48,0.06);padding:12px;border-radius:10px;margin-bottom:12px;font-size:13px;color:var(--red)\'>❌ 驳回理由："+(r.reject_reason||r.review_comment||"未填写")+"</div>";}
+      html+="<div style=\'margin-bottom:12px\'><div style=\'font-size:14px;font-weight:600;margin-bottom:8px;\'>提交整改照片</div><div class=\'upload-area\' id=\'respUpload\' onclick=\"document.getElementById(\'respFileInput\').click()\"><input type=\'file\' accept=\'image/*\' id=\'respFileInput\' onchange=\'handleRespUpload(this)\'>"
+      +"<div id=\'respUploadPlaceholder\'>📷 拍照或选择整改后照片</div><img id=\'respPreview\' style=\'display:none\'></div>"
+      +"<button class=\'btn btn-primary\' id=\'submitRectifyBtn\' onclick=\'submitRectification()\'>提交整改</button></div>";
+    }
+    if(rs==="submitted"){html+="<div style=\'background:rgba(0,122,255,0.06);padding:16px;border-radius:10px;text-align:center;font-size:14px;color:var(--primary)\'>⏳ 整改已提交，等待管理员审核</div>";}
+    if(rs==="approved"){html+="<div style=\'background:rgba(34,197,94,0.06);padding:16px;border-radius:10px;text-align:center;font-size:14px;color:var(--green)\'>✅ 审核已通过，整改完成</div>";}
+  }
+  
+  if(!isAdmin&&!isResp){html+="<div style=\'text-align:center;color:var(--text-soft);padding:20px;font-size:14px\'>暂无可用操作</div>";}
+  ac.innerHTML=html;
+  document.getElementById("actionCard").style.display="";
+}
+let adminUploadFile=null;
+function handleAdminUpload(input){const f=input.files[0];if(!f)return;adminUploadFile=f;const reader=new FileReader();reader.onload=function(e){document.getElementById("adminUploadPlaceholder").style.display="none";const p=document.getElementById("adminPreview");p.src=e.target.result;p.style.display="block";document.getElementById("adminUpload").classList.add("has-img")};reader.readAsDataURL(f)}
+async function uploadAfterImage(){if(!adminUploadFile){showToast("请先选择照片");return}const btn=document.getElementById("uploadAfterBtn");btn.disabled=true;btn.textContent="上传中...";const fd=new FormData();fd.append("after_image",adminUploadFile);try{const res=await fetch(API+"/6s/"+currentRecord.id,{method:"PUT",headers:{"Authorization":"Bearer "+token},body:fd});const d=await res.json();if(d.code===0){showToast("上传成功");setTimeout(()=>location.reload(),1000)}else{showToast(d.msg);btn.disabled=false;btn.textContent="上传照片"}}catch(e){showToast("上传失败");btn.disabled=false;btn.textContent="上传照片"}}
+function openReviewModal(){document.getElementById("reviewComment").value="";document.getElementById("reviewModal").classList.add("show")}
+function closeReviewModal(){document.getElementById("reviewModal").classList.remove("show")}
+async function doReview(action){const comment=document.getElementById("reviewComment").value.trim();if(action==="rejected"&&!comment){showToast("驳回必须填写理由");return}closeReviewModal();const btn=document.getElementById("reviewApproveBtn");btn.disabled=true;try{const res=await fetch(API+"/6s/"+currentRecord.id+"/review",{method:"PUT",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({action,comment})});const d=await res.json();if(d.code===0){showToast(d.msg);setTimeout(()=>location.reload(),1000)}else{showToast(d.msg);btn.disabled=false}}catch(e){showToast("操作失败");btn.disabled=false}}
+let respUploadFile=null;
+function handleRespUpload(input){const f=input.files[0];if(!f)return;respUploadFile=f;const reader=new FileReader();reader.onload=function(e){document.getElementById("respUploadPlaceholder").style.display="none";const p=document.getElementById("respPreview");p.src=e.target.result;p.style.display="block";document.getElementById("respUpload").classList.add("has-img")};reader.readAsDataURL(f)}
+async function submitRectification(){if(!respUploadFile){showToast("请先拍照或选择整改后照片");return}const btn=document.getElementById("submitRectifyBtn");btn.disabled=true;btn.textContent="提交中...";const fd=new FormData();fd.append("after_image",respUploadFile);try{const res=await fetch(API+"/6s/"+currentRecord.id+"/submit",{method:"PUT",headers:{"Authorization":"Bearer "+token},body:fd});const d=await res.json();if(d.code===0){showToast("整改已提交，等待审核");setTimeout(()=>location.reload(),1000)}else{showToast(d.msg);btn.disabled=false;btn.textContent="提交整改"}}catch(e){showToast("提交失败");btn.disabled=false;btn.textContent="提交整改"}}
+async function submitExistingRectification(){const btn=document.getElementById("submitExistingBtn");if(btn){btn.disabled=true;btn.textContent="提交中..."}try{const res=await fetch(API+"/6s/"+currentRecord.id+"/submit",{method:"PUT",headers:{"Authorization":"Bearer "+token},body:new FormData()});const d=await res.json();if(d.code===0){showToast("整改已提交，等待审核");setTimeout(()=>location.reload(),1000)}else{showToast(d.msg);if(btn){btn.disabled=false;btn.textContent="✅ 提交"}}}catch(e){showToast("提交失败");if(btn){btn.disabled=false;btn.textContent="✅ 提交"}}}
+loadRecord();
+
+function openImgViewer(src,label){document.getElementById("viewerImg").src=src;document.getElementById("viewerLabel").textContent=label;document.getElementById("imgViewer").classList.add("show");document.body.style.overflow="hidden"}
+function handlePlaceholderUpload(input){const f=input.files[0];if(!f)return;const fd=new FormData();fd.append("after_image",f);fetch(API+"/6s/"+currentRecord.id,{method:"PUT",headers:{"Authorization":"Bearer "+token},body:fd}).then(r=>r.json()).then(d=>{if(d.code===0){showToast("上传成功");setTimeout(()=>location.reload(),1000)}else{showToast(d.msg)}}).catch(()=>showToast("上传失败"));input.value=""}
+function closeImgViewer(){document.getElementById("imgViewer").classList.remove("show");document.body.style.overflow=""}
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeImgViewer()})
+
+</script>
+</div></body>
+</html>

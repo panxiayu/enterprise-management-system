@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投票结果 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .result-option { padding: 16px 0; border-bottom: 1px solid var(--border); }
+        .result-option:last-child { border-bottom: none; }
+        .option-content { flex: 1; }
+        .option-text { font-size: 14px; color: var(--text); margin-bottom: 8px; }
+        .option-stats { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+        .votes-count { min-width: 40px; }
+        .progress-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+        .total-votes { text-align: center; padding: 24px 0; border-top: 1px solid var(--border); margin-top: 16px; }
+        .total-votes .number { font-size: 36px; font-weight: 700; background: var(--bg-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .total-votes .label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <a href="voting-list.html" class="back-link">← 返回投票列表</a>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">加载中...</div>
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="votingDetail" style="display: none;">
+            <div class="card">
+                <div class="header-top">
+                    <span class="page-title" id="votingTitle"></span>
+                    <span id="votingType"></span>
+                </div>
+                <p class="card-desc" id="votingDesc"></p>
+                <p class="meta" id="votingDeadline"></p>
+                <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary btn-sm" id="viewVotersBtn" onclick="showVoters()" style="display: none;">查看投票人</button>
+                </div>
+                <div id="anonymousTip" style="display: none; background: rgba(255,193,7,0.15); border: 1px solid var(--warning); border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 13px; color: var(--warning);">
+                    🔒 这是一个匿名投票，组织者无法查看投票人详情
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 16px;">
+                <div class="card-title">投票结果</div>
+                <div id="optionsList"></div>
+                <div class="total-votes">
+                    <div class="number" id="totalVotes">0</div>
+                    <div class="label">总投票人数</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 投票人详情弹窗 -->
+    <div class="modal" id="votersModal">
+        <div class="modal-box" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <div class="modal-title">投票人详情</div>
+            <div id="votersList" style="margin-top: 16px;"></div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeVotersModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let token = '';
+        let votingId = new URLSearchParams(window.location.search).get('id');
+        let voting = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            token = window.AdminSession && window.AdminSession.requireValid
+                ? window.AdminSession.requireValid()
+                : (localStorage.getItem('token') || localStorage.getItem('adminToken') || '');
+            if (!token) {
+                return;
+            }
+            loadVotingDetail();
+        });
+
+        function loadVotingDetail() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('votingDetail').style.display = 'none';
+
+            // 同时获取投票详情和结果
+            Promise.all([
+                fetch(`${API_URL}/voting/${votingId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(res => res.json()),
+                fetch(`${API_URL}/voting/${votingId}/results`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(res => res.json())
+            ])
+            .then(([detailData, resultsData]) => {
+                document.getElementById('loading').style.display = 'none';
+                if (detailData.code === 0) {
+                    voting = detailData.data;
+                    document.getElementById('votingDetail').style.display = 'block';
+                    renderVotingDetail(detailData.data, resultsData.code === 0 ? resultsData.data : null);
+                } else {
+                    showError(detailData.msg);
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                showError('加载失败');
+            });
+        }
+
+        function renderVotingDetail(voting, results) {
+            document.getElementById('votingTitle').textContent = voting.title;
+
+            // 构建类型标签
+            let typeHtml = '';
+            if (voting.isAnonymous) {
+                typeHtml += '<span class="badge" style="background: var(--warning); color: white;">🔒 匿名</span> ';
+            }
+            if (voting.multipleChoice) {
+                typeHtml += '<span class="badge badge-primary">多选</span>';
+            }
+            document.getElementById('votingType').innerHTML = typeHtml;
+
+            document.getElementById('votingDesc').textContent = voting.description || '暂无描述';
+            document.getElementById('votingDeadline').textContent = '时间: ' + (voting.startDate ? new Date(voting.startDate).toLocaleString('zh-CN') : '') + ' ~ ' + (voting.endDate ? new Date(voting.endDate).toLocaleString('zh-CN') : '-');
+
+            // 显示匿名提示
+            document.getElementById('anonymousTip').style.display = voting.isAnonymous ? 'block' : 'none';
+
+            // 显示投票人按钮（非匿名投票）
+            document.getElementById('viewVotersBtn').style.display = voting.isAnonymous ? 'none' : 'inline-block';
+
+            // 渲染结果
+            if (results) {
+                document.getElementById('totalVotes').textContent = results.totalVotes;
+                const list = document.getElementById('optionsList');
+                list.innerHTML = (results.options || []).map(opt => `
+                    <div class="result-option">
+                        <div class="option-text">${opt.text}</div>
+                        <div class="option-stats">
+                            <span class="votes-count">${opt.votes} 票 (${opt.percentage}%)</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${opt.percentage}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function goBack() {
+            window.location.href = 'voting-list.html';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function showVoters() {
+            fetch(`${API_URL}/voting/${votingId}/voters`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) {
+                    if (data.data.anonymous) {
+                        document.getElementById('votersList').innerHTML = '<p style="color: var(--text-secondary);">匿名投票不显示投票人详情</p>';
+                    } else if (data.data.voters.length === 0) {
+                        document.getElementById('votersList').innerHTML = '<p style="color: var(--text-secondary);">暂无投票记录</p>';
+                    } else {
+                        document.getElementById('votersList').innerHTML = data.data.voters.map(v => `
+                            <div style="padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: 600;">${v.employeeName || '未知'}</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary);">工号: ${v.employeeId || '-'}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 12px; color: var(--text-secondary);">${v.options.join(', ')}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    document.getElementById('votersModal').classList.add('active');
+                } else {
+                    alert(data.msg || '获取失败');
+                }
+            })
+            .catch(() => alert('获取投票人详情失败'));
+        }
+
+        function closeVotersModal() {
+            document.getElementById('votersModal').classList.remove('active');
+        }
+    </script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

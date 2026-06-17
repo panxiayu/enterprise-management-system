@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>消息通知 - 兴利汽车模具</title>
+  <style>
+    :root{--bg:#f0f7ff;--card:#fff;--line:#d6e9ff;--blue:#4a90e2;--green:#22b985;--orange:#e49a42;--red:#df6a72;--text:#26416e;--soft:#7188ac}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{min-height:100vh;padding:18px 14px 36px;color:var(--text);background:linear-gradient(145deg,#e2f5ff,#f8f1fb);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif}
+    .wrap{max-width:680px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.back{border:0;color:var(--blue);background:transparent;font-size:14px;font-weight:700}.top h1{font-size:20px}
+    .hero,.item,.empty{border:1px solid rgba(255,255,255,.85);background:rgba(255,255,255,.72);box-shadow:0 9px 24px rgba(74,144,226,.10);backdrop-filter:blur(14px)}
+    .hero{padding:16px;border-radius:20px}.hero p{margin-top:5px;color:var(--soft);font-size:12px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.metric{padding:10px 6px;border-radius:14px;background:rgba(236,247,255,.72);color:var(--soft);font-size:11px;text-align:center}.metric strong{display:block;margin-bottom:2px;color:var(--text);font-size:21px}.metric.warn strong{color:var(--orange)}.metric.good strong{color:var(--green)}
+    .toolbar{display:flex;gap:8px;margin:14px 0 10px}.tab,.action,.filter{flex:1;padding:9px 5px;border:1px solid var(--line);border-radius:12px;color:var(--soft);background:rgba(255,255,255,.56);font-size:13px;font-weight:700}.tab.active{color:#fff;border-color:var(--blue);background:var(--blue)}.filter{font:inherit}
+    .subtools{display:flex;gap:8px;margin-bottom:10px}
+    .list{display:grid;gap:9px}.item{display:flex;gap:9px;padding:13px;border-radius:17px;text-decoration:none;color:inherit}.dot{width:9px;height:9px;flex:0 0 auto;margin-top:6px;border-radius:50%;background:var(--blue)}.dot.warn{background:var(--orange)}.dot.success{background:var(--green)}.copy{min-width:0;flex:1}.copy strong{display:block;font-size:15px;font-weight:800}.copy small{display:block;margin-top:4px;color:var(--soft);font-size:11px;line-height:1.5}.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.tag{padding:3px 7px;border-radius:8px;color:#6484a4;background:#edf7ff;font-size:10px}.item.unread{background:rgba(255,255,255,.88)}
+    .empty{padding:32px 16px;border-radius:18px;color:var(--soft);font-size:13px;text-align:center}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top"><button class="back" onclick="location.href='employee.html'">‹ 返回</button><h1>消息通知</h1><span></span></header>
+    <section class="hero">
+      <strong id="welcome">消息中心</strong>
+      <p>查看任务提醒和系统动态，未读优先展示，点开后会自动跳到对应页面。</p>
+      <div class="summary">
+        <span class="metric"><strong id="unreadCount">0</strong>未读</span>
+        <span class="metric warn"><strong id="taskCount">0</strong>待办消息</span>
+        <span class="metric good"><strong id="totalCount">0</strong>全部消息</span>
+      </div>
+    </section>
+    <div class="toolbar">
+      <button class="tab active" data-module="" onclick="switchModule('')">全部</button>
+      <button class="tab" data-module="task" onclick="switchModule('task')">待办</button>
+      <button class="tab" data-module="6s" onclick="switchModule('6s')">6S</button>
+      <button class="action" onclick="readAll()">全部已读</button>
+    </div>
+    <div class="subtools">
+      <select class="filter" id="readFilter" onchange="loadList()">
+        <option value="">全部状态</option>
+        <option value="unread">未读</option>
+        <option value="read">已读</option>
+      </select>
+      <select class="filter" id="taskScopeFilter" onchange="loadList()">
+        <option value="">全部任务</option>
+        <option value="today">今日到期</option>
+        <option value="overdue">已逾期</option>
+        <option value="high">高优先级</option>
+      </select>
+    </div>
+    <section class="list" id="noticeList"><div class="empty">正在加载消息...</div></section>
+  </main>
+  <script src="/js/auth-guard.js"></script>
+  <script>
+    const API = window.location.origin + '/api';
+    const token = localStorage.getItem('employee_token');
+    const staff = JSON.parse(localStorage.getItem('employee_info') || '{}');
+    let currentModule = '';
+    function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    async function api(path,options={}){const r=await fetch(API+path,{...options,headers:{Authorization:'Bearer '+token,...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}});const d=await r.json();if(!r.ok||d.code!==0)throw new Error(d.msg||'操作失败');return d.data}
+    function syncTabs(){document.querySelectorAll('[data-module]').forEach(x=>x.classList.toggle('active',x.dataset.module===currentModule))}
+    async function loadSummary(){try{const d=await api('/notifications/summary');unreadCount.textContent=d.unread||0;taskCount.textContent=d.task_unread||0;totalCount.textContent=d.total||0}catch(e){}}
+    async function markRead(id,e){if(e)e.stopPropagation();try{await api('/notifications/'+id+'/read',{method:'POST'});await Promise.all([loadSummary(),loadList()])}catch{}}
+    function formatTime(value){return value?String(value).replace('T',' ').slice(0,16):''}
+    function buildNoticeHint(n){const parts=[];if(n.content)parts.push(esc(n.content));if(n.module==='task'&&n.task_due_at)parts.push('截止 '+esc(formatTime(n.task_due_at)));if(n.created_at)parts.push('接收 '+esc(formatTime(n.created_at)));return parts.join(' · ')}
+    async function loadList(){noticeList.innerHTML='<div class="empty">正在加载消息...</div>';try{const params=new URLSearchParams();if(currentModule)params.set('module',currentModule);if(readFilter.value)params.set('read',readFilter.value);if(taskScopeFilter.value)params.set('task_scope',taskScopeFilter.value);const rows=await api('/notifications?'+params.toString());if(!rows.length){noticeList.innerHTML='<div class="empty">当前没有消息</div>';return}noticeList.innerHTML=rows.map(n=>`<a class="item ${Number(n.is_read)===0?'unread':''}" href="${esc(n.link||'employee.html')}" onclick="markRead(${Number(n.id)},event)"><i class="dot ${n.level==='warning'?'warn':n.level==='success'?'success':''}"></i><div class="copy"><strong>${esc(n.title)}</strong><small>${buildNoticeHint(n)}</small><div class="tags"><span class="tag">${esc(n.module==='task'?'个人待办':n.module==='6s'?'6S':'系统')}</span><span class="tag">${Number(n.is_read)===0?'未读':'已读'}</span></div></div></a>`).join('')}catch(e){noticeList.innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+    async function readAll(){try{await api('/notifications/read-all',{method:'POST'});await Promise.all([loadSummary(),loadList()])}catch(e){alert(e.message)}}
+    function switchModule(module){currentModule=module;syncTabs();loadList()}
+    if(!token){location.href='/'}else{welcome.textContent=(staff.name||'员工')+'，你好';syncTabs();Promise.all([loadSummary(),loadList()])}
+  </script>
+</body>
+</html>

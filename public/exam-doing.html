@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="stylesheet" href="css/theme.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>考试进行中</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: linear-gradient(135deg, var(--bg) 0%, var(--bg) 50%, var(--bg) 100%); }
+    .exam-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+    .exam-header { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; position: sticky; top: 0; z-index: 100; }
+    .timer { font-size: 18px; font-weight: 600; color: var(--accent); font-family: 'Inter', sans-serif; }
+    .timer.warning { color: var(--warning); }
+    .timer.danger { color: var(--danger); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .progress { font-size: 13px; color: var(--text-secondary); }
+    .question-area { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px; transition: all 0.15s ease; }
+    .question-type { font-size: 12px; color: var(--accent); margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .question-text { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 20px; font-weight: 500; }
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .option { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); cursor: pointer; transition: all 0.15s; }
+    .option:hover { border-color: var(--accent); background: var(--bg-hover); }
+    .option.selected { border-color: var(--accent); background: rgba(94,106,210,0.1); }
+    .option input { margin-top: 2px; width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+    .option label { flex: 1; cursor: pointer; line-height: 1.5; color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; }
+    .option-label { font-weight: 700; min-width: 24px; color: var(--accent); }
+    .exam-footer { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 20px; display: flex; justify-content: space-between; gap: 10px; position: sticky; bottom: 0; }
+    .loading { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--white); border: 1px solid var(--border); color: var(--text); padding: 10px 20px; border-radius: var(--radius-md); z-index: 1000; }
+  </style>
+</head>
+<body>
+  <div class="exam-container">
+    <div class="exam-header">
+      <div class="timer" id="timer">⏱️ --:--:--</div>
+      <div class="progress">第 <span id="currentIdx">1</span> / <span id="totalQuestions">0</span> 题</div>
+    </div>
+
+    <div id="questionArea" class="question-area">
+      <div class="loading">加载中...</div>
+    </div>
+
+    <div class="exam-footer">
+      <button id="prevBtn" class="btn btn-secondary" onclick="prevQuestion()" style="display: none;">上一题</button>
+      <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">下一题</button>
+      <button id="submitBtn" class="btn btn-danger" onclick="submitExam()" style="display: none;">提交试卷</button>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let examData = null;
+    let answerId = null;
+    let currentIndex = 0;
+    let timerInterval = null;
+    let remainingSeconds = 0;
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    }
+
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+      const timerEl = document.getElementById('timer');
+      timerEl.textContent = '⏱️ ' + formatTime(remainingSeconds);
+      
+      timerEl.classList.remove('warning', 'danger');
+      if (remainingSeconds <= 60) {
+        timerEl.classList.add('danger');
+      } else if (remainingSeconds <= 300) {
+        timerEl.classList.add('warning');
+      }
+    }
+
+    function startTimer(seconds) {
+      remainingSeconds = seconds;
+      updateTimerDisplay();
+      
+      timerInterval = setInterval(() => {
+        remainingSeconds--;
+        updateTimerDisplay();
+        
+        if (remainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          showToast('时间到，自动提交！');
+          setTimeout(() => submitExam(true), 1000);
+        }
+      }, 1000);
+    }
+
+    function renderQuestions() {
+      const questions = examData.questions || [];
+      const area = document.getElementById('questionArea');
+      
+      if (questions.length === 0) {
+        area.innerHTML = '<div class="loading">此考试暂无题目</div>';
+        return;
+      }
+
+      area.innerHTML = questions.map((q, idx) => {
+        let typeText = '单选题';
+        if (q.type === 'multiple_choice') typeText = '多选题';
+        else if (q.type === 'true_false') typeText = '判断题';
+        
+        let options = q.options || [];
+        if (q.type === 'true_false') options = ['√ 正确', '× 错误'];
+
+        const inputType = q.type === 'multiple_choice' ? 'checkbox' : 'radio';
+
+        const optionsHtml = options.map((opt, optIdx) => {
+          const optLabel = q.type === 'true_false' ? (optIdx === 0 ? '√' : '×') : String.fromCharCode(65 + optIdx);
+          return `
+            <div class="option" data-question-idx="${idx}" data-value="${optLabel}">
+              <input type="${inputType}" name="q${idx}" value="${optLabel}" id="opt${idx}_${optIdx}">
+              <label for="opt${idx}_${optIdx}">
+                <span class="option-label">${optLabel}.</span> ${opt}
+              </label>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="question-item" data-index="${idx}" style="display: ${idx === 0 ? 'block' : 'none'};">
+            <div class="question-type">${typeText}</div>
+            <div class="question-text">${idx + 1}. ${q.content}</div>
+            <div class="options">${optionsHtml}</div>
+          </div>
+        `;
+      }).join('');
+      
+      document.getElementById('totalQuestions').textContent = questions.length;
+    }
+
+    function showQuestion(index) {
+      const questions = document.querySelectorAll('.question-item');
+      const total = questions.length;
+      
+      questions.forEach((q, i) => {
+        q.style.display = i === index ? 'block' : 'none';
+      });
+
+      currentIndex = index;
+      document.getElementById('currentIdx').textContent = index + 1;
+      
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const submitBtn = document.getElementById('submitBtn');
+      
+      prevBtn.style.display = index === 0 ? 'none' : 'inline-block';
+      
+      if (index === total - 1) {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'inline-block';
+      } else {
+        nextBtn.style.display = 'inline-block';
+        submitBtn.style.display = 'none';
+      }
+    }
+
+    function prevQuestion() {
+      if (currentIndex > 0) showQuestion(currentIndex - 1);
+    }
+
+    function nextQuestion() {
+      const total = examData.questions.length;
+      if (currentIndex < total - 1) showQuestion(currentIndex + 1);
+    }
+
+    document.addEventListener('click', (e) => {
+      const option = e.target.closest('.option');
+      if (!option) return;
+      
+      const questionIdx = parseInt(option.dataset.questionIdx);
+      const value = option.dataset.value;
+      const q = examData.questions[questionIdx];
+      
+      if (q.type === 'multiple_choice') {
+        option.classList.toggle('selected');
+        const input = option.querySelector('input');
+        input.checked = !input.checked;
+      } else {
+        document.querySelectorAll(`.option[data-question-idx="${questionIdx}"]`).forEach(opt => {
+          opt.classList.remove('selected');
+          opt.querySelector('input').checked = false;
+        });
+        option.classList.add('selected');
+        option.querySelector('input').checked = true;
+      }
+    });
+
+    function getAnswers() {
+      const answers = {};
+      examData.questions.forEach((q, idx) => {
+        const selected = document.querySelectorAll(`.option.selected[data-question-idx="${idx}"]`);
+        if (selected.length === 0) {
+          answers[q._id] = '';
+        } else if (q.type === 'multiple_choice') {
+          const values = Array.from(selected).map(opt => opt.dataset.value).sort();
+          answers[q._id] = values.join(',');
+        } else {
+          answers[q._id] = selected[0].dataset.value;
+        }
+      });
+      return answers;
+    }
+
+    async function submitExam(force = false) {
+      if (!force && !confirm('确认提交试卷？提交后无法修改。')) return;
+      
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '提交中...';
+
+      const responses = [];
+      examData.questions.forEach(q => {
+        responses.push({
+          questionId: q._id,
+          userAnswer: getAnswers()[q._id] || ''
+        });
+      });
+
+      try {
+        const res = await request({
+          url: '/api/exam/submit',
+          method: 'POST',
+          data: { answerId, responses }
+        });
+
+        window.location.href = `/result.html?score=${res.data.totalScore}&isPassed=${res.data.isPassed}&correct=${res.data.correctCount}&total=${res.data.totalQuestions}`;
+      } catch (error) {
+        showToast(error.message || '提交失败');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '提交试卷';
+        
+        if (remainingSeconds > 0) {
+          startTimer(remainingSeconds);
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const examId = urlParams.get('examId');
+
+      if (!examId) {
+        showToast('缺少考试 ID');
+        setTimeout(() => window.location.href = '/exam.html', 1500);
+        return;
+      }
+
+      if (!checkLogin()) {
+        window.location.href = '/';
+        return;
+      }
+
+      try {
+        const detailRes = await request({ url: '/api/exam/' + examId });
+        examData = detailRes.data;
+        
+        const startRes = await request({
+          url: '/api/exam/start',
+          method: 'POST',
+          data: { examId }
+        });
+        
+        answerId = startRes.data.answerId;
+        
+        renderQuestions();
+        showQuestion(0);
+
+        const duration = examData.exam?.duration;
+        if (duration) {
+          startTimer(duration * 60);
+        }
+      } catch (error) {
+        showToast(error.message || '加载考试失败');
+        setTimeout(() => window.location.href = '/exam.html', 2000);
+      }
+    });
+  </script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拟物3D图标设计预览</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e8ecf1; min-height: 100vh; padding: 40px; }
+        h1 { text-align: center; margin-bottom: 10px; font-size: 26px; color: #333; font-weight: 300; letter-spacing: 2px; }
+        .subtitle { text-align: center; margin-bottom: 30px; font-size: 13px; color: #888; }
+        .preview-grid { display: flex; flex-direction: column; gap: 50px; max-width: 900px; margin: 0 auto; }
+        .scheme { background: white; border-radius: 24px; padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+        .scheme-title { font-size: 14px; color: #666; margin-bottom: 20px; text-align: center; font-weight: 500; letter-spacing: 1px; }
+        .icon-row { display: flex; gap: 48px; flex-wrap: wrap; justify-content: center; }
+        .icon-item { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .icon-wrapper { position: relative; width: 72px; height: 72px; cursor: pointer; transition: transform 0.25s; }
+        .icon-wrapper:hover { transform: translateY(-6px) rotateX(8deg); }
+        .icon-label { font-size: 11px; color: #555; font-weight: 500; text-align: center; }
+        .label-sub { font-size: 9px; color: #999; margin-top: -6px; }
+
+        /* ===================== 3D 书本 ===================== */
+        .icon-book { position: absolute; inset: 0; }
+        .book-spine {
+            position: absolute; left: 8px; top: 8px; width: 10px; height: 56px;
+            background: linear-gradient(145deg, #5d7a9c 0%, #4a6d8c 30%, #3d5a80 70%, #2c4a6e 100%);
+            border-radius: 2px 0 0 2px; box-shadow: -2px 0 4px rgba(0,0,0,0.3);
+        }
+        .book-cover {
+            position: absolute; left: 16px; top: 4px; width: 44px; height: 64px;
+            background: linear-gradient(145deg, #5d7a9c 0%, #4a6d8c 30%, #3d5a80 70%, #2c4a6e 100%);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.35), -2px 0 4px rgba(0,0,0,0.2),
+                        inset 2px 2px 4px rgba(255,255,255,0.15), inset -2px -2px 4px rgba(0,0,0,0.15);
+        }
+        .book-cover::before {
+            content: ''; position: absolute; top: 10px; left: 8px; right: 8px; height: 2px;
+            background: linear-gradient(90deg, #f4d03f, #f7dc6f); border-radius: 1px;
+            box-shadow: 0 8px 0 #f4d03f, 0 16px 0 #f4d03f;
+        }
+        .book-cover::after {
+            content: ''; position: absolute; bottom: 10px; left: 8px; right: 8px; height: 10px;
+            background: linear-gradient(90deg, #f4d03f, #f7dc6f); border-radius: 2px;
+        }
+        .book-pages {
+            position: absolute; left: 18px; top: 8px; width: 40px; height: 56px;
+            background: linear-gradient(90deg, #faf8f5 0%, #f5f2ed 100%);
+            border-radius: 0 3px 3px 0; z-index: -1;
+            box-shadow: inset 2px 0 4px rgba(0,0,0,0.1);
+        }
+        .book-pages::before {
+            content: ''; position: absolute; top: 8px; left: 5px; right: 5px; height: 1px;
+            background: #ddd; box-shadow: 0 7px 0 #ddd, 0 14px 0 #ddd, 0 21px 0 #ddd;
+        }
+
+        /* ===================== 3D 试卷 ===================== */
+        .icon-exam { position: absolute; inset: 0; }
+        .exam-paper {
+            position: absolute; left: 8px; top: 6px; width: 52px; height: 56px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8f8f8 50%, #f0f0f0 100%);
+            border-radius: 3px;
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.3), 2px 2px 6px rgba(0,0,0,0.2), inset 0 0 20px rgba(0,0,0,0.03);
+        }
+        .exam-paper::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 10px; border-radius: 3px 3px 0 0;
+            background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 2px 4px rgba(200,50,40,0.3);
+        }
+        .exam-paper::after {
+            content: ''; position: absolute; top: 18px; left: 8px; right: 8px; height: 1px;
+            background: #ddd; box-shadow: 0 8px 0 #ddd, 0 16px 0 #ddd, 0 24px 0 #ddd;
+        }
+        .exam-seal {
+            position: absolute; bottom: 8px; right: 8px; width: 14px; height: 14px; border-radius: 50%;
+            background: linear-gradient(145deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .exam-seal::before {
+            content: '✓'; position: absolute; inset: 0; display: flex; align-items: center;
+            justify-content: center; font-size: 8px; color: white; font-weight: bold;
+        }
+
+        /* ===================== 3D 写字板 ===================== */
+        .icon-6s { position: absolute; inset: 0; }
+        .board-back {
+            position: absolute; left: 8px; top: 8px; width: 52px; height: 56px;
+            background: linear-gradient(145deg, #34495e 0%, #2c3e50 100%);
+            border-radius: 4px;
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.35), inset 2px 2px 4px rgba(255,255,255,0.1), inset -2px -2px 4px rgba(0,0,0,0.2);
+        }
+        .board-clip {
+            position: absolute; left: 24px; top: 2px; width: 20px; height: 10px; border-radius: 2px;
+            background: linear-gradient(180deg, #95a5a6 0%, #7f8c8d 100%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 2;
+        }
+        .board-clip::before {
+            content: ''; position: absolute; top: -3px; left: 4px; width: 12px; height: 5px; border-radius: 2px 2px 0 0;
+            background: linear-gradient(180deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+        .board-paper {
+            position: absolute; left: 12px; top: 16px; width: 44px; height: 44px;
+            background: linear-gradient(145deg, #fff 0%, #f5f5f5 100%);
+            border-radius: 2px; box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+        }
+        .board-paper::before {
+            content: ''; position: absolute; top: 10px; left: 6px; right: 6px; height: 1px;
+            background: #ddd; box-shadow: 0 8px 0 #ddd, 0 16px 0 #ddd, 0 24px 0 #ddd;
+        }
+        .board-paper::after {
+            content: ''; position: absolute; bottom: 8px; left: 6px; width: 20px; height: 3px;
+            background: #3498db; border-radius: 1px;
+        }
+
+        /* ===================== 3D 工牌 ===================== */
+        .icon-staff { position: absolute; inset: 0; }
+        .lanyard {
+            position: absolute; left: 28px; top: 4px; width: 16px; height: 14px;
+            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 50%, #e74c3c 100%);
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .lanyard::before {
+            content: ''; position: absolute; top: -4px; left: 3px; width: 10px; height: 6px;
+            background: linear-gradient(180deg, #f4d03f 0%, #d4af37 100%);
+            border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .badge-card {
+            position: absolute; left: 8px; top: 18px; width: 56px; height: 44px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f8f8 100%);
+            border-radius: 4px; border: 1px solid #ddd;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.35), inset 1px 1px 2px rgba(255,255,255,0.8);
+        }
+        .badge-card::before {
+            content: ''; position: absolute; top: 6px; left: 6px; width: 16px; height: 16px;
+            background: linear-gradient(180deg, #ddd 0%, #bbb 100%);
+            border-radius: 2px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
+        }
+        .badge-card::after {
+            content: ''; position: absolute; top: 26px; left: 6px; right: 6px; height: 3px;
+            background: linear-gradient(90deg, #aaa, #ccc, #aaa); border-radius: 1px;
+            box-shadow: 0 5px 0 0 #bbb, 0 10px 0 0 #ddd;
+        }
+
+        /* ===================== 3D 投票箱 ===================== */
+        .icon-vote { position: absolute; inset: 0; }
+        .ballot-top {
+            position: absolute; left: 8px; top: 6px; width: 56px; height: 16px;
+            background: linear-gradient(180deg, #c0392b 0%, #a93226 100%);
+            border-radius: 6px 6px 0 0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .ballot-top::before {
+            content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+            width: 28px; height: 6px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #333 100%);
+            border-radius: 3px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .ballot-box {
+            position: absolute; left: 10px; top: 18px; width: 52px; height: 46px;
+            background: linear-gradient(180deg, #e74c3c 0%, #c0392b 50%, #a93226 100%);
+            border-radius: 0 0 4px 4px;
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.4), inset 2px 2px 4px rgba(255,255,255,0.15);
+        }
+        .ballot-box::before {
+            content: ''; position: absolute; top: 4px; left: 6px; right: 6px; bottom: 4px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.2) 100%);
+            border-radius: 2px;
+        }
+        .ballot-box::after {
+            content: '票'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 16px; font-weight: bold; color: rgba(255,255,255,0.9);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* ===================== 3D 文件夹 ===================== */
+        .icon-file { position: absolute; inset: 0; }
+        .folder-back {
+            position: absolute; left: 6px; top: 12px; width: 58px; height: 48px;
+            background: linear-gradient(180deg, #f39c12 0%, #d68910 100%);
+            border-radius: 0 8px 8px 8px;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.3), inset 2px 2px 4px rgba(255,255,255,0.1);
+        }
+        .folder-front {
+            position: absolute; left: 6px; top: 20px; width: 58px; height: 40px;
+            background: linear-gradient(180deg, #f5ab35 0%, #f39c12 50%, #e67e22 100%);
+            border-radius: 0 4px 6px 6px;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.25), inset 1px 1px 3px rgba(255,255,255,0.2);
+        }
+        .folder-tab {
+            position: absolute; top: 8px; left: 10px; width: 22px; height: 10px;
+            background: linear-gradient(180deg, #f5ab35 0%, #f39c12 100%);
+            border-radius: 4px 4px 0 0; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.3);
+        }
+        .folder-paper {
+            position: absolute; left: 12px; top: 26px; width: 24px; height: 28px;
+            background: linear-gradient(180deg, #fff 0%, #f5f5f5 100%);
+            border-radius: 1px; box-shadow: 1px 1px 3px rgba(0,0,0,0.15);
+        }
+        .folder-paper::before {
+            content: ''; position: absolute; top: 6px; left: 4px; right: 4px; height: 1px;
+            background: #ddd; box-shadow: 0 6px 0 #ddd, 0 12px 0 #ddd;
+        }
+
+        /* ===================== 吃饭图标（人物+碗） ===================== */
+        .icon-eat { position: absolute; inset: 0; }
+        /* 人物头部 */
+        .eat-head {
+            position: absolute; left: 22px; top: 2px; width: 28px; height: 28px;
+            background: linear-gradient(180deg, #ffe4c4 0%, #ffd4a4 100%);
+            border-radius: 50%;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+        }
+        /* 人物身体 */
+        .eat-body {
+            position: absolute; left: 18px; top: 26px; width: 36px; height: 32px;
+            background: linear-gradient(180deg, #5d7a9c 0%, #4a6d8c 100%);
+            border-radius: 8px 8px 0 0;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+        }
+        /* 碗 */
+        .eat-bowl {
+            position: absolute; left: 8px; top: 36px; width: 32px; height: 24px;
+            background: linear-gradient(180deg, #fefefe 0%, #e8e8e8 100%);
+            border-radius: 0 0 50% 50%;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.25);
+        }
+        .eat-bowl::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 8px;
+            background: linear-gradient(180deg, #fefefe 0%, #f0f0f0 100%);
+            border-radius: 0 0 0 0;
+        }
+        .eat-bowl::after {
+            content: ''; position: absolute; top: 4px; left: 4px; right: 4px; height: 14px;
+            background: linear-gradient(180deg, #fff8e8 0%, #f5f0dc 100%);
+            border-radius: 0 0 50% 50%;
+        }
+        /* 筷子 */
+        .eat-chop1 {
+            position: absolute; right: 12px; top: 28px; width: 3px; height: 26px;
+            background: linear-gradient(90deg, #deb887 0%, #c4a46c 50%, #b8956a 100%);
+            border-radius: 1px;
+            transform: rotate(-20deg);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+        .eat-chop2 {
+            position: absolute; right: 8px; top: 30px; width: 3px; height: 26px;
+            background: linear-gradient(90deg, #deb887 0%, #c4a46c 50%, #b8956a 100%);
+            border-radius: 1px;
+            transform: rotate(10deg);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+        /* 蒸汽 */
+        .eat-steam {
+            position: absolute; left: 20px; top: 28px; width: 3px; height: 6px;
+            background: rgba(200,200,200,0.5);
+            border-radius: 2px;
+            box-shadow: 6px 0 0 rgba(200,200,200,0.4), 12px 0 0 rgba(200,200,200,0.3);
+        }
+
+        /* 餐盒B：圆形 */
+        .lunch-b { position: absolute; inset: 0; }
+        .lunch-b .box-top {
+            position: absolute; left: 6px; top: 6px; width: 60px; height: 60px;
+            background: linear-gradient(180deg, #f8f8f8 0%, #e8e8e8 100%);
+            border-radius: 50%;
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.35), inset 2px 2px 6px rgba(255,255,255,0.8);
+        }
+        .lunch-b .soup {
+            position: absolute; top: 14px; left: 14px; width: 14px; height: 14px;
+            background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+            border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .lunch-b .soup::before {
+            content: ''; position: absolute; top: 3px; left: 3px; width: 8px; height: 8px;
+            background: linear-gradient(180deg, #8b5a2b 0%, #654321 100%);
+            border-radius: 50%;
+        }
+        .lunch-b .meat {
+            position: absolute; top: 14px; right: 14px; width: 14px; height: 12px;
+            background: linear-gradient(135deg, #cd5c5c 0%, #8b4513 100%);
+            border-radius: 2px;
+        }
+        .lunch-b .fish {
+            position: absolute; top: 32px; left: 14px; width: 16px; height: 10px;
+            background: linear-gradient(180deg, #ffefd5 0%, #ffe4c4 100%);
+            border-radius: 60% 40% 40% 60%;
+        }
+        .lunch-b .fish::before {
+            content: ''; position: absolute; right: -3px; top: 1px; width: 6px; height: 8px;
+            background: linear-gradient(135deg, #ffe4c4 0%, #f5d5b8 100%);
+            border-radius: 0 80% 80% 0;
+        }
+        .lunch-b .veg {
+            position: absolute; top: 32px; right: 14px; width: 14px; height: 10px;
+            background: linear-gradient(180deg, #32cd32 0%, #228b22 100%);
+            border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+        }
+        .lunch-b .rice1 {
+            position: absolute; bottom: 14px; left: 14px; width: 14px; height: 10px;
+            background: linear-gradient(180deg, #fffef8 0%, #f5f5dc 100%);
+            border-radius: 2px;
+        }
+        .lunch-b .rice2 {
+            position: absolute; bottom: 14px; left: 30px; width: 14px; height: 10px;
+            background: linear-gradient(180deg, #fffef8 0%, #f5f5dc 100%);
+            border-radius: 2px;
+        }
+        .lunch-b .rice3 {
+            position: absolute; bottom: 14px; right: 14px; width: 14px; height: 10px;
+            background: linear-gradient(180deg, #fffef8 0%, #f5f5dc 100%);
+            border-radius: 2px;
+        }
+        .lunch-b .chopstick1 {
+            position: absolute; right: 10px; top: 28px; width: 2px; height: 22px;
+            background: linear-gradient(90deg, #deb887 0%, #c4a46c 100%);
+            border-radius: 0 0 1px 1px;
+            transform: rotate(12deg);
+        }
+        .lunch-b .chopstick2 {
+            position: absolute; right: 13px; top: 28px; width: 2px; height: 22px;
+            background: linear-gradient(90deg, #c4a46c 0%, #b8956a 100%);
+            border-radius: 0 0 1px 1px;
+            transform: rotate(12deg);
+        }
+
+        /* 餐盒C：方形分隔 */
+        .lunch-c { position: absolute; inset: 0; }
+        .lunch-c .box-top {
+            position: absolute; left: 6px; top: 6px; width: 60px; height: 60px;
+            background: linear-gradient(180deg, #f5f5f5 0%, #e8e8e8 100%);
+            border-radius: 4px;
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.35), inset 2px 2px 6px rgba(255,255,255,0.8);
+        }
+        .lunch-c .soup {
+            position: absolute; top: 8px; left: 8px; width: 16px; height: 16px;
+            background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+            border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+        .lunch-c .soup::before {
+            content: ''; position: absolute; top: 3px; left: 3px; width: 10px; height: 10px;
+            background: linear-gradient(180deg, #8b5a2b 0%, #654321 100%);
+            border-radius: 50%;
+        }
+        .lunch-c .meat {
+            position: absolute; top: 8px; right: 8px; width: 16px; height: 14px;
+            background: linear-gradient(135deg, #cd5c5c 0%, #8b4513 50%, #654321 100%);
+            border-radius: 2px;
+        }
+        .lunch-c .fish {
+            position: absolute; top: 26px; left: 8px; width: 18px; height: 12px;
+            background: linear-gradient(180deg, #ffefd5 0%, #ffe4c4 100%);
+            border-radius: 60% 40% 40% 60%;
+        }
+        .lunch-c .fish::before {
+            content: ''; position: absolute; right: -4px; top: 1px; width: 7px; height: 10px;
+            background: linear-gradient(135deg, #ffe4c4 0%, #f5d5b8 100%);
+            border-radius: 0 80% 80% 0;
+        }
+        .lunch-c .veg {
+            position: absolute; top: 26px; right: 8px; width: 16px; height: 12px;
+            background: linear-gradient(180deg, #32cd32 0%, #228b22 100%);
+            border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+        }
+        .lunch-c .rice1 {
+            position: absolute; bottom: 8px; left: 8px; width: 14px; height: 10px;
+            background: linear-gradient(180deg, #fffef8 0%, #f5f5dc 100%);
+            border-radius: 2px;
+        }
+        .lunch-c .rice2 {
+            position: absolute; bottom: 8px; left: 24px; width: 14px; height: 10px;
+            background: linear-gradient(180deg, #fffef8 0%, #f5f5dc 100%);
+            border-radius: 2px;
+        }
+        .lunch-c .rice3 {
+            position: absolute; bottom: 8px; right: 8px; width: 14px; height: 10px;
+            background: linear-gradient(180deg, #fffef8 0%, #f5f5dc 100%);
+            border-radius: 2px;
+        }
+        .lunch-c .chopstick1 {
+            position: absolute; right: 6px; top: 22px; width: 3px; height: 28px;
+            background: linear-gradient(90deg, #deb887 0%, #c4a46c 100%);
+            transform: rotate(12deg);
+        }
+        .lunch-c .chopstick2 {
+            position: absolute; right: 10px; top: 22px; width: 3px; height: 28px;
+            background: linear-gradient(90deg, #c4a46c 0%, #b8956a 100%);
+            transform: rotate(12deg);
+        }
+
+        /* 餐盒D：简约 */
+        .lunch-d { position: absolute; inset: 0; }
+        .lunch-d .box-top {
+            position: absolute; left: 6px; top: 6px; width: 60px; height: 60px;
+            background: linear-gradient(180deg, #f0f0f0 0%, #e0e0e0 100%);
+            border-radius: 6px;
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.35), inset 2px 2px 6px rgba(255,255,255,0.8);
+        }
+        .lunch-d .soup {
+            position: absolute; top: 12px; left: 12px; width: 16px; height: 16px;
+            background: linear-gradient(180deg, #fff 0%, #f0f0f0 100%);
+            border-radius: 50%;
+        }
+        .lunch-d .soup::before {
+            content: ''; position: absolute; top: 3px; left: 3px; width: 10px; height: 10px;
+            background: linear-gradient(180deg, #8b5a2b 0%, #654321 100%);
+            border-radius: 50%;
+        }
+        .lunch-d .meat {
+            position: absolute; top: 12px; right: 12px; width: 16px; height: 14px;
+            background: linear-gradient(135deg, #cd5c5c 0%, #8b4513 100%);
+            border-radius: 2px;
+        }
+        .lunch-d .fish {
+            position: absolute; top: 32px; left: 12px; width: 16px; height: 11px;
+            background: linear-gradient(180deg, #ffefd5 0%, #ffe4c4 100%);
+            border-radius: 60% 40% 40% 60%;
+        }
+        .lunch-d .fish::before {
+            content: ''; position: absolute; right: -3px; top: 1px; width: 6px; height: 9px;
+            background: linear-gradient(135deg, #ffe4c4 0%, #f5d5b8 100%);
+            border-radius: 0 80% 80% 0;
+        }
+        .lunch-d .veg {
+            position: absolute; top: 32px; right: 12px; width: 16px; height: 11px;
+            background: linear-gradient(180deg, #32cd32 0%, #228b22 100%);
+            border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+        }
+        .lunch-d .rice1 {
+            position: absolute; bottom: 12px; left: 12px; width: 18px; height: 10px;
+            background: linear-gradient(180deg, #fffef8 0%, #f5f5dc 100%);
+            border-radius: 2px;
+        }
+        .lunch-d .rice2 {
+            position: absolute; bottom: 12px; right: 12px; width: 18px; height: 10px;
+            background: linear-gradient(180deg, #fffef8 0%, #f5f5dc 100%);
+            border-radius: 2px;
+        }
+        .lunch-d .chopstick1 {
+            position: absolute; right: 8px; top: 26px; width: 2px; height: 24px;
+            background: linear-gradient(90deg, #deb887 0%, #c4a46c 100%);
+            transform: rotate(12deg);
+        }
+        .lunch-d .chopstick2 {
+            position: absolute; right: 12px; top: 26px; width: 2px; height: 24px;
+            background: linear-gradient(90deg, #c4a46c 0%, #b8956a 100%);
+            transform: rotate(12deg);
+        }
+
+        /* ===================== 保险箱（9键密码） ===================== */
+        .icon-permission { position: absolute; inset: 0; }
+        .safe-body {
+            position: absolute; left: 10px; top: 16px; width: 52px; height: 48px;
+            background: linear-gradient(180deg, #3d5a80 0%, #2c4a6e 50%, #1c3a5e 100%);
+            border-radius: 4px;
+            box-shadow: 4px 4px 14px rgba(0,0,0,0.45), inset 2px 2px 4px rgba(255,255,255,0.15);
+        }
+        .safe-door {
+            position: absolute; left: 12px; top: 18px; width: 48px; height: 44px;
+            background: linear-gradient(180deg, #4a6d8c 0%, #3d5a80 50%, #2c4a6e 100%);
+            border-radius: 3px;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.35), inset 1px 1px 3px rgba(255,255,255,0.2);
+        }
+        .safe-door::before {
+            content: ''; position: absolute; inset: 3px;
+            border: 1px solid rgba(0,0,0,0.2);
+            border-radius: 2px;
+        }
+        .safe-keypad {
+            position: absolute; left: 14px; top: 20px; width: 26px; height: 30px;
+            background: linear-gradient(180deg, #1a252f 0%, #0f1a24 100%);
+            border-radius: 3px;
+            box-shadow: inset 1px 1px 4px rgba(0,0,0,0.6);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1px;
+            padding: 2px;
+        }
+        .safe-key {
+            background: linear-gradient(180deg, #3d5a80 0%, #2c4a6e 100%);
+            border-radius: 1px;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 5px; color: #a0c0e0; font-weight: bold;
+        }
+        .safe-handle {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            width: 10px; height: 24px;
+            background: linear-gradient(90deg, #7f8c8d 0%, #95a5a6 50%, #7f8c8d 100%);
+            border-radius: 3px;
+            box-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+        }
+        .safe-hinge {
+            position: absolute; left: 8px; top: 22px; width: 4px; height: 6px;
+            background: linear-gradient(180deg, #7f8c8d 0%, #5d6d6e 100%);
+            border-radius: 1px;
+        }
+        .safe-hinge::after {
+            content: ''; position: absolute; left: 0; top: 18px; width: 4px; height: 6px;
+            background: linear-gradient(180deg, #7f8c8d 0%, #5d6d6e 100%);
+            border-radius: 1px;
+        }
+
+        /* ===================== 日式餐盒 ===================== */
+        .icon-lunchbox { position: absolute; inset: 0; }
+        /* 餐盒主体 - 上下两层 */
+        .lunchbox-body {
+            position: absolute; left: 6px; top: 8px; width: 60px; height: 56px;
+            background: linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%);
+            border-radius: 6px;
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.3), inset 2px 2px 4px rgba(255,255,255,0.8);
+        }
+        /* 上层隔层 */
+        .lunchbox-top {
+            position: absolute; left: 8px; top: 10px; width: 56px; height: 24px;
+            background: linear-gradient(180deg, #f8f8f8 0%, #e8e8e8 100%);
+            border-radius: 4px 4px 0 0;
+            border-bottom: 1px solid #d0d0d0;
+            display: flex; gap: 2px; padding: 3px;
+        }
+        /* 下层隔层 */
+        .lunchbox-bottom {
+            position: absolute; left: 8px; top: 36px; width: 56px; height: 26px;
+            background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 100%);
+            border-radius: 0 0 4px 4px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        /* 肉片 - 左上 */
+        .lunch-meat {
+            position: absolute; left: 4px; top: 4px; width: 18px; height: 14px;
+            background: linear-gradient(135deg, #cd5c5c 0%, #b84c4c 50%, #8b4513 100%);
+            border-radius: 2px;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.3);
+        }
+        /* 紫甘蓝 */
+        .lunch-cabbage {
+            position: absolute; left: 22px; top: 4px; width: 14px; height: 14px;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 50%, #7d3c98 100%);
+            border-radius: 2px;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.3);
+        }
+        /* 西兰花 */
+        .lunch-broccoli {
+            position: absolute; right: 4px; top: 4px; width: 12px; height: 14px;
+            background: linear-gradient(180deg, #27ae60 0%, #2ecc71 50%, #229954 100%);
+            border-radius: 2px;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.3);
+        }
+        /* 玉米粒 */
+        .lunch-corn {
+            position: absolute; left: 10px; top: 20px; width: 12px; height: 10px;
+            background: linear-gradient(180deg, #f1c40f 0%, #f39c12 100%);
+            border-radius: 2px;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.4);
+        }
+        /* 饭团 - 下层 */
+        .lunch-rice {
+            position: absolute; left: 12px; top: 40px; width: 36px; height: 18px;
+            background: linear-gradient(180deg, #fffef5 0%, #f5f5dc 50%, #e8e8d0 100%);
+            border-radius: 50%;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.8);
+        }
+        /* 饭团上的紫米/梅子 */
+        .lunch-rice::before {
+            content: ''; position: absolute; right: 8px; top: 6px; width: 8px; height: 6px;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            border-radius: 50%;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.3);
+        }
+        /* 小番茄 */
+        .lunch-tomato {
+            position: absolute; left: 2px; bottom: 2px; width: 8px; height: 8px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border-radius: 50%;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.4);
+        }
+        /* 葡萄/李子 */
+        .lunch-grape {
+            position: absolute; right: 2px; bottom: 2px; width: 8px; height: 8px;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            border-radius: 50%;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.4);
+        }
+
+        /* 说明 */
+        .info-box { max-width: 700px; margin: 40px auto; background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .info-box h3 { font-size: 16px; color: #333; margin-bottom: 12px; }
+        .info-box p { font-size: 13px; color: #666; line-height: 1.8; }
+    </style>
+</head>
+<body>
+    <h1>拟物3D图标设计</h1>
+    <p class="subtitle">方案1蓝色系 · 保险箱9键密码(1-9) · 日式餐盒（肉+菜+饭团）</p>
+
+    <div class="preview-grid">
+        <!-- 完整预览 -->
+        <div class="scheme">
+            <div class="scheme-title">全部图标预览</div>
+            <div class="icon-row">
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-book"><div class="book-spine"></div><div class="book-pages"></div><div class="book-cover"></div></div>
+                    </div>
+                    <div class="icon-label">学习任务</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-exam"><div class="exam-paper"></div><div class="exam-seal"></div></div>
+                    </div>
+                    <div class="icon-label">在线考试</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-meal"><div class="meal-box"></div><div class="meal-box-inner"></div><div class="meal-fish-zone"></div><div class="meal-fish"></div><div class="meal-veg"></div><div class="meal-divider-v"></div><div class="meal-divider-h"></div><div class="meal-meat-zone"></div><div class="meal-meat"></div><div class="meal-rice-zone"></div><div class="meal-rice"></div><div class="meal-chop1"></div><div class="meal-chop2"></div></div>
+                    </div>
+                    <div class="icon-label">报餐</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-6s"><div class="board-clip"></div><div class="board-back"></div><div class="board-paper"></div></div>
+                    </div>
+                    <div class="icon-label">6S管理</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-staff"><div class="lanyard"></div><div class="badge-card"></div></div>
+                    </div>
+                    <div class="icon-label">员工管理</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-vote"><div class="ballot-top"></div><div class="ballot-box"></div></div>
+                    </div>
+                    <div class="icon-label">投票系统</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-permission"><div class="safe-hinge"></div><div class="safe-body"></div><div class="safe-door"></div><div class="safe-keypad"><div class="safe-key">1</div><div class="safe-key">2</div><div class="safe-key">3</div><div class="safe-key">4</div><div class="safe-key">5</div><div class="safe-key">6</div><div class="safe-key">7</div><div class="safe-key">8</div><div class="safe-key">9</div></div><div class="safe-handle"></div></div>
+                    </div>
+                    <div class="icon-label">权限管理</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-file"><div class="folder-back"></div><div class="folder-tab"></div><div class="folder-front"></div><div class="folder-paper"></div></div>
+                    </div>
+                    <div class="icon-label">文件管理</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 餐盘方案对比 -->
+        <div class="scheme">
+            <div class="scheme-title">— 方形餐盘（整体）—</div>
+            <div class="icon-row">
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-meal"><div class="meal-box"></div><div class="meal-box-inner"></div><div class="meal-fish-zone"></div><div class="meal-fish"></div><div class="meal-veg"></div><div class="meal-divider-v"></div><div class="meal-divider-h"></div><div class="meal-meat-zone"></div><div class="meal-meat"></div><div class="meal-rice-zone"></div><div class="meal-rice"></div><div class="meal-chop1"></div><div class="meal-chop2"></div></div>
+                    </div>
+                    <div class="icon-label">报餐系统</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 餐盘分解 -->
+        <div class="scheme">
+            <div class="scheme-title">— 方形餐盘（分解）—</div>
+            <div class="icon-row">
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-meal"><div class="meal-box-dis"></div><div class="meal-box-inner-dis"></div></div>
+                    </div>
+                    <div class="icon-label">餐盘</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div style="position:absolute;left:14px;top:16px;width:20px;height:14px;background:linear-gradient(180deg,#ffefd5 0%,#ffe4c4 50%,#f5d5b8 100%);border-radius:70% 30% 30% 70% / 50% 50% 50% 50%;box-shadow:0 1px 2px rgba(0,0,0,0.15),inset 1px 1px 2px rgba(255,255,255,0.6);"></div>
+                        <div style="position:absolute;left:14px;top:32px;width:14px;height:12px;background:linear-gradient(180deg,#3cb371 0%,#2e8b57 100%);border-radius:50% 50% 40% 40% / 70% 70% 30% 30%;box-shadow:inset 1px 1px 2px rgba(255,255,255,0.4);"></div>
+                    </div>
+                    <div class="icon-label">鱼+菜</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div style="position:absolute;right:14px;top:16px;width:14px;height:14px;background:linear-gradient(135deg,#cd5c5c 0%,#b84c4c 40%,#8b4513 70%,#654321 100%);border-radius:2px;box-shadow:inset 1px 1px 2px rgba(255,255,255,0.3);"></div>
+                    </div>
+                    <div class="icon-label">红烧肉</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div style="position:absolute;right:14px;bottom:16px;width:14px;height:14px;background:linear-gradient(180deg,#fffef8 0%,#f5f5dc 100%);border-radius:50%;box-shadow:inset 0 1px 2px rgba(255,255,255,0.8);"></div>
+                    </div>
+                    <div class="icon-label">米饭</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 保险箱特写 -->
+        <div class="scheme">
+            <div class="scheme-title">保险箱特写（9键密码）</div>
+            <div class="icon-row">
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="width:120px;height:120px;transform:scale(1.5);">
+                        <div class="icon-permission">
+                            <div class="safe-hinge"></div>
+                            <div class="safe-body"></div>
+                            <div class="safe-door"></div>
+                            <div class="safe-keypad"><div class="safe-key">1</div><div class="safe-key">2</div><div class="safe-key">3</div><div class="safe-key">4</div><div class="safe-key">5</div><div class="safe-key">6</div><div class="safe-key">7</div><div class="safe-key">8</div><div class="safe-key">9</div></div>
+                            <div class="safe-handle"></div>
+                        </div>
+                    </div>
+                    <div class="icon-label">保险箱</div>
+                    <div class="label-sub">3×3按键 + 把手</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 吃饭图标 -->
+        <div class="scheme">
+            <div class="scheme-title">— 吃饭（人物+碗）—</div>
+            <div class="icon-row">
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-eat">
+                            <div class="eat-head"></div>
+                            <div class="eat-body"></div>
+                            <div class="eat-bowl"></div>
+                            <div class="eat-chop1"></div>
+                            <div class="eat-chop2"></div>
+                            <div class="eat-steam"></div>
+                        </div>
+                    </div>
+                    <div class="icon-label">吃饭</div>
+                    <div class="label-sub">人物+碗+筷子</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div class="eat-head" style="position:absolute;left:22px;top:8px;"></div>
+                        <div class="eat-body" style="position:absolute;left:18px;top:32px;"></div>
+                    </div>
+                    <div class="icon-label">分解-人物</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div class="eat-bowl" style="position:absolute;left:12px;top:36px;"></div>
+                        <div class="eat-chop1" style="position:absolute;left:8px;top:32px;"></div>
+                        <div class="eat-chop2" style="position:absolute;left:18px;top:30px;"></div>
+                    </div>
+                    <div class="icon-label">分解-碗筷</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div class="eat-steam" style="position:absolute;left:16px;top:2px;"></div>
+                    </div>
+                    <div class="icon-label">分解-蒸汽</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日式餐盒 -->
+        <div class="scheme">
+            <div class="scheme-title">— 日式餐盒 —</div>
+            <div class="icon-row">
+                <div class="icon-item">
+                    <div class="icon-wrapper">
+                        <div class="icon-lunchbox">
+                            <div class="lunchbox-body">
+                                <div class="lunchbox-top">
+                                    <div class="lunch-meat"></div>
+                                    <div class="lunch-cabbage"></div>
+                                    <div class="lunch-broccoli"></div>
+                                    <div class="lunch-corn"></div>
+                                </div>
+                                <div class="lunchbox-bottom">
+                                    <div class="lunch-rice"></div>
+                                </div>
+                                <div class="lunch-tomato"></div>
+                                <div class="lunch-grape"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="icon-label">餐盒</div>
+                    <div class="label-sub">肉+菜+饭团</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div class="lunchbox-body" style="position:absolute;left:6px;top:8px;">
+                            <div class="lunchbox-top" style="position:absolute;">
+                                <div class="lunch-meat" style="position:absolute;left:4px;top:4px;"></div>
+                                <div class="lunch-cabbage" style="position:absolute;left:22px;top:4px;"></div>
+                                <div class="lunch-broccoli" style="position:absolute;right:4px;top:4px;"></div>
+                                <div class="lunch-corn" style="position:absolute;left:10px;top:20px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="icon-label">分解-上层</div>
+                    <div class="label-sub">肉+紫甘蓝+西兰花+玉米</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div class="lunch-rice" style="position:absolute;left:12px;top:20px;width:36px;height:18px;"></div>
+                    </div>
+                    <div class="icon-label">分解-饭团</div>
+                    <div class="label-sub">米饭+紫米</div>
+                </div>
+                <div class="icon-item">
+                    <div class="icon-wrapper" style="background: transparent;">
+                        <div class="lunch-tomato" style="position:absolute;left:12px;top:36px;"></div>
+                        <div class="lunch-grape" style="position:absolute;right:12px;top:36px;"></div>
+                    </div>
+                    <div class="icon-label">分解-小食</div>
+                    <div class="label-sub">番茄+葡萄</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-box">
+        <h3>选择说明</h3>
+        <p>
+            <strong>报餐系统</strong>：日式餐盒（上下两层）<br>
+            上层：肉片+紫甘蓝+西兰花+玉米 | 下层：饭团（紫米）| 配食：番茄+葡萄<br>
+            <strong>吃饭</strong>：人物+碗+筷子+蒸汽
+        </p>
+    </div>
+</body>
+</html>

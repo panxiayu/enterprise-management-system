@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: exam-system-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TZ=Asia/Shanghai
+      # 可选的 JWT 密钥（生产环境请修改！）
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      - SYNC_SECRET=${SYNC_SECRET:-sync-secret-change-me}
+      # SMB 同步配置
+      - SMB_HOST=${SMB_HOST:-192.168.110.4}
+      - SMB_SHARE=${SMB_SHARE:-办公部门数据盘$}
+      - SMB_SUBDIR=${SMB_SUBDIR:-行政部/行政部共享数据}
+      - SMB_USER=${SMB_USER:-xlmould\\HMCTB}
+      - SMB_PASS=${SMB_PASS:-HMCTB123}
+      - EXCEL_PASSWORD=${EXCEL_PASSWORD:-1111}
+      - SIX_S_UPLOAD_DIR=${SIX_S_UPLOAD_DIR:-/app/uploads/6s}
+    volumes:
+      # 持久化数据库文件
+      - exam_data:/app/data
+      # 开发时挂载源码和静态文件（热重载）
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./uploads:/app/uploads
+      - ./scripts:/app/scripts
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - exam-network
+
+networks:
+  exam-network:
+    driver: bridge
+
+volumes:
+  exam_data:
+    driver: local

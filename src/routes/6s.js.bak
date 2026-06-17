@@ -1,0 +1,316 @@
+// src/routes/6s.js - 6S曝光管理 API
+const express = require('express');
+const router = express.Router();
+const db = require('../models/database');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+
+// 配置文件上传
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../public/uploads/6s');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
+
+// 获取曝光列表
+// GET /api/6s
+router.get('/', authMiddleware, (req, res) => {
+  try {
+    const { search, status, project } = req.query;
+
+    let query = 'SELECT * FROM six_s_records WHERE 1=1';
+    const params = [];
+
+    if (search) {
+      query += ' AND (project_code LIKE ? OR description LIKE ? OR person_charge LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    if (status) {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+
+    if (project) {
+      query += ' AND project_code = ?';
+      params.push(project);
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const records = db.prepare(query).all(...params);
+
+    // 获取统计数据
+    const stats = {
+      total: db.prepare('SELECT COUNT(*) as count FROM six_s_records').get().count,
+      pending: db.prepare("SELECT COUNT(*) as count FROM six_s_records WHERE status = 'pending'").get().count,
+      fixed: db.prepare("SELECT COUNT(*) as count FROM six_s_records WHERE status = 'fixed'").get().count
+    };
+
+    // 获取所有项目编号（用于筛选）
+    const projects = db.prepare('SELECT DISTINCT project_code FROM six_s_records ORDER BY project_code').all();
+
+    res.json({
+      code: 0,
+      msg: 'success',
+      data: {
+        records,
+        stats,
+        projects
+      }
+    });
+  } catch (err) {
+    console.error('获取曝光列表失败:', err);
+    res.status(500).json({
+      code: -1,
+      msg: '服务器错误',
+      data: null
+    });
+  }
+});
+
+// 获取曝光详情
+// GET /api/6s/:id
+router.get('/:id', authMiddleware, (req, res) => {
+  try {
+    const { id } = req.params;
+    const record = db.prepare('SELECT * FROM six_s_records WHERE id = ?').get(id);
+
+    if (!record) {
+      return res.status(404).json({
+        code: -1,
+        msg: '记录不存在',
+        data: null
+      });
+    }
+
+    res.json({
+      code: 0,
+      msg: 'success',
+      data: record
+    });
+  } catch (err) {
+    console.error('获取曝光详情失败:', err);
+    res.status(500).json({
+      code: -1,
+      msg: '服务器错误',
+      data: null
+    });
+  }
+});
+
+// 6S权限中间件 - 允许管理员或拥有s6_permission的员工
+const s6PermissionMiddleware = (req, res, next) => {
+  if (req.user.type === 'employee') {
+    // 员工用户检查s6_permission（注意：SQLite列名不能以数字开头，实际是s6_permission）
+    if (req.user.s6_permission !== 1) {
+      return res.status(403).json({ code: -1, msg: '没有6S管理权限', data: null });
+    }
+  } else if (req.user.role !== 'admin') {
+    return res.status(403).json({ code: -1, msg: '需要管理员权限', data: null });
+  }
+  next();
+};
+
+// 添加曝光记录
+// POST /api/6s
+router.post('/', authMiddleware, s6PermissionMiddleware, upload.fields([
+  { name: 'before_image', maxCount: 1 },
+  { name: 'after_image', maxCount: 1 }
+]), (req, res) => {
+  try {
+    const { project_code, description, person_charge, area, status, check_date } = req.body;
+
+    if (!project_code) {
+      return res.status(400).json({
+        code: -1,
+        msg: '项目编号必填',
+        data: null
+      });
+    }
+
+    const before_image = req.files?.before_image?.[0]?.filename || null;
+    const after_image = req.files?.after_image?.[0]?.filename || null;
+
+    // 获取创建者ID - 员工使用id，管理员使用userId
+    const createdBy = req.user.type === 'employee' ? req.user.id : req.user.userId;
+
+    const stmt = db.prepare(`
+      INSERT INTO six_s_records (project_code, description, person_charge, area, status, before_image, after_image, check_date, created_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `);
+
+    const result = stmt.run(
+      project_code,
+      description || '',
+      person_charge || '',
+      area || '',
+      status || 'pending',
+      before_image,
+      after_image,
+      check_date || null,
+      createdBy
+    );
+
+    res.json({
+      code: 0,
+      msg: '添加成功',
+      data: {
+        id: result.lastInsertRowid,
+        project_code,
+        description,
+        person_charge,
+        area,
+        status,
+        before_image,
+        after_image,
+        check_date
+      }
+    });
+  } catch (err) {
+    console.error('添加曝光记录失败:', err);
+    res.status(500).json({
+      code: -1,
+      msg: '服务器错误',
+      data: null
+    });
+  }
+});
+
+// 更新曝光记录
+// PUT /api/6s/:id
+router.put('/:id', authMiddleware, s6PermissionMiddleware, upload.fields([
+  { name: 'before_image', maxCount: 1 },
+  { name: 'after_image', maxCount: 1 }
+]), (req, res) => {
+  try {
+    const { id } = req.params;
+    const { project_code, description, person_charge, area, status, check_date } = req.body;
+
+    const record = db.prepare('SELECT * FROM six_s_records WHERE id = ?').get(id);
+    if (!record) {
+      return res.status(404).json({
+        code: -1,
+        msg: '记录不存在',
+        data: null
+      });
+    }
+
+    // 如果上传了新图片，使用新图片；否则保留原图片
+    const before_image = req.files?.before_image?.[0]?.filename || record.before_image;
+    const after_image = req.files?.after_image?.[0]?.filename || record.after_image;
+
+    const stmt = db.prepare(`
+      UPDATE six_s_records
+      SET project_code = COALESCE(?, project_code),
+          description = COALESCE(?, description),
+          person_charge = COALESCE(?, person_charge),
+          area = COALESCE(?, area),
+          status = COALESCE(?, status),
+          before_image = ?,
+          after_image = ?,
+          check_date = COALESCE(?, check_date),
+          updated_at = datetime('now')
+      WHERE id = ?
+    `);
+
+    stmt.run(
+      project_code,
+      description,
+      person_charge,
+      area,
+      status,
+      before_image,
+      after_image,
+      check_date,
+      id
+    );
+
+    res.json({
+      code: 0,
+      msg: '更新成功',
+      data: null
+    });
+  } catch (err) {
+    console.error('更新曝光记录失败:', err);
+    res.status(500).json({
+      code: -1,
+      msg: '服务器错误',
+      data: null
+    });
+  }
+});
+
+// 删除曝光记录
+// DELETE /api/6s/:id
+router.delete('/:id', authMiddleware, adminMiddleware, (req, res) => {
+  try {
+    const { id } = req.params;
+    const record = db.prepare('SELECT * FROM six_s_records WHERE id = ?').get(id);
+
+    if (!record) {
+      return res.status(404).json({
+        code: -1,
+        msg: '记录不存在',
+        data: null
+      });
+    }
+
+    // 删除关联的图片文件
+    if (record.before_image) {
+      const beforePath = path.join(__dirname, '../../public/uploads/6s', record.before_image);
+      if (fs.existsSync(beforePath)) fs.unlinkSync(beforePath);
+    }
+    if (record.after_image) {
+      const afterPath = path.join(__dirname, '../../public/uploads/6s', record.after_image);
+      if (fs.existsSync(afterPath)) fs.unlinkSync(afterPath);
+    }
+
+    db.prepare('DELETE FROM six_s_records WHERE id = ?').run(id);
+
+    res.json({
+      code: 0,
+      msg: '删除成功',
+      data: null
+    });
+  } catch (err) {
+    console.error('删除曝光记录失败:', err);
+    res.status(500).json({
+      code: -1,
+      msg: '服务器错误',
+      data: null
+    });
+  }
+});
+
+// 获取统计数据
+// GET /api/6s/stats/summary
+router.get('/stats/summary', authMiddleware, (req, res) => {
+  try {
+    const stats = {
+      total: db.prepare('SELECT COUNT(*) as count FROM six_s_records').get().count,
+      pending: db.prepare("SELECT COUNT(*) as count FROM six_s_records WHERE status = 'pending'").get().count,
+      fixed: db.prepare("SELECT COUNT(*) as count FROM six_s_records WHERE status = 'fixed'").get().count
+    };
+    const byArea = db.prepare("SELECT area, COUNT(*) as count, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending, SUM(CASE WHEN status='fixed' THEN 1 ELSE 0 END) as fixed FROM six_s_records WHERE area IS NOT NULL AND area != '' GROUP BY area ORDER BY count DESC").all();
+    const byPerson = db.prepare("SELECT person_charge as name, COUNT(*) as count, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending, SUM(CASE WHEN status='fixed' THEN 1 ELSE 0 END) as fixed FROM six_s_records WHERE person_charge IS NOT NULL AND person_charge != '' GROUP BY person_charge ORDER BY count DESC").all();
+    const monthly = db.prepare("SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count, SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending, SUM(CASE WHEN status='fixed' THEN 1 ELSE 0 END) as fixed FROM six_s_records WHERE created_at >= date('now', '-12 months') GROUP BY month ORDER BY month DESC").all();
+    res.json({ code: 0, msg: 'success', data: { ...stats, byArea, byPerson, monthly } });
+  } catch (err) {
+    console.error('get stats failed:', err);
+    res.status(500).json({ code: -1, msg: 'server error', data: null });
+  }
+});
+
+module.exports = router;

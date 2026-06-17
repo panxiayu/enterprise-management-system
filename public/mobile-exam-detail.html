@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>答题详情 - 兴利汽车模具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #F0F7FF;
+            --primary: #7CB9F5;
+            --secondary: #A8D4FF;
+            --accent: #22C58D;
+            --danger: #ef4444;
+            --text: #1D2B5A;
+            --text-soft: #5B72A9;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 40px;
+        }
+
+        .page-wrapper {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .page-wrapper {
+                max-width: 680px;
+            }
+            .question-card {
+                padding: 24px;
+            }
+            .question-text {
+                font-size: 16px;
+            }
+            .option-item {
+                padding: 14px 18px;
+                font-size: 15px;
+            }
+            .result-summary {
+                padding: 24px;
+            }
+            .summary-value {
+                font-size: 32px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .page-wrapper {
+                max-width: 800px;
+            }
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: white;
+            border: 1px solid rgba(74, 144, 226, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.08);
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            background: #f0f7ff;
+        }
+
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text);
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .exam-title {
+            font-size: 15px;
+            color: var(--text-soft);
+            margin-bottom: 16px;
+            padding: 0 4px;
+        }
+
+        .question-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.08);
+            border: 1px solid rgba(74, 144, 226, 0.08);
+        }
+
+        .question-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .question-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .question-number.wrong {
+            background: linear-gradient(135deg, var(--danger), #f87171);
+        }
+
+        .question-number.correct {
+            background: linear-gradient(135deg, var(--accent), #34d399);
+        }
+
+        .question-text {
+            flex: 1;
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.6;
+            color: var(--text);
+        }
+
+        .question-text.wrong {
+            color: var(--danger);
+        }
+
+        .options-list {
+            margin-left: 40px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            transition: all 0.2s;
+        }
+
+        .option-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .option-item.user-selected {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .option-item.user-selected.correct {
+            background: rgba(34, 197, 141, 0.08);
+            border: 1px solid rgba(34, 197, 141, 0.2);
+        }
+
+        .option-marker {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 700;
+            color: #9ca3af;
+        }
+
+        .option-item.user-selected .option-marker {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+        }
+
+        .option-item.user-selected.correct .option-marker {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .option-text {
+            flex: 1;
+            color: var(--text);
+        }
+
+        .option-item.user-selected .option-text {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .option-item.user-selected.correct .option-text {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .result-summary {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.08);
+            border: 1px solid rgba(74, 144, 226, 0.08);
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .summary-value.score {
+            background: linear-gradient(135deg, #4A90E2, #65B3FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .summary-value.wrong {
+            color: var(--danger);
+        }
+
+        .summary-value.correct {
+            color: var(--accent);
+        }
+
+        .summary-label {
+            font-size: 12px;
+            color: var(--text-soft);
+        }
+
+        .retake-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9500, #ff7a00);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 4px;">
+            <div style="flex:1;"></div>
+            <div id="examTitle" style="text-align:center;font-size:18px;font-weight:700;color:var(--text);"></div>
+            <div style="flex:1;display:flex;justify-content:flex-end;">
+                <span id="retakeBadge" style="display:none;background:linear-gradient(135deg,#ff9500,#ff7a00);color:white;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">补考</span>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">加载中...</div>
+
+        <div id="summaryCard" class="result-summary" style="display: none;">
+        <div class="summary-item">
+            <div id="summaryScore" class="summary-value score">0</div>
+            <div class="summary-label">得分</div>
+        </div>
+        <div class="summary-item">
+            <div id="summaryCorrect" class="summary-value correct">0</div>
+            <div class="summary-label">答对</div>
+        </div>
+        <div class="summary-item">
+            <div id="summaryWrong" class="summary-value wrong">0</div>
+            <div class="summary-label">答错</div>
+        </div>
+    </div>
+
+    <div id="questionsContainer"></div>
+
+        <div style="padding:0 0 20px 0;">
+            <button id="detailListBtn" class="btn btn-list" onclick="goToList()" style="width:100%;padding:16px;background:linear-gradient(135deg,#9ca3af,#d1d5db);color:white;border:none;border-radius:16px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:12px;">返回培训列表</button>
+            <button id="detailRetakeBtn" class="btn btn-retake" onclick="retryExam()" style="width:auto;padding:16px 32px;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:white;border:none;border-radius:16px;font-size:15px;font-weight:600;cursor:pointer;display:none;margin-left:auto;">前往补考</button>
+        </div>
+    </div>
+
+    <script src="/js/auth-guard.js"></script>
+    <script>
+        const API = window.location.origin + '/api';
+        let token = localStorage.getItem('employee_token');
+        let examId = null;
+        let recordId = null;
+
+        function getExamId() {
+            return new URLSearchParams(window.location.search).get('examId');
+        }
+
+        function getRecordId() {
+            return new URLSearchParams(window.location.search).get('recordId');
+        }
+
+        function goBack() {
+            window.location.href = 'mobile-training-list.html';
+        }
+
+        // 拦截物理返回键，跳转到培训列表
+        (function initBackHandler() {
+            const TARGET_URL = 'mobile-training-list.html';
+
+            history.pushState({ title: 'fake', url: location.href }, 'fake', location.href);
+
+            window.addEventListener('popstate', function(e) {
+                history.pushState({ title: 'fake', url: location.href }, 'fake', location.href);
+                location.href = TARGET_URL;
+            });
+
+            // Android/WeChat 使用 visibilitychange
+            let hiddenTime = 0;
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    hiddenTime = Date.now();
+                } else if (document.visibilityState === 'visible' && hiddenTime > 0) {
+                    if (Date.now() - hiddenTime < 500) {
+                        location.href = TARGET_URL;
+                    }
+                }
+            });
+
+            window.addEventListener('pageshow', function(e) {
+                if (e.persisted) {
+                    history.pushState({ title: 'fake', url: location.href }, 'fake', location.href);
+                }
+            });
+        })();
+
+        async function loadDetail() {
+            recordId = getRecordId();
+
+            if (!recordId) {
+                document.getElementById('loading').textContent = '参数错误';
+                return;
+            }
+
+            try {
+                const res = await fetch(API + '/exam/' + recordId + '/detail', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                const json = await res.json();
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (json.code === 0 && json.data) {
+                    renderDetail(json.data);
+                } else {
+                    document.getElementById('loading').textContent = json.msg || '加载失败';
+                    document.getElementById('loading').style.display = '';
+                }
+            } catch (err) {
+                document.getElementById('loading').textContent = '加载失败';
+                document.getElementById('loading').style.display = '';
+                console.error(err);
+            }
+        }
+
+        function renderDetail(data) {
+            examId = data.exam_id;
+            document.getElementById('examTitle').textContent = data.exam_title;
+
+            // 显示补考标识
+            if (data.is_retake === 1) {
+                document.getElementById('retakeBadge').style.display = '';
+            }
+
+            // 渲染统计
+            document.getElementById('summaryCard').style.display = 'flex';
+            document.getElementById('summaryScore').textContent = data.total_score || 0;
+            document.getElementById('summaryCorrect').textContent = data.correct_count || 0;
+
+            const totalQuestions = data.questions.length;
+            const correctCount = data.correct_count || 0;
+            const wrongCount = totalQuestions - correctCount;
+            document.getElementById('summaryWrong').textContent = wrongCount;
+
+            // 渲染答题详情
+            const container = document.getElementById('questionsContainer');
+            const questions = data.questions || [];
+
+            let html = '';
+            questions.forEach((q, index) => {
+                const isCorrect = q.isCorrect;
+                const userAnswer = q.userAnswer;
+                const hasUserAnswer = userAnswer !== undefined && userAnswer !== null && userAnswer !== '';
+
+                html += '<div class="question-card">';
+                html += '<div class="question-header">';
+                html += '<div class="question-number ' + (hasUserAnswer ? (isCorrect ? 'correct' : 'wrong') : '') + '">' + (index + 1) + '</div>';
+                html += '<div class="question-text ' + (!isCorrect && hasUserAnswer ? 'wrong' : '') + '">' + escapeHtml(q.content) + '</div>';
+                html += '</div>';
+
+                html += '<div class="options-list">';
+                const options = q.options || [];
+                const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+                if (q.type === 'true_false') {
+                    // 判断题：正确用 ✔，错误用 ✘
+                    [{ opt: '√', label: '正确', symbol: '&#10003;' }, { opt: '×', label: '错误', symbol: '&#10007;' }].forEach((item) => {
+                        const isUserSelected = userAnswer === item.opt;
+                        let optClass = isUserSelected ? (isCorrect ? 'correct user-selected' : 'user-selected') : '';
+                        html += '<div class="option-item ' + optClass + '">';
+                        html += '<div class="option-marker">' + item.symbol + '</div>';
+                        html += '<div class="option-text">' + item.label + '</div>';
+                        html += '</div>';
+                    });
+                } else if (q.type === 'multiple_choice') {
+                    // 多选题：userAnswer 是逗号分隔的字母，如 "A,C"
+                    const userSelectedLetters = userAnswer ? userAnswer.split(',') : [];
+                    options.forEach((optText, optIndex) => {
+                        const letter = optionLabels[optIndex];
+                        const isUserSelected = userSelectedLetters.includes(letter);
+                        const optClass = isUserSelected ? (isCorrect ? 'correct user-selected' : 'user-selected') : '';
+                        html += '<div class="option-item ' + optClass + '">';
+                        html += '<div class="option-marker">' + letter + '</div>';
+                        html += '<div class="option-text">' + escapeHtml(optText) + '</div>';
+                        html += '</div>';
+                    });
+                } else {
+                    // 单选题：userAnswer 是字母，如 "A"
+                    options.forEach((optText, optIndex) => {
+                        const letter = optionLabels[optIndex];
+                        const isUserSelected = userAnswer === letter;
+                        const optClass = isUserSelected ? (isCorrect ? 'correct user-selected' : 'user-selected') : '';
+                        html += '<div class="option-item ' + optClass + '">';
+                        html += '<div class="option-marker">' + letter + '</div>';
+                        html += '<div class="option-text">' + escapeHtml(optText) + '</div>';
+                        html += '</div>';
+                    });
+                }
+                html += '</div>';
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+
+            // 按钮显示逻辑：如果是正式考试成绩，显示"前往补考"按钮；补考记录只显示"返回培训列表"
+            if (data.is_retake === 0) {
+                document.getElementById('detailRetakeBtn').style.display = 'block';
+            } else {
+                document.getElementById('detailRetakeBtn').style.display = 'none';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function goToList() {
+            window.location.href = 'mobile-training-list.html';
+        }
+
+        function retryExam() {
+            window.location.href = 'mobile-exam-doing.html?id=' + examId + '&retake=1';
+        }
+
+        loadDetail();
+    </script>
+</body>
+</html>

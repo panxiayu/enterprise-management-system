@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>投票 - 兴利汽车模具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --ios-bg: #f2f2f7;
+            --ios-card: rgba(255,255,255,0.9);
+            --ios-blue: #007aff;
+            --ios-gray: #8e8e93;
+            --ios-radius: 16px;
+            --ios-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+            --transition: 0.3s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+            background: var(--ios-bg);
+            color: #1c1c1e;
+            padding-bottom: 80px;
+            padding-top: 20px;
+        }
+
+
+
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 680px;
+                padding: 0 24px;
+            }
+            .ios-card {
+                padding: 24px 28px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+
+        .ios-card {
+            background: var(--ios-card);
+            border-radius: var(--ios-radius);
+            padding: 20px 24px;
+            margin-bottom: 12px;
+            box-shadow: var(--ios-shadow);
+        }
+
+        .ios-card h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .ios-card p {
+            font-size: 15px;
+            color: var(--ios-gray);
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .card-meta {
+            font-size: 13px;
+            color: var(--ios-gray);
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        .status-success { background: rgba(0,122,255,0.12); color: var(--ios-blue); }
+        .status-danger { background: rgba(255,59,48,0.12); color: #ff3b30; }
+        .status-warning { background: rgba(255,149,0,0.12); color: #ff9500; }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            background: rgba(255,255,255,0.8);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .option-item:last-child { margin-bottom: 0; }
+        .option-item:active { transform: scale(0.98); }
+        .option-item.selected {
+            background: rgba(0,122,255,0.08);
+            border-color: var(--ios-blue);
+        }
+        .option-item.disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .option-radio, .option-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--ios-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .option-radio { border-radius: 50%; }
+        .option-checkbox { border-radius: 6px; }
+        .option-radio.checked, .option-checkbox.checked {
+            background: var(--ios-blue);
+            border-color: var(--ios-blue);
+            color: white;
+        }
+
+        .option-text {
+            flex: 1;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .input-group { margin-bottom: 14px; }
+        .input-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .input-field {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 10px;
+            font-size: 16px;
+            background: rgba(255,255,255,0.8);
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--ios-blue);
+        }
+
+        .ios-btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 14px;
+            background: var(--ios-blue);
+            color: #fff;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .ios-btn:active { transform: scale(0.97); opacity: 0.9; }
+        .ios-btn:disabled {
+            background: var(--ios-gray);
+            cursor: not-allowed;
+        }
+
+        .ios-btn-secondary {
+            background: rgba(0,122,255,0.1);
+            color: var(--ios-blue);
+        }
+
+        .bottom-nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .bottom-nav .ios-btn { flex: 1; }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--ios-gray);
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--ios-blue);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--ios-gray);
+        }
+        .error-icon { font-size: 40px; margin-bottom: 12px; }
+
+        .toast {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: var(--ios-blue);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading" class="loading" style="display: none;">加载中...</div>
+        <div id="errorBox" class="error-state" style="display: none;">
+            <div class="error-icon">⚠️</div>
+            <div id="errorMessage">加载失败</div>
+        </div>
+
+        <div id="votingContent" style="display: none;">
+            <div class="ios-card">
+                <h3 id="votingTitle"></h3>
+                <p id="votingDesc"></p>
+                <div class="card-meta" id="votingDeadline"></div>
+                <div id="statusBadge" class="status-badge" style="margin-top: 6px;"></div>
+            </div>
+
+            <div id="employeeVerify" class="ios-card" style="display: none;">
+                <div class="input-group">
+                    <label class="input-label">工号 *</label>
+                    <input type="text" id="employeeId" class="input-field" placeholder="请输入您的工号">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                    <label class="input-label">姓名 *</label>
+                    <input type="text" id="employeeName" class="input-field" placeholder="请输入您的姓名">
+                </div>
+            </div>
+
+            <div class="ios-card" id="optionsCard" style="margin-top: 12px;">
+                <div id="optionsTitle" style="font-size: 15px; font-weight: 600; margin-bottom: 14px;">请选择</div>
+                <div id="optionsList"></div>
+            </div>
+
+            <div class="bottom-nav">
+                <button class="ios-btn ios-btn-secondary" onclick="goBack()">返回</button>
+                <button class="ios-btn" id="submitBtn" onclick="submitVote()">提交投票</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let token = new URLSearchParams(window.location.search).get('token');
+        let voting = null;
+        let selectedOptions = [];
+
+        function getDeviceToken() {
+            try {
+                let dt = localStorage.getItem('voting_device_token');
+                if (!dt) {
+                    if (crypto && crypto.randomUUID) {
+                        dt = crypto.randomUUID();
+                    } else {
+                        dt = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                            const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                            return v.toString(16);
+                        });
+                    }
+                    localStorage.setItem('voting_device_token', dt);
+                }
+                return dt;
+            } catch (e) {
+                return 'temp-' + Math.random().toString(36).substring(2);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token) {
+                showError('无效的投票链接');
+                return;
+            }
+            loadVoting();
+        });
+
+        function loadVoting() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('votingContent').style.display = 'none';
+
+            fetch(`${API_URL}/voting/anonymous/${token}`, {
+                headers: { 'X-Device-Token': getDeviceToken() }
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                if (data.code === 0) {
+                    voting = data.data;
+                    if (voting.hasVoted || voting.status === 'ended') {
+                        window.location.href = `mobile-voting-result.html?token=${token}`;
+                        return;
+                    }
+                    renderVoting();
+                } else {
+                    showError(data.msg || '加载失败');
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                showError('加载失败，请检查网络');
+            });
+        }
+
+        function renderVoting() {
+            document.getElementById('votingContent').style.display = 'block';
+            document.getElementById('votingTitle').textContent = voting.title;
+            document.getElementById('votingDesc').textContent = voting.description || '暂无描述';
+            document.getElementById('votingDeadline').textContent = `${formatDateTime(voting.startDate)} ~ ${formatDateTime(voting.endDate)}`;
+
+            const statusEl = document.getElementById('statusBadge');
+            if (voting.status === 'ended') {
+                statusEl.className = 'status-badge status-danger';
+                statusEl.textContent = '已结束';
+            } else if (voting.status === 'notStarted') {
+                statusEl.className = 'status-badge status-warning';
+                statusEl.textContent = '未开始';
+            } else {
+                statusEl.className = 'status-badge status-success';
+                statusEl.textContent = '进行中';
+            }
+
+            if (!voting.isAnonymous) {
+                document.getElementById('employeeVerify').style.display = 'block';
+            }
+
+            document.getElementById('optionsTitle').textContent = '请选择' + (voting.multipleChoice ? '（可多选）' : '');
+
+            const list = document.getElementById('optionsList');
+            list.innerHTML = (voting.options || []).map(opt => `
+                <div class="option-item ${selectedOptions.includes(opt.id) ? 'selected' : ''}"
+                     onclick="selectOption(${opt.id})">
+                    <div class="${voting.multipleChoice ? 'option-checkbox' : 'option-radio'} ${selectedOptions.includes(opt.id) ? 'checked' : ''}">
+                        ${selectedOptions.includes(opt.id) ? '✓' : ''}
+                    </div>
+                    <span class="option-text">${opt.text}</span>
+                </div>
+            `).join('');
+
+            const submitBtn = document.getElementById('submitBtn');
+            if (voting.status !== 'available') {
+                submitBtn.disabled = true;
+                submitBtn.textContent = voting.status === 'ended' ? '投票已结束' : '投票未开始';
+            } else if (voting.hasVoted) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '已投票';
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '提交投票';
+            }
+        }
+
+        function selectOption(optionId) {
+            if (voting.hasVoted || voting.status !== 'available') return;
+
+            if (voting.multipleChoice) {
+                if (selectedOptions.includes(optionId)) {
+                    selectedOptions = selectedOptions.filter(id => id !== optionId);
+                } else {
+                    selectedOptions.push(optionId);
+                }
+            } else {
+                selectedOptions = [optionId];
+            }
+            renderVoting();
+        }
+
+        function submitVote() {
+            if (voting.status !== 'available') {
+                showToast(voting.status === 'ended' ? '投票已结束' : '投票未开始');
+                return;
+            }
+            if (voting.hasVoted) {
+                showToast('您已投过票');
+                return;
+            }
+            if (selectedOptions.length === 0) {
+                showToast('请选择选项');
+                return;
+            }
+            if (!voting.isAnonymous) {
+                const employeeId = document.getElementById('employeeId').value.trim();
+                const employeeName = document.getElementById('employeeName').value.trim();
+                if (!employeeId || !employeeName) {
+                    showToast('请输入工号和姓名');
+                    return;
+                }
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+
+            const body = {
+                optionIds: selectedOptions,
+                deviceToken: getDeviceToken()
+            };
+
+            if (!voting.isAnonymous) {
+                body.employeeId = document.getElementById('employeeId').value.trim();
+                body.employeeName = document.getElementById('employeeName').value.trim();
+            }
+
+            fetch(`${API_URL}/voting/anonymous/${token}/vote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Device-Token': getDeviceToken()
+                },
+                body: JSON.stringify(body)
+            })
+            .then(res => res.json())
+            .then(data => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '提交投票';
+                if (data.code === 0) {
+                    showToast('投票成功');
+                    window.location.href = `mobile-voting-result.html?token=${token}`;
+                } else {
+                    showToast(data.msg || '提交失败');
+                }
+            })
+            .catch(err => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '提交投票';
+                showToast('提交失败');
+            });
+        }
+
+        function goBack() {
+            window.location.href = 'employee.html';
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').textContent = msg;
+            document.getElementById('errorBox').style.display = 'block';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function formatDateTime(dt) {
+            if (!dt) return '-';
+            if (typeof dt === 'string' && dt.includes('T')) {
+                const [datePart, timePart] = dt.split('T');
+                const dateParts = datePart.split('-');
+                const timeParts = timePart.split(':');
+                return `${dateParts[0]}-${dateParts[1]}-${dateParts[2]} ${timeParts[0]}:${timeParts[1]}`;
+            }
+            return dt;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目报告 - 宁波兴利汽车模具企业管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title .icon {
+            font-size: 24px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .status-ok {
+            color: #22c55e;
+            font-weight: 600;
+        }
+        .status-error {
+            color: #ef4444;
+            font-weight: 600;
+        }
+        .status-warning {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .tag-success {
+            background: rgba(34,197,94,0.15);
+            color: #22c55e;
+        }
+        .tag-error {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+        }
+        .tag-warning {
+            background: rgba(245,158,11,0.15);
+            color: #f59e0b;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        .stat-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .account-table td:first-child {
+            font-family: monospace;
+            background: #f1f5f9;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .timestamp {
+            color: #999;
+            font-size: 12px;
+        }
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        ul li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        ul li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+            font-weight: bold;
+        }
+        ul.warning li::before {
+            content: '⚠';
+            color: #f59e0b;
+        }
+        .code {
+            font-family: monospace;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 50px;
+            text-align: center;
+        }
+        .method-get { background: #dbeafe; color: #1d4ed8; }
+        .method-post { background: #dcfce7; color: #15803d; }
+        .method-put { background: #fef3c7; color: #b45309; }
+        .method-delete { background: #fee2e2; color: #dc2626; }
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        td a {
+            color: #667eea;
+            font-weight: 500;
+        }
+        td a:hover {
+            color: #764ba2;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+        .page-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .page-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .page-url {
+            font-family: monospace;
+            font-size: 12px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .btn-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .btn-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .btn-item .btn-name {
+            font-weight: 600;
+            color: #333;
+        }
+        .btn-item .btn-action {
+            color: #667eea;
+        }
+        .api-module {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .api-module-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .api-table {
+            font-size: 12px;
+        }
+        .overflow-x {
+            overflow-x: auto;
+        }
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 10px;
+            }
+            .content {
+                padding: 15px;
+            }
+            table {
+                font-size: 11px;
+            }
+            th, td {
+                padding: 6px 8px;
+            }
+            .overflow-x {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 宁波兴利汽车模具企业管理系统</h1>
+            <p>项目报告 / 项目状态总览 / 完整API文档</p>
+        </div>
+
+        <div class="content">
+            <!-- 系统状态 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title"><span class="icon">📊</span>系统状态</div>
+                    <span class="timestamp">生成时间: 2026-04-05</span>
+                </div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">🎯 部署信息</div>
+                        <div class="stat-row">
+                            <span>生产环境</span>
+                            <span class="stat-value"><a href="http://112.16.178.98:3000" target="_blank">http://112.16.178.98:3000</a></span>
+                        </div>
+                        <div class="stat-row">
+                            <span>Docker容器</span>
+                            <span class="status-ok">运行中 (healthy)</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>容器名称</span>
+                            <span class="stat-value">exam-system-api</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">📈 数据统计</div>
+                        <div class="stat-row">
+                            <span>员工总数</span>
+                            <span class="stat-value">214 人</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>试卷数量</span>
+                            <span class="stat-value">1 份</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>题目数量</span>
+                            <span class="stat-value">25 题</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>学习任务</span>
+                            <span class="stat-value">1 个</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 移动端访问地址 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">📱</span>移动端访问地址（手机浏览器访问）</div>
+                <p style="margin-bottom:16px;color:#666;font-size:13px;">触摸优化，响应式布局，适合手机/平板设备访问</p>
+                <div class="overflow-x">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模块</th>
+                            <th>访问地址</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>员工登录</strong></td>
+                            <td><a href="http://112.16.178.98:3000/" target="_blank">http://112.16.178.98:3000/</a></td>
+                            <td>手机端员工登录入口</td>
+                        </tr>
+                        <tr>
+                            <td><strong>员工工作台</strong></td>
+                            <td><a href="http://112.16.178.98:3000/employee.html" target="_blank">http://112.16.178.98:3000/employee.html</a></td>
+                            <td>功能导航首页</td>
+                        </tr>
+                        <tr>
+                            <td><strong>考试列表</strong></td>
+                            <td><a href="http://112.16.178.98:3000/mobile-exam-list.html" target="_blank">http://112.16.178.98:3000/mobile-exam-list.html</a></td>
+                            <td>查看可用考试</td>
+                        </tr>
+                        <tr>
+                            <td><strong>考试答题</strong></td>
+                            <td><a href="http://112.16.178.98:3000/mobile-exam-doing.html?id=1" target="_blank">http://112.16.178.98:3000/mobile-exam-doing.html?id=1</a></td>
+                            <td>在线答题（需先开始考试）</td>
+                        </tr>
+                        <tr>
+                            <td><strong>考试成绩</strong></td>
+                            <td><a href="http://112.16.178.98:3000/mobile-result.html" target="_blank">http://112.16.178.98:3000/mobile-result.html</a></td>
+                            <td>查看考试成绩</td>
+                        </tr>
+                        <tr>
+                            <td><strong>学习任务列表</strong></td>
+                            <td><a href="http://112.16.178.98:3000/mobile-learning-task-list.html" target="_blank">http://112.16.178.98:3000/mobile-learning-task-list.html</a></td>
+                            <td>视频学习任务</td>
+                        </tr>
+                        <tr>
+                            <td><strong>报餐列表</strong></td>
+                            <td><a href="http://112.16.178.98:3000/mobile-meal-list.html" target="_blank">http://112.16.178.98:3000/mobile-meal-list.html</a></td>
+                            <td>食堂报餐</td>
+                        </tr>
+                        <tr>
+                            <td><strong>6S曝光列表</strong></td>
+                            <td><a href="http://112.16.178.98:3000/mobile-6s-list.html" target="_blank">http://112.16.178.98:3000/mobile-6s-list.html</a></td>
+                            <td>6S问题曝光</td>
+                        </tr>
+                        <tr>
+                            <td><strong>新增6S曝光</strong></td>
+                            <td><a href="http://112.16.178.98:3000/mobile-6s-add.html" target="_blank">http://112.16.178.98:3000/mobile-6s-add.html</a></td>
+                            <td>拍照上传曝光</td>
+                        </tr>
+                        <tr>
+                            <td><strong>6S曝光详情</strong></td>
+                            <td><a href="http://112.16.178.98:3000/mobile-6s-detail.html?id=1" target="_blank">http://112.16.178.98:3000/mobile-6s-detail.html?id=1</a></td>
+                            <td>查看/编辑曝光记录</td>
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            <!-- PC端访问地址 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">💻</span>PC端访问地址（电脑浏览器访问）</div>
+                <p style="margin-bottom:16px;color:#666;font-size:13px;">桌面端管理后台，需使用电脑浏览器访问</p>
+                <div class="overflow-x">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>模块</th>
+                            <th>访问地址</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>管理员登录</strong></td>
+                            <td><a href="http://112.16.178.98:3000/admin/login.html" target="_blank">http://112.16.178.98:3000/admin/login.html</a></td>
+                            <td>管理员登录入口</td>
+                        </tr>
+                        <tr>
+                            <td><strong>管理仪表盘</strong></td>
+                            <td><a href="http://112.16.178.98:3000/dashboard.html" target="_blank">http://112.16.178.98:3000/dashboard.html</a></td>
+                            <td>管理后台首页</td>
+                        </tr>
+                        <tr>
+                            <td><strong>员工管理</strong></td>
+                            <td><a href="http://112.16.178.98:3000/staff-list.html" target="_blank">http://112.16.178.98:3000/staff-list.html</a></td>
+                            <td>员工信息管理</td>
+                        </tr>
+                        <tr>
+                            <td><strong>考试管理</strong></td>
+                            <td><a href="http://112.16.178.98:3000/exam.html" target="_blank">http://112.16.178.98:3000/exam.html</a></td>
+                            <td>试卷/题目/成绩管理</td>
+                        </tr>
+                        <tr>
+                            <td><strong>报餐管理</strong></td>
+                            <td><a href="http://112.16.178.98:3000/meal-list.html" target="_blank">http://112.16.178.98:3000/meal-list.html</a></td>
+                            <td>报餐活动管理</td>
+                        </tr>
+                        <tr>
+                            <td><strong>投票管理</strong></td>
+                            <td><a href="http://112.16.178.98:3000/voting-list.html" target="_blank">http://112.16.178.98:3000/voting-list.html</a></td>
+                            <td>投票活动管理</td>
+                        </tr>
+                        <tr>
+                            <td><strong>6S管理</strong></td>
+                            <td><a href="http://112.16.178.98:3000/6s-list.html" target="_blank">http://112.16.178.98:3000/6s-list.html</a></td>
+                            <td>6S曝光管理</td>
+                        </tr>
+                        <tr>
+                            <td><strong>权限管理</strong></td>
+                            <td><a href="http://112.16.178.98:3000/permission-list.html" target="_blank">http://112.16.178.98:3000/permission-list.html</a></td>
+                            <td>粒化权限配置</td>
+                        </tr>
+                        <tr>
+                            <td><strong>文件管理</strong></td>
+                            <td><a href="http://112.16.178.98:3000/file-manager.html" target="_blank">http://112.16.178.98:3000/file-manager.html</a></td>
+                            <td>资料文件管理</td>
+                        </tr>
+                        <tr>
+                            <td><strong>项目报告</strong></td>
+                            <td><a href="http://112.16.178.98:3000/project-report.html" target="_blank">http://112.16.178.98:3000/project-report.html</a></td>
+                            <td>系统技术文档</td>
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
+            </div>
+
+            <!-- API接口完整列表 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">🔌</span>完整API接口文档</div>
+
+                <!-- 认证模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">🔐 认证模块 (auth)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/auth/login</span></td><td>管理员登录 (username+password)</td><td>否</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/auth/employee-login</span></td><td>员工登录 (employee_id+name)</td><td>否</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/auth/lookup?employee_id=xxx</span></td><td>工号查询姓名</td><td>否</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/auth/me</span></td><td>获取当前用户信息</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/auth/logout</span></td><td>登出</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/auth/refresh</span></td><td>刷新Token</td><td>是</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/auth/permissions</span></td><td>更新当前用户权限</td><td>管理员</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 考试模块(员工) -->
+                <div class="api-module">
+                    <div class="api-module-title">📝 考试模块-员工 (exam)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam/list</span></td><td>获取可用考试列表</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam/:id</span></td><td>获取考试详情(含题目)</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/exam/start</span></td><td>开始考试</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/exam/submit</span></td><td>提交考试答案</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam/stats/user</span></td><td>获取用户考试统计</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam/my-records</span></td><td>获取我的考试成绩</td><td>是</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 考试管理模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">📝 考试管理模块 (exam-admin)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam-admin/papers</span></td><td>获取所有试卷</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam-admin/paper/:id</span></td><td>获取试卷详情</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/exam-admin/paper</span></td><td>创建试卷</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/exam-admin/paper/:id</span></td><td>更新试卷</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-delete">DELETE</span></td><td><span class="code">/api/exam-admin/paper/:id</span></td><td>删除试卷</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam-admin/questions</span></td><td>获取所有题目</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/exam-admin/question</span></td><td>添加题目</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/exam-admin/question/:id</span></td><td>更新题目</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-delete">DELETE</span></td><td><span class="code">/api/exam-admin/question/:id</span></td><td>删除题目</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam-admin/records</span></td><td>获取所有成绩记录</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam-admin/record/:id</span></td><td>获取成绩详情</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-delete">DELETE</span></td><td><span class="code">/api/exam-admin/record/:id</span></td><td>删除成绩记录</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/exam-admin/stats</span></td><td>获取统计信息</td><td>管理员</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 学习任务模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">📚 学习任务模块 (learning-task)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/learning-tasks</span></td><td>获取任务列表</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/learning-tasks/:id</span></td><td>获取任务详情</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/learning-tasks</span></td><td>创建学习任务</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/learning-tasks/:id</span></td><td>更新学习任务</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-delete">DELETE</span></td><td><span class="code">/api/learning-tasks/:id</span></td><td>删除学习任务</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/learning-tasks/batch-delete</span></td><td>批量删除任务</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/learning-tasks/:id/progress</span></td><td>更新学习进度</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/learning-task/upload-ppt</span></td><td>上传PPT并转换为视频</td><td>管理员</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 报餐模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">🍱 报餐模块 (meal)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/meal/list</span></td><td>获取报餐活动列表</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/meal/:id</span></td><td>获取报餐活动详情</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/meal/create</span></td><td>创建报餐活动</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/meal/:id/order</span></td><td>提交报餐</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/meal/:id/statistics</span></td><td>获取报餐统计</td><td>管理员</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 6S模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">📋 6S管理模块 (6s)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/6s</span></td><td>获取曝光列表</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/6s/:id</span></td><td>获取曝光详情</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/6s</span></td><td>添加曝光记录</td><td>是(6S权限)</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/6s/:id</span></td><td>更新曝光记录</td><td>是(6S权限)</td></tr>
+                            <tr><td><span class="method method-delete">DELETE</span></td><td><span class="code">/api/6s/:id</span></td><td>删除曝光记录</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/6s/stats/summary</span></td><td>获取统计数据</td><td>是</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 投票模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">📊 投票模块 (voting)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/voting/list</span></td><td>获取投票列表</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/voting/:id</span></td><td>获取投票详情</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/voting/create</span></td><td>创建投票</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/voting/:id/vote</span></td><td>提交投票</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/voting/:id/results</span></td><td>获取投票结果</td><td>管理员</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 员工管理模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">👥 员工管理模块 (staff)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/staff</span></td><td>获取员工列表</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/staff/:id</span></td><td>获取员工详情</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/staff</span></td><td>添加员工</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/staff/:id</span></td><td>编辑员工</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-delete">DELETE</span></td><td><span class="code">/api/staff/:id</span></td><td>删除员工</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/staff/bulk-import</span></td><td>批量导入员工</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/staff/sync-from-smb</span></td><td>从SMB同步员工</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/staff/batch-permissions</span></td><td>批量更新员工权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/staff/permission-fields</span></td><td>获取权限字段配置</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/staff/column-config</span></td><td>获取用户列配置</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/staff/column-config</span></td><td>保存用户列配置</td><td>是</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 粒化权限模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">🔐 粒化权限模块 (granular-permissions)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/exams</span></td><td>获取考试权限状态</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/exams/:id/staff</span></td><td>获取考试权限员工</td><td>是</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/permissions/exams/:id/staff</span></td><td>批量更新考试权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/permissions/exams/batch</span></td><td>批量导入考试权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/meals</span></td><td>获取报餐权限状态</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/meals/:id/staff</span></td><td>获取报餐权限员工</td><td>是</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/permissions/meals/:id/staff</span></td><td>批量更新报餐权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/permissions/meals/batch</span></td><td>批量导入报餐权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/s6</span></td><td>获取6S权限列表</td><td>是</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/permissions/s6</span></td><td>批量更新6S权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/permissions/s6/batch</span></td><td>批量导入6S权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/files/public</span></td><td>获取公共文件权限</td><td>是</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/permissions/files/public</span></td><td>批量更新公共文件权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/permissions/files/public/batch</span></td><td>批量导入公共文件权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/files/personal</span></td><td>获取个人文件权限</td><td>是</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/permissions/files/personal</span></td><td>批量更新个人文件权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/permissions/files/personal/batch</span></td><td>批量导入个人文件权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/learning-tasks</span></td><td>获取学习任务权限状态</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/permissions/staff</span></td><td>获取所有员工(权限分配用)</td><td>是</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 文件管理模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">📁 文件管理模块 (file-manager)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/file-manager/list</span></td><td>获取文件列表</td><td>是</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/file-manager/upload</span></td><td>上传文件</td><td>是</td></tr>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/file-manager/download/:filename</span></td><td>下载文件</td><td>是</td></tr>
+                            <tr><td><span class="method method-delete">DELETE</span></td><td><span class="code">/api/file-manager/delete/:filename</span></td><td>删除文件</td><td>是</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+
+                <!-- 管理员管理模块 -->
+                <div class="api-module">
+                    <div class="api-module-title">⚙️ 管理员管理模块 (admin)</div>
+                    <div class="overflow-x">
+                    <table class="api-table">
+                        <thead>
+                            <tr><th>方法</th><th>路径</th><th>说明</th><th>认证</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><span class="method method-get">GET</span></td><td><span class="code">/api/admin/list</span></td><td>获取管理员列表</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-post">POST</span></td><td><span class="code">/api/admin/add</span></td><td>添加管理员</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-put">PUT</span></td><td><span class="code">/api/admin/:id/update</span></td><td>更新管理员权限</td><td>管理员</td></tr>
+                            <tr><td><span class="method method-delete">DELETE</span></td><td><span class="code">/api/admin/:id</span></td><td>删除管理员</td><td>管理员</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 页面按钮功能 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">🎛️</span>页面按钮功能</div>
+
+                <!-- 员工端页面 -->
+                <div class="page-card">
+                    <div class="page-name">📱 员工登录页 (index.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/" target="_blank">http://112.16.178.98:3000/</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">工号输入</span> <span class="btn-action">→ 输入工号自动查询姓名</span></div>
+                        <div class="btn-item"><span class="btn-name">登录按钮</span> <span class="btn-action">→ 验证工号+姓名，登入系统</span></div>
+                        <div class="btn-item"><span class="btn-name">管理员登录链接</span> <span class="btn-action">→ 跳转管理员登录页</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 员工工作台 (employee.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/employee.html" target="_blank">http://112.16.178.98:3000/employee.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">退出登录</span> <span class="btn-action">→ 清除Token，返回登录页</span></div>
+                        <div class="btn-item"><span class="btn-name">学习任务卡片</span> <span class="btn-action">→ 跳转学习任务列表</span></div>
+                        <div class="btn-item"><span class="btn-name">在线考试卡片</span> <span class="btn-action">→ 跳转考试列表</span></div>
+                        <div class="btn-item"><span class="btn-name">报餐系统卡片</span> <span class="btn-action">→ 跳转报餐列表</span></div>
+                        <div class="btn-item"><span class="btn-name">6S管理卡片</span> <span class="btn-action">→ 跳转6S曝光列表</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 学习任务列表 (mobile-learning-task-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-learning-task-list.html" target="_blank">http://112.16.178.98:3000/mobile-learning-task-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回员工工作台</span></div>
+                        <div class="btn-item"><span class="btn-name">任务卡片</span> <span class="btn-action">→ 跳转任务详情页</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 学习任务详情 (mobile-learning-task-detail.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-learning-task-detail.html?id=2" target="_blank">http://112.16.178.98:3000/mobile-learning-task-detail.html?id=2</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回任务列表</span></div>
+                        <div class="btn-item"><span class="btn-name">视频播放按钮</span> <span class="btn-action">→ 播放/暂停视频</span></div>
+                        <div class="btn-item"><span class="btn-name">参加考试按钮</span> <span class="btn-action">→ 跳转关联考试</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 考试列表 (mobile-exam-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-exam-list.html" target="_blank">http://112.16.178.98:3000/mobile-exam-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回员工工作台</span></div>
+                        <div class="btn-item"><span class="btn-name">去学习链接</span> <span class="btn-action">→ 跳转学习任务(未完成时)</span></div>
+                        <div class="btn-item"><span class="btn-name">考试卡片</span> <span class="btn-action">→ 已完成→成绩页 / 未参加→答题页</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 考试答题 (mobile-exam-doing.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-exam-doing.html?id=2" target="_blank">http://112.16.178.98:3000/mobile-exam-doing.html?id=2</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 确认退出考试</span></div>
+                        <div class="btn-item"><span class="btn-name">上一题/下一题</span> <span class="btn-action">→ 切换题目</span></div>
+                        <div class="btn-item"><span class="btn-name">答题卡弹窗</span> <span class="btn-action">→ 显示所有题目状态</span></div>
+                        <div class="btn-item"><span class="btn-name">交卷按钮</span> <span class="btn-action">→ 提交答案，显示成绩</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 考试成绩 (mobile-result.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-result.html" target="_blank">http://112.16.178.98:3000/mobile-result.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回考试列表</span></div>
+                        <div class="btn-item"><span class="btn-name">再考一次(未通过)</span> <span class="btn-action">→ 重新开始考试</span></div>
+                        <div class="btn-item"><span class="btn-name">返回工作台(已通过)</span> <span class="btn-action">→ 返回员工工作台</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 报餐列表 (mobile-meal-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-meal-list.html" target="_blank">http://112.16.178.98:3000/mobile-meal-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回员工工作台</span></div>
+                        <div class="btn-item"><span class="btn-name">报餐卡片</span> <span class="btn-action">→ 跳转报餐详情页</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 报餐详情 (mobile-meal-detail.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-meal-detail.html" target="_blank">http://112.16.178.98:3000/mobile-meal-detail.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回报餐列表</span></div>
+                        <div class="btn-item"><span class="btn-name">菜单选择</span> <span class="btn-action">→ 选择菜品</span></div>
+                        <div class="btn-item"><span class="btn-name">数量调整</span> <span class="btn-action">→ 增加/减少数量</span></div>
+                        <div class="btn-item"><span class="btn-name">提交报餐</span> <span class="btn-action">→ 确认报餐</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 6S曝光列表 (mobile-6s-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-6s-list.html" target="_blank">http://112.16.178.98:3000/mobile-6s-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回员工工作台</span></div>
+                        <div class="btn-item"><span class="btn-name">筛选下拉</span> <span class="btn-action">→ 按状态/区域筛选</span></div>
+                        <div class="btn-item"><span class="btn-name">曝光卡片</span> <span class="btn-action">→ 跳转曝光详情</span></div>
+                        <div class="btn-item"><span class="btn-name">新增曝光按钮</span> <span class="btn-action">→ 跳转新增页面</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 6S新增曝光 (mobile-6s-add.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-6s-add.html" target="_blank">http://112.16.178.98:3000/mobile-6s-add.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回列表</span></div>
+                        <div class="btn-item"><span class="btn-name">拍照按钮</span> <span class="btn-action">→ 拍摄整改前/后照片</span></div>
+                        <div class="btn-item"><span class="btn-name">提交按钮</span> <span class="btn-action">→ 提交曝光记录</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">📱 6S曝光详情 (mobile-6s-detail.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/mobile-6s-detail.html" target="_blank">http://112.16.178.98:3000/mobile-6s-detail.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">返回按钮</span> <span class="btn-action">→ 返回列表</span></div>
+                        <div class="btn-item"><span class="btn-name">编辑按钮</span> <span class="btn-action">→ 编辑曝光记录</span></div>
+                    </div>
+                </div>
+
+                <!-- PC端页面 -->
+                <div class="page-card">
+                    <div class="page-name">💻 管理员登录 (admin/login.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/admin/login.html" target="_blank">http://112.16.178.98:3000/admin/login.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">用户名/密码输入</span> <span class="btn-action">→ 输入登录凭证</span></div>
+                        <div class="btn-item"><span class="btn-name">登录按钮</span> <span class="btn-action">→ 验证并登入后台</span></div>
+                        <div class="btn-item"><span class="btn-name">返回链接</span> <span class="btn-action">→ 返回首页</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">💻 管理后台仪表盘 (dashboard.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/dashboard.html" target="_blank">http://112.16.178.98:3000/dashboard.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">员工登录按钮</span> <span class="btn-action">→ 跳转员工登录</span></div>
+                        <div class="btn-item"><span class="btn-name">管理员按钮</span> <span class="btn-action">→ 跳转管理面板</span></div>
+                        <div class="btn-item"><span class="btn-name">员工管理卡片</span> <span class="btn-action">→ 跳转员工列表</span></div>
+                        <div class="btn-item"><span class="btn-name">学习任务卡片</span> <span class="btn-action">→ 跳转学习任务管理</span></div>
+                        <div class="btn-item"><span class="btn-name">考试系统卡片</span> <span class="btn-action">→ 跳转考试管理</span></div>
+                        <div class="btn-item"><span class="btn-name">报餐系统卡片</span> <span class="btn-action">→ 跳转报餐管理</span></div>
+                        <div class="btn-item"><span class="btn-name">投票系统卡片</span> <span class="btn-action">→ 跳转投票管理</span></div>
+                        <div class="btn-item"><span class="btn-name">文件管理卡片</span> <span class="btn-action">→ 跳转文件管理</span></div>
+                        <div class="btn-item"><span class="btn-name">6S曝光卡片</span> <span class="btn-action">→ 跳转6S管理</span></div>
+                        <div class="btn-item"><span class="btn-name">权限管理卡片</span> <span class="btn-action">→ 跳转权限管理</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">💻 员工列表 (staff-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/staff-list.html" target="_blank">http://112.16.178.98:3000/staff-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">搜索框</span> <span class="btn-action">→ 按姓名/工号搜索</span></div>
+                        <div class="btn-item"><span class="btn-name">部门筛选</span> <span class="btn-action">→ 筛选部门</span></div>
+                        <div class="btn-item"><span class="btn-name">添加员工</span> <span class="btn-action">→ 弹出添加表单</span></div>
+                        <div class="btn-item"><span class="btn-name">编辑按钮</span> <span class="btn-action">→ 编辑员工信息</span></div>
+                        <div class="btn-item"><span class="btn-name">删除按钮</span> <span class="btn-action">→ 删除员工确认</span></div>
+                        <div class="btn-item"><span class="btn-name">批量导入</span> <span class="btn-action">→ 批量导入员工</span></div>
+                        <div class="btn-item"><span class="btn-name">导出按钮</span> <span class="btn-action">→ 导出员工数据</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">💻 考试管理 (exam.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/exam.html" target="_blank">http://112.16.178.98:3000/exam.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">试卷列表</span> <span class="btn-action">→ 查看所有试卷</span></div>
+                        <div class="btn-item"><span class="btn-name">创建试卷</span> <span class="btn-action">→ 新建试卷</span></div>
+                        <div class="btn-item"><span class="btn-name">编辑试卷</span> <span class="btn-action">→ 修改试卷信息</span></div>
+                        <div class="btn-item"><span class="btn-name">删除试卷</span> <span class="btn-action">→ 删除试卷及题目</span></div>
+                        <div class="btn-item"><span class="btn-name">添加题目</span> <span class="btn-action">→ 添加新题目</span></div>
+                        <div class="btn-item"><span class="btn-name">编辑题目</span> <span class="btn-action">→ 修改题目内容</span></div>
+                        <div class="btn-item"><span class="btn-name">删除题目</span> <span class="btn-action">→ 删除题目</span></div>
+                        <div class="btn-item"><span class="btn-name">成绩记录</span> <span class="btn-action">→ 查看考试成绩</span></div>
+                        <div class="btn-item"><span class="btn-name">统计信息</span> <span class="btn-action">→ 查看考试统计</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">💻 权限管理 (permission-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/permission-list.html" target="_blank">http://112.16.178.98:3000/permission-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">考试权限Tab</span> <span class="btn-action">→ 管理考试权限</span></div>
+                        <div class="btn-item"><span class="btn-name">报餐权限Tab</span> <span class="btn-action">→ 管理报餐权限</span></div>
+                        <div class="btn-item"><span class="btn-name">6S权限Tab</span> <span class="btn-action">→ 管理6S权限</span></div>
+                        <div class="btn-item"><span class="btn-name">文件权限Tab</span> <span class="btn-action">→ 管理文件权限</span></div>
+                        <div class="btn-item"><span class="btn-name">保存权限</span> <span class="btn-action">→ 保存权限配置</span></div>
+                        <div class="btn-item"><span class="btn-name">批量导入</span> <span class="btn-action">→ 批量导入权限</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">💻 报餐管理 (meal-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/meal-list.html" target="_blank">http://112.16.178.98:3000/meal-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">创建活动</span> <span class="btn-action">→ 新建报餐活动</span></div>
+                        <div class="btn-item"><span class="btn-name">活动卡片</span> <span class="btn-action">→ 跳转活动详情</span></div>
+                        <div class="btn-item"><span class="btn-name">统计按钮</span> <span class="btn-action">→ 查看报餐统计</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">💻 投票管理 (voting-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/voting-list.html" target="_blank">http://112.16.178.98:3000/voting-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">创建投票</span> <span class="btn-action">→ 新建投票活动</span></div>
+                        <div class="btn-item"><span class="btn-name">投票卡片</span> <span class="btn-action">→ 跳转投票详情</span></div>
+                        <div class="btn-item"><span class="btn-name">查看结果</span> <span class="btn-action">→ 查看投票结果</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">💻 文件管理 (file-manager.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/file-manager.html" target="_blank">http://112.16.178.98:3000/file-manager.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">上传文件</span> <span class="btn-action">→ 上传新文件</span></div>
+                        <div class="btn-item"><span class="btn-name">下载按钮</span> <span class="btn-action">→ 下载文件</span></div>
+                        <div class="btn-item"><span class="btn-name">删除按钮</span> <span class="btn-action">→ 删除文件</span></div>
+                    </div>
+                </div>
+
+                <div class="page-card">
+                    <div class="page-name">💻 6S管理 (6s-list.html)</div>
+                    <div class="page-url"><a href="http://112.16.178.98:3000/6s-list.html" target="_blank">http://112.16.178.98:3000/6s-list.html</a></div>
+                    <div class="btn-list">
+                        <div class="btn-item"><span class="btn-name">搜索框</span> <span class="btn-action">→ 搜索曝光记录</span></div>
+                        <div class="btn-item"><span class="btn-name">状态筛选</span> <span class="btn-action">→ 筛选待整改/已整改</span></div>
+                        <div class="btn-item"><span class="btn-name">区域筛选</span> <span class="btn-action">→ 按区域筛选</span></div>
+                        <div class="btn-item"><span class="btn-name">添加曝光</span> <span class="btn-action">→ 新增曝光记录</span></div>
+                        <div class="btn-item"><span class="btn-name">编辑按钮</span> <span class="btn-action">→ 编辑曝光记录</span></div>
+                        <div class="btn-item"><span class="btn-name">删除按钮</span> <span class="btn-action">→ 删除曝光记录</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据库 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">💾</span>数据库结构</div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">📦 数据库位置</div>
+                        <div class="stat-row">
+                            <span>Docker Volume</span>
+                            <span class="stat-value">server_exam_data</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>容器内路径</span>
+                            <span class="stat-value">/app/data/exam.db</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>宿主机路径</span>
+                            <span class="stat-value">/var/lib/docker/volumes/...</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">📋 数据表</div>
+                        <table style="font-size:12px;">
+                            <tr><td>staff</td><td>214条</td><td>员工表</td></tr>
+                            <tr><td>users</td><td>3条</td><td>系统用户</td></tr>
+                            <tr><td>exams</td><td>1条</td><td>考试表</td></tr>
+                            <tr><td>questions</td><td>25条</td><td>题目表</td></tr>
+                            <tr><td>exam_records</td><td>2条</td><td>考试记录</td></tr>
+                            <tr><td>learning_tasks</td><td>1条</td><td>学习任务</td></tr>
+                            <tr><td>learning_progress</td><td>1条</td><td>学习进度</td></tr>
+                            <tr><td>exam_permissions</td><td>2条</td><td>考试权限</td></tr>
+                            <tr><td>meal_activities</td><td>0条</td><td>报餐活动</td></tr>
+                            <tr><td>meal_orders</td><td>0条</td><td>报餐订单</td></tr>
+                            <tr><td>votings</td><td>0条</td><td>投票表</td></tr>
+                            <tr><td>six_s_records</td><td>0条</td><td>6S曝光记录</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 已完成功能 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">✅</span>已完成功能</div>
+                <ul>
+                    <li>员工登录系统 - 工号+姓名验证，lookup自动填充功能</li>
+                    <li>管理员登录系统 - 用户名+密码验证，权限控制</li>
+                    <li>员工工作台 - 功能入口导航，支持PC和移动端</li>
+                    <li>考试系统 - 在线考试、答题、提交、成绩统计完整流程</li>
+                    <li>学习任务系统 - 视频学习、进度保存、与考试关联</li>
+                    <li>移动端适配 - 所有页面支持手机访问，viewport优化，触摸友好</li>
+                    <li>权限控制 - 粒化权限管理（exam_permissions表）</li>
+                    <li>考试与学习任务绑定 - 完成学习才能参加考试</li>
+                    <li>学习完成引导考试 - 弹窗提示参加关联考试</li>
+                    <li>报餐系统 - 活动管理、菜单选择、订单统计</li>
+                    <li>投票系统 - 创建投票、投票、结果统计</li>
+                    <li>6S曝光管理 - 曝光记录、整改追踪、照片上传</li>
+                    <li>文件管理 - 文件上传、下载、删除</li>
+                    <li>粒化权限系统 - 考试/报餐/6S/文件权限精细控制</li>
+                </ul>
+            </div>
+
+            <!-- 已修复问题 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">🔧</span>已修复问题</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>问题</th>
+                            <th>原因</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>员工登录lookup不自动填充</td>
+                            <td>工号输入框缺少oninput事件绑定</td>
+                            <td><span class="tag tag-success">已修复</span></td>
+                        </tr>
+                        <tr>
+                            <td>考试开始失败(FK错误)</td>
+                            <td>exam_records表staff_id与user_id外键冲突</td>
+                            <td><span class="tag tag-success">已修复</span></td>
+                        </tr>
+                        <tr>
+                            <td>exam_records外键约束</td>
+                            <td>user_id引用users表但员工数据在staff表</td>
+                            <td><span class="tag tag-success">已修复</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table style="margin-top:15px;">
+                    <thead>
+                        <tr>
+                            <th>问题</th>
+                            <th>原因</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>判断题答案格式不匹配</td>
+                            <td>数据库true_false，前端multiple判断错误，compareAnswer未处理true_false</td>
+                            <td><span class="tag tag-success">已修复</span></td>
+                        </tr>
+                        <tr>
+                            <td>员工提交考试记录查询错误</td>
+                            <td>提交时用user_id查询，但员工记录用staff_id存储</td>
+                            <td><span class="tag tag-success">已修复</span></td>
+                        </tr>
+                        <tr>
+                            <td>员工6S权限检查始终失败</td>
+                            <td>员工登录token缺少s6_permission字段</td>
+                            <td><span class="tag tag-success">已修复</span></td>
+                        </tr>
+                        <tr>
+                            <td>mobile-exam-doing多选题渲染错误</td>
+                            <td>判断条件用multiple而不是multiple_choice</td>
+                            <td><span class="tag tag-success">已修复</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 待完成/问题 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">⚠️</span>待完成/问题</div>
+                <ul class="warning">
+                    <li><strong>部分员工缺少学习权限</strong> - task_permission=0导致无法访问学习任务（数据配置问题）</li>
+                    <li><strong>报餐系统无活动数据</strong> - meal_activities表为空（数据问题）</li>
+                    <li><strong>投票系统无数据</strong> - votings表为空（数据问题）</li>
+                </ul>
+            </div>
+
+            <!-- 测试账号 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">👤</span>测试账号</div>
+                <table class="account-table">
+                    <thead>
+                        <tr>
+                            <th>类型</th>
+                            <th>账号</th>
+                            <th>密码/工号</th>
+                            <th>姓名</th>
+                            <th>考试权限</th>
+                            <th>学习权限</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>管理员</td>
+                            <td>admin</td>
+                            <td>admin123</td>
+                            <td>管理员</td>
+                            <td><span class="tag tag-success">✓</span></td>
+                            <td><span class="tag tag-success">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td>员工</td>
+                            <td>10001</td>
+                            <td>邬荣武</td>
+                            <td>邬荣武</td>
+                            <td><span class="tag tag-error">✗</span></td>
+                            <td><span class="tag tag-error">✗</span></td>
+                        </tr>
+                        <tr>
+                            <td>员工</td>
+                            <td>10013</td>
+                            <td>潘夏煜</td>
+                            <td>潘夏煜</td>
+                            <td><span class="tag tag-success">✓</span></td>
+                            <td><span class="tag tag-success">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td>员工</td>
+                            <td>10003</td>
+                            <td>金巧红</td>
+                            <td>金巧红</td>
+                            <td><span class="tag tag-error">✗</span></td>
+                            <td><span class="tag tag-error">✗</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 技术架构 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">🏗️</span>技术架构</div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">技术栈</div>
+                        <div class="stat-row">
+                            <span>后端</span>
+                            <span>Node.js + Express</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>数据库</span>
+                            <span>SQLite (better-sqlite3)</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>前端</span>
+                            <span>HTML5 + CSS3 + Vanilla JS</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>部署</span>
+                            <span>Docker容器化</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">项目结构</div>
+                        <div class="stat-row">
+                            <span>源码</span>
+                            <span>/app/src/</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>页面</span>
+                            <span>/app/public/</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>路由</span>
+                            <span>/app/src/routes/</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>数据</span>
+                            <span>/app/data/</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 目标 -->
+            <div class="section">
+                <div class="section-title"><span class="icon">🎯</span>目标效果</div>
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-title">短期目标</div>
+                        <ul style="font-size:13px;">
+                            <li style="padding:5px 0 5px 20px;">1. 修复判断题答案格式问题</li>
+                            <li style="padding:5px 0 5px 20px;">2. 完善报餐系统数据录入</li>
+                            <li style="padding:5px 0 5px 20px;">3. 完善投票系统功能</li>
+                            <li style="padding:5px 0 5px 20px;">4. 员工权限全面配置</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">长期目标</div>
+                        <ul style="font-size:13px;">
+                            <li style="padding:5px 0 5px 20px;">1. 完整的CRM功能</li>
+                            <li style="padding:5px 0 5px 20px;">2. 财务报表统计</li>
+                            <li style="padding:5px 0 5px 20px;">3. 员工考勤管理</li>
+                            <li style="padding:5px 0 5px 20px;">4. 系统数据导入导出</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            宁波兴利汽车模具企业管理系统 | <a href="http://112.16.178.98:3000" target="_blank">http://112.16.178.98:3000</a> | 系统运行中 | Docker容器状态: healthy
+        </div>
+    </div>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

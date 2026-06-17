@@ -1,0 +1,465 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>员工工作台 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/mobile-theme.css">
+    <style>
+        :root {
+            --bg: #F0F7FF;
+            --card: #ffffff;
+            --border: #D6E9FF;
+            --primary: #4A90E2;
+            --secondary: #65B3FF;
+            --accent: #22C58D;
+            --text: #1D2B5A;
+            --text-soft: #5B72A9;
+            --radius: 22px;
+            --transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            --shadow: 0 8px 24px rgba(74, 144, 226, 0.12);
+            --shadow-hover: 0 16px 40px rgba(74, 144, 226, 0.18);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding-bottom: 80px;
+            padding-top: 20px;
+        }
+
+        /* 序列入场动画 */
+        .fade-item {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: var(--transition);
+        }
+        .fade-in {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        .logout-btn {
+            font-size: 15px;
+            color: var(--text-soft);
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            padding: 8px 16px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .logout-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 680px;
+                padding: 0 24px;
+            }
+            .module-card {
+                padding: 24px;
+            }
+            .module-icon {
+                width: 72px;
+                height: 72px;
+            }
+            .module-icon img {
+                width: 76px;
+                height: 76px;
+            }
+            .card-6s .module-icon img {
+                width: 64px;
+                height: 64px;
+            }
+            .module-name {
+                font-size: 18px;
+            }
+            .module-desc {
+                font-size: 14px;
+            }
+            .welcome-card {
+                padding: 28px;
+            }
+            .welcome-title {
+                font-size: 28px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+
+        .welcome-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+        .welcome-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .welcome-left { flex: 1; }
+
+        .welcome-title {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .welcome-sub {
+            font-size: 14px;
+            color: var(--text-soft);
+        }
+
+        .module-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+            color: var(--text);
+        }
+        .module-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary);
+        }
+        .module-card:active {
+            transform: scale(0.98);
+        }
+
+        .module-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .module-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+            overflow: hidden;
+            background: transparent;
+            box-shadow: none;
+        }
+        .module-icon img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+        .card-6s .module-icon img {
+            width: 58px;
+            height: 58px;
+        }
+
+        .module-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .module-name {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .module-desc {
+            font-size: 13px;
+            color: var(--text-soft);
+        }
+
+        .module-arrow {
+            font-size: 24px;
+            color: var(--text-soft);
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .module-card:hover .module-arrow {
+            color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .no-permission {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-soft);
+        }
+
+        .no-permission-icon { font-size: 56px; margin-bottom: 16px; }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-soft);
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--secondary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .tabbar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 76px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 20px;
+            border-top: 1px solid var(--border);
+            z-index: 999;
+        }
+
+        .tab-item {
+            font-size: 12px;
+            color: var(--text-soft);
+            text-align: center;
+            transition: var(--transition);
+        }
+        .tab-item.active { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading" class="loading fade-item" style="display: none;">加载中...</div>
+        <div id="noPermission" class="no-permission fade-item" style="display:none">
+            <div class="no-permission-icon">🔒</div>
+            <div>您当前没有任何可用模块权限</div>
+            <div style="font-size:12px;margin-top:8px;">请联系管理员开通权限</div>
+        </div>
+
+        <div class="welcome-card fade-item">
+            <div class="welcome-left">
+                <div class="welcome-title" id="welcomeName">你好，员工</div>
+                <div class="welcome-sub">欢迎使用兴利汽车模具工作台</div>
+            </div>
+            <button class="logout-btn" onclick="logout()">退出</button>
+        </div>
+
+        <div id="moduleGrid" style="display:none">
+            <a class="module-card card-exam fade-item" id="cardExam" href="mobile-training-list.html" style="display:none">
+                <div class="module-icon"><img src="icons/icon-exam.svg" alt="培训"></div>
+                <div class="module-info">
+                    <div class="module-name">在线培训</div>
+                    <div class="module-desc">学习课程，参加考试</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+            <a class="module-card card-meal fade-item" id="cardMeal" href="mobile-meal-list.html" style="display:none">
+                <div class="module-icon"><img src="icons/icon-meal.svg" alt="报餐"></div>
+                <div class="module-info">
+                    <div class="module-name">报餐系统</div>
+                    <div class="module-desc">每日报餐，食堂管理</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+            <a class="module-card card-task fade-item" id="cardTasks" href="employee-module-auth.html?scope=admin-linked&title=%E6%88%91%E7%9A%84%E5%BE%85%E5%8A%9E&target=mobile-my-tasks.html">
+                <div class="module-icon"><img src="icons/icon-personal-todo.svg?v=20260602" alt="待办"></div>
+                <div class="module-info">
+                    <div class="module-name">我的待办</div>
+                    <div class="module-desc">查看任务，跟进处理进度</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+            <a class="module-card card-6s fade-item" id="card6SAdmin" href="employee-module-auth.html?scope=admin-linked&title=6S%E7%AE%A1%E7%90%86&target=mobile-6s-list.html" style="display:none">
+                <div class="module-icon"><img src="icons/icon-6s.svg" alt="6S"></div>
+                <div class="module-info">
+                    <div class="module-name">6S管理</div>
+                    <div class="module-desc">曝光问题，整改管理</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+            <a class="module-card card-6s-tasks fade-item" id="card6STasks" href="mobile-6s-tasks.html" style="display:none">
+                <div class="module-icon"><img src="icons/icon-6s.svg" alt="6S"></div>
+                <div class="module-info">
+                    <div class="module-name">6S任务</div>
+                    <div class="module-desc">查看任务，整改问题</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+            <a class="module-card card-voting fade-item" id="cardVoting" href="mobile-voting-list.html" style="display:none">
+                <div class="module-icon"><img src="icons/icon-voting.svg" alt="投票"></div>
+                <div class="module-info">
+                    <div class="module-name">投票系统</div>
+                    <div class="module-desc">参与投票，查看结果</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+            <a class="module-card card-feedback fade-item" id="cardFeedback" href="mobile-feedback-list.html">
+                <div class="module-icon"><img src="icons/icon-feedback.svg" alt="反馈"></div>
+                <div class="module-info">
+                    <div class="module-name">我的反馈</div>
+                    <div class="module-desc">查看反馈记录和回复</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+        </div>
+    </div>
+
+    <script src="/js/employee-session.js"></script>
+    <script src="/js/auth-guard.js"></script>
+    <script src="/js/module-access.js"></script>
+    <script>
+        const API = window.location.origin + '/api';
+
+        function getStaff() {
+            try {
+                return JSON.parse(localStorage.getItem('employee_info') || '{}');
+            } catch { return {}; }
+        }
+
+        function logout() {
+            window.EmployeeSession.clear();
+            window.location.href = window.location.origin + '/';
+        }
+
+        async function init() {
+            if (!window.EmployeeSession.ensureValid()) {
+                window.EmployeeSession.redirectToLogin();
+                return;
+            }
+            const token = localStorage.getItem('employee_token');
+
+            const staff = getStaff();
+            document.getElementById('welcomeName').textContent = '你好，' + (staff.name || '员工');
+
+            const perms = await checkGranularPermissions(token, staff.id);
+            saveGranularPermissions(perms);
+            document.getElementById('loading').style.display = 'none';
+
+            let hasAny = true;
+
+            if (perms.hasExam) {
+                document.getElementById('cardExam').style.display = '';
+                hasAny = true;
+            }
+
+            document.getElementById('cardMeal').style.display = '';
+            hasAny = true;
+
+            if (perms.has6S) {
+                document.getElementById('card6SAdmin').style.display = '';
+                hasAny = true;
+            }
+            if (perms.has6STasks) {
+                document.getElementById('card6STasks').style.display = '';
+                hasAny = true;
+            }
+
+            if (perms.hasVoting) {
+                document.getElementById('cardVoting').style.display = '';
+                hasAny = true;
+            }
+
+            if (!hasAny) {
+                document.getElementById('noPermission').style.display = '';
+            }
+            document.getElementById('moduleGrid').style.display = '';
+
+            // 序列入场动画
+            const items = document.querySelectorAll('.fade-item');
+            items.forEach((el, i) => {
+                setTimeout(() => el.classList.add('fade-in'), 150 * i);
+            });
+        }
+
+        async function checkGranularPermissions(token, staffId) {
+            try {
+                const [examRes, mealRes, s6Res, taskRes, votingRes] = await Promise.all([
+                    fetch(`${API}/permissions/exams`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API}/permissions/meals`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API}/permissions/s6`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API}/6s/my-tasks`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API}/voting/list`, { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+
+                const [examData, mealData, s6Data, taskData, votingData] = await Promise.all([
+                    examRes.json(),
+                    mealRes.json(),
+                    s6Res.json(),
+                    taskRes.json(),
+                    votingRes.json()
+                ]);
+
+                const hasExam = examData.code === 0 && examData.data.some(e => e.perm_count > 0);
+                const hasMeal = mealData.code === 0 && mealData.data.some(m => m.perm_count > 0);
+                const has6S = s6Data.code === 0 && s6Data.data.some(s => s.id === staffId && s.has_perm == 1);
+                const has6STasks = taskData.code === 0 && taskData.data && taskData.data.length > 0;
+                // 有投票任务才显示投票入口
+                const hasVoting = votingData.code === 0 && votingData.data && votingData.data.length > 0;
+
+                return { hasExam, hasMeal, has6S, has6STasks, hasVoting };
+            } catch (err) {
+                console.error('检查权限失败:', err);
+                return { hasExam: false, hasMeal: false, has6S: false, has6STasks: false, hasVoting: false };
+            }
+        }
+
+        function saveGranularPermissions(perms) {
+            localStorage.setItem('granular_permissions', JSON.stringify({
+                hasExam: perms.hasExam ? 1 : 0,
+                hasMeal: perms.hasMeal ? 1 : 0,
+                has6S: perms.has6S ? 1 : 0,
+                has6STasks: perms.has6STasks ? 1 : 0,
+                hasVoting: perms.hasVoting ? 1 : 0,
+                timestamp: Date.now()
+            }));
+        }
+
+        init();
+    </script>
+</body>
+</html>

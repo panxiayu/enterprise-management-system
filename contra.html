@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContraQuest - Light Blue 完美复刻</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #F0F7FF;
+  color: #1D2B5A;
+  min-height: 100vh;
+  padding: 0;
+}
+:root {
+  --bg: #F0F7FF;
+  --card: #ffffff;
+  --border: #D6E9FF;
+  --primary: #4A90E2;
+  --secondary: #65B3FF;
+  --accent: #22C58D;
+  --text: #1D2B5A;
+  --text-soft: #5B72A9;
+  --radius: 22px;
+  --transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 70px 24px;
+}
+
+/* 序列入场动画 */
+.fade-item {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: var(--transition);
+}
+.fade-in {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* 头部 */
+.header {
+  margin-bottom: 50px;
+}
+.header h1 {
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.header p {
+  font-size: 18px;
+  color: var(--text-soft);
+}
+
+/* 卡片网格 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+  margin-bottom: 50px;
+}
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 32px;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+  cursor: pointer;
+}
+.card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--primary);
+  box-shadow: 0 18px 36px rgba(74, 144, 226, 0.12);
+}
+.card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.card p {
+  font-size: 15px;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+/* 进度条 */
+.progress {
+  width: 100%;
+  height: 10px;
+  background: #E5F0FF;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 22px;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+}
+
+/* 学习路径 */
+.quests h2 {
+  font-size: 26px;
+  margin-bottom: 32px;
+  color: var(--text);
+}
+.quest-item {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 24px;
+}
+.quest-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text-soft);
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+.quest-dot.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 6px 12px rgba(74,144,226,0.2);
+}
+.quest-card {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 26px 30px;
+  transition: var(--transition);
+}
+.quest-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(74,144,226,0.08);
+}
+.quest-card h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.quest-card p {
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+/* 按钮 */
+.btn {
+  padding: 18px 42px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  color: #fff;
+  border-radius: 18px;
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  margin-top: 50px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 12px 24px rgba(74,144,226,0.25);
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header fade-item">
+    <h1>ContraQuest</h1>
+    <p>Next-Gen Gamified EdTech Experience</p>
+  </div>
+
+  <div class="grid">
+    <div class="card fade-item">
+      <h3>Learning Progress</h3>
+      <p>Track your daily learning streak & achievements</p>
+      <div class="progress">
+        <div class="progress-fill" id="prog"></div>
+      </div>
+    </div>
+    <div class="card fade-item">
+      <h3>Interactive Lessons</h3>
+      <p>Video-based learning with real-time AI feedback</p>
+    </div>
+    <div class="card fade-item">
+      <h3>Quizzes & Challenges</h3>
+      <p>Level up by completing gamified test stages</p>
+    </div>
+  </div>
+
+  <div class="quests fade-item">
+    <h2>Learning Path</h2>
+    <div class="quest-item">
+      <div class="quest-dot active">1</div>
+      <div class="quest-card">
+        <h3>Beginner Module</h3>
+        <p>Completed • Master the fundamentals</p>
+      </div>
+    </div>
+    <div class="quest-item">
+      <div class="quest-dot">2</div>
+      <div class="quest-card">
+        <h3>Intermediate Skills</h3>
+        <p>In Progress • Unlock advanced topics</p>
+      </div>
+    </div>
+    <div class="quest-item">
+      <div class="quest-dot">3</div>
+      <div class="quest-card">
+        <h3>Expert Challenges</h3>
+        <p>Locked • Complete full assessment</p>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn fade-item">Start Learning</button>
+</div>
+
+<script>
+// 🔥 全套丝滑动画
+const items = document.querySelectorAll('.fade-item');
+items.forEach((el, i) => {
+  setTimeout(() => el.classList.add('fade-in'), 150 * i);
+});
+
+// 进度条动画
+setTimeout(() => {
+  document.getElementById('prog').style.width = '72%';
+}, 600);
+</script>
+</body>
+</html>

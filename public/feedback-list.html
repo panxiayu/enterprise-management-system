@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反馈工作台</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        /* 沿用 theme.css 提供的 :root 变量,只在局部定义 theme.css 没有的 6s-list 特有 token */
+        :root {
+            --bg: #F0F7FF;
+            --bg-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.02 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+            --primary: #4A90E2;
+            --primary-dark: #2563eb;
+            --primary-soft: rgba(74, 144, 226, 0.12);
+            --secondary: #65B3FF;
+            --accent: #22C58D;
+            --text: #14245A;
+            --text-soft: #5B72A9;
+            --text-mute: #94a3b8;
+            --gray-line: rgba(214, 233, 255, 0.95);
+            --gray-input: #ffffff;
+            --red: #d92d20;
+            --red-soft: #fff0ef;
+            --green: #16a765;
+            --green-soft: #eafaf2;
+            --orange: #b77900;
+            --orange-soft: #fef3c7;
+            --blue-soft: #eef6ff;
+            --bubble-self: linear-gradient(135deg, #4a90e2 0%, #22c58d 100%);
+            --bubble-other: #ffffff;
+            --panel-shadow: 0 18px 48px rgba(52, 96, 160, 0.14);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            background: var(--bg);
+            background-image: var(--bg-noise);
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", sans-serif;
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            font-size: 14px;
+        }
+        .workbench {
+            display: grid;
+            grid-template-columns: 320px 1fr 280px;
+            height: 100vh;
+            max-width: 1440px;
+            margin: 0 auto;
+            background:
+                radial-gradient(circle at 8% 8%, rgba(101, 179, 255, 0.18), transparent 28%),
+                linear-gradient(135deg, #f4f9ff 0%, #eef7ff 52%, #f8fbff 100%);
+            background-attachment: fixed;
+        }
+        .panel {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid var(--gray-line);
+            border-radius: 24px;
+            box-shadow: var(--panel-shadow);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .panel + .panel { border-left: 0.5px solid rgba(0,0,0,0.06); }
+        .topbar {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 22px;
+            border-bottom: 1px solid var(--gray-line);
+            background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,251,255,0.82));
+            flex-shrink: 0;
+        }
+        .topbar h1 { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: 0.2px; }
+        .topbar .stats { display: flex; gap: 12px; font-size: 12px; color: var(--text-soft); align-items: center; }
+        .topbar .stats strong { color: var(--red); font-weight: 700; margin-right: 4px; }
+        .topbar .back-btn { font-size: 13px; color: var(--primary); cursor: pointer; }
+        .search-box { padding: 12px 14px 8px; border-bottom: 1px solid var(--gray-line); flex-shrink: 0; }
+        .search-input {
+            width: 100%;
+            height: 34px;
+            padding: 0 12px 0 34px;
+            border: 1px solid var(--gray-line);
+            border-radius: 12px;
+            font-size: 13px;
+            background: var(--gray-input) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235B72A9' stroke-width='2.5'><circle cx='11' cy='11' r='7'/><path d='m21 21-4.3-4.3'/></svg>") no-repeat 11px center;
+            color: var(--text);
+            outline: none;
+        }
+        .search-input:focus { background-color: #FFFFFF; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+        .staff-list { flex: 1; overflow-y: auto; }
+        .staff-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            cursor: pointer;
+            border-bottom: 0.5px solid rgba(107, 148, 184, 0.10);
+            transition: background 0.12s;
+            position: relative;
+        }
+        .staff-item:hover { background: #f0f7ff; }
+        .staff-item.active {
+            background: #f0f7ff;
+            box-shadow: inset 3px 0 0 var(--primary);
+        }
+        .staff-item.active::before { display: none; }
+        .staff-avatar {
+            width: 42px; height: 42px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #4a90e2, #22c58d);
+            display: flex; align-items: center; justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(74, 144, 226, 0.20);
+            letter-spacing: -1px;
+        }
+        .staff-info { flex: 1; min-width: 0; }
+        .staff-info .row1 {
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+            margin-bottom: 3px;
+        }
+        .staff-info .time-stack {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+            flex-shrink: 0;
+        }
+        .staff-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .staff-name .sub { color: var(--text-mute); font-weight: 400; font-size: 12px; margin-left: 4px; }
+        .staff-dept { font-size: 12px; color: var(--text-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .staff-preview {
+            font-size: 12px;
+            color: var(--text-mute);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            margin-top: 2px;
+        }
+        .staff-item .badge {
+            flex-shrink: 0;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: linear-gradient(135deg, #ff3b30, #ff7a70);
+            color: white;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 18px;
+            text-align: center;
+        }
+        .chat-header {
+            height: 60px;
+            padding: 0 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--gray-line);
+            background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,251,255,0.82));
+            flex-shrink: 0;
+        }
+        .chat-header .who { display: flex; align-items: center; gap: 10px; }
+        .chat-header .who-avatar {
+            width: 32px; height: 32px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #4a90e2, #22c58d);
+            color: white; font-weight: 700; font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(74, 144, 226, 0.20);
+        }
+        .chat-header .who-name { font-size: 15px; font-weight: 800; }
+        .chat-header .who-meta { font-size: 12px; color: var(--text-soft); }
+        .chat-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 0;
+            background: rgba(237, 244, 252, 0.45);
+            background-image: var(--bg-noise);
+        }
+        .chat-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; color: var(--text-soft); }
+        .chat-empty .icon { font-size: 48px; opacity: 0.5; margin-bottom: 12px; }
+        .time-divider {
+            text-align: center;
+            margin: 16px 0 12px;
+            color: var(--text-mute);
+            font-size: 12px;
+            letter-spacing: 0.3px;
+            font-weight: 600;
+        }
+        .msg {
+            display: flex;
+            align-items: flex-start;
+            padding: 0 20px;
+            margin-bottom: 12px;
+        }
+        .msg.user  { justify-content: flex-end; }
+        .msg.admin { justify-content: flex-start; }
+        .msg + .msg { margin-top: 2px; }
+        .avatar {
+            width: 36px; height: 36px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; font-size: 13px;
+            flex-shrink: 0;
+            box-shadow: 0 3px 8px rgba(74, 144, 226, 0.18);
+        }
+        .msg.user  .avatar { margin-left: 10px; order: 2; background: linear-gradient(135deg, #4a90e2, #22c58d); }
+        .msg.admin .avatar { margin-right: 10px; order: 1; background: #22c58d; }
+        .bubble-wrap {
+            position: relative;
+            max-width: 65%;
+            display: flex;
+            flex-direction: column;
+        }
+        .msg.user  .bubble-wrap { align-items: flex-end; order: 1; }
+        .msg.admin .bubble-wrap { align-items: flex-start; order: 2; }
+        .bubble {
+            position: relative;
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            letter-spacing: 0.2px;
+            word-break: break-word;
+            white-space: pre-wrap;
+            border: 0;
+        }
+        .msg.user  .bubble {
+            background: linear-gradient(135deg, #4a90e2 0%, #22c58d 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.18);
+        }
+        .msg.admin .bubble {
+            background: #ffffff;
+            color: var(--text);
+            border: 1px solid var(--gray-line);
+            box-shadow: 0 4px 12px rgba(73, 118, 159, 0.06);
+        }
+        .bubble::before {
+            content: "";
+            position: absolute;
+            top: 12px;
+            width: 0; height: 0;
+            border-style: solid;
+            border-width: 4px 5px 4px 0;
+            border-color: transparent;
+        }
+        .msg.user  .bubble::before { right: -5px; border-left-color: #22c58d; }
+        .msg.admin .bubble::before { left: -5px; border-right-color: rgba(214, 233, 255, 0.95); border-width: 4px 0 4px 5px; }
+        .msg-meta {
+            display: flex; align-items: center; gap: 6px;
+            margin-top: 4px;
+            font-size: 11px;
+            color: var(--text-mute);
+            flex-wrap: wrap;
+        }
+        .msg.user  .msg-meta { justify-content: flex-end; }
+        .msg.admin .msg-meta { justify-content: flex-start; }
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            color: #fff;
+            letter-spacing: 0.3px;
+            font-weight: 800;
+        }
+        .tag-bug, .tag-pending     { background: var(--red-soft); color: var(--red); }
+        .tag-performance, .tag-processing { background: var(--orange-soft); color: var(--orange); }
+        .tag-suggestion           { background: var(--blue-soft); color: #2563eb; }
+        .tag-ui, .tag-resolved    { background: var(--green-soft); color: var(--green); }
+        .tag-other, .tag-rejected { background: #f3f4f6; color: #6b7280; }
+        .tag-viewed               { background: #f3f4f6; color: #6b7280; }
+        .bubble.image-bubble { padding: 4px; }
+        .bubble.image-bubble .img-grid {
+            display: grid; gap: 3px;
+            border-radius: 6px; overflow: hidden;
+            margin: 0 4px 4px;
+        }
+        .bubble.image-bubble .img-grid.cols-1 { grid-template-columns: 1fr; }
+        .bubble.image-bubble .img-grid img { display: block; width: 100%; max-width: 220px; max-height: 240px; object-fit: cover; border-radius: 4px; }
+        .bubble.image-bubble .img-grid.cols-1 img { max-width: 220px; max-height: 320px; }
+        .input-area {
+            border-top: 1px solid var(--gray-line);
+            padding: 12px 16px 14px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,251,255,0.82));
+            backdrop-filter: blur(20px) saturate(145%);
+            -webkit-backdrop-filter: blur(20px) saturate(145%);
+            flex-shrink: 0;
+        }
+        .input-box { display: flex; gap: 8px; align-items: flex-end; }
+        .input-box textarea {
+            flex: 1; min-width: 0;
+            min-height: 38px;
+            max-height: 120px;
+            padding: 9px 13px;
+            border: 1px solid var(--gray-line);
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            background: rgba(255,255,255,0.7);
+            color: var(--text);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+            resize: none;
+            line-height: 1.5;
+        }
+        .input-box textarea::placeholder { color: var(--text-mute); }
+        .input-box textarea:focus { background: #FFFFFF; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+        .send-btn {
+            height: 38px;
+            padding: 0 18px;
+            background: linear-gradient(135deg, #4a90e2, #65b3ff);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            flex-shrink: 0;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.35);
+        }
+        .send-btn:active { transform: translateY(1px); box-shadow: 0 8px 24px rgba(74, 144, 226, 0.45); }
+        .send-btn:disabled { background: #cbd5e1; box-shadow: none; }
+        .input-hint {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-mute);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .input-hint .pill { background: var(--primary-soft); color: var(--primary-dark); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+        .meta-panel { padding: 18px; overflow-y: auto; }
+        .meta-section { margin-bottom: 22px; }
+        .meta-section h3 {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 10px;
+        }
+        .meta-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+        .meta-row .label { color: var(--text-soft); }
+        .meta-row .value { color: var(--text); font-weight: 500; }
+        .meta-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .meta-stat {
+            background: rgba(255,255,255,0.85);
+            border: 1px solid var(--gray-line);
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.08);
+        }
+        .meta-stat .num { font-size: 20px; font-weight: 850; color: var(--text); line-height: 1.1; }
+        .meta-stat .lbl { font-size: 11px; color: var(--text-soft); margin-top: 4px; }
+        .meta-stat.warn .num { color: var(--red); }
+        .meta-stat.ok   .num { color: var(--green); }
+        .meta-recent { max-height: 240px; overflow-y: auto; }
+        .meta-recent .item {
+            padding: 8px 0;
+            border-bottom: 0.5px solid rgba(0,0,0,0.05);
+            font-size: 12px;
+        }
+        .meta-recent .item:last-child { border-bottom: none; }
+        .meta-recent .item .t { color: var(--text-soft); margin-bottom: 2px; }
+        .meta-recent .item .d { color: #111; line-height: 1.4; }
+        .loading { text-align: center; padding: 40px; color: var(--text-soft); }
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.78); color: white;
+            padding: 10px 20px; border-radius: 8px;
+            font-size: 13px;
+            z-index: 9999;
+            animation: toastIn 0.3s ease;
+        }
+        @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+    </style>
+</head>
+<body>
+<div class="workbench">
+    <!-- 左:员工列表 -->
+    <div class="panel">
+        <div class="topbar">
+            <h1>反馈工作台</h1>
+            <div class="stats">
+                <span><strong id="totalPending">0</strong>待处理</span>
+            </div>
+        </div>
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="搜索员工/工号/消息">
+        </div>
+        <div class="staff-list" id="staffList">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <!-- 中:对话流 -->
+    <div class="panel" style="background:transparent;border-left:0;">
+        <div class="chat-header">
+            <div class="who">
+                <div class="who-avatar" id="whoAvatar">-</div>
+                <div>
+                    <div class="who-name" id="whoName">未选择</div>
+                    <div class="who-meta" id="whoMeta">从左侧选择员工查看对话</div>
+                </div>
+            </div>
+            <div style="font-size:12px;color:var(--text-soft);" id="chatCount"></div>
+        </div>
+        <div class="chat-wrap" id="chatWrap">
+            <div class="chat-empty">
+                <div class="icon">💬</div>
+                <div>从左侧选择一位员工开始处理反馈</div>
+            </div>
+        </div>
+        <div class="input-area">
+            <div class="input-box">
+                <textarea id="replyInput" placeholder="输入回复... (Ctrl+Enter 发送)" rows="1" disabled></textarea>
+                <button class="send-btn" id="sendBtn" disabled onclick="sendReply()">发送</button>
+            </div>
+            <div class="input-hint" id="inputHint" style="display:none">
+                <span class="pill" id="replyTarget">回复最新一条</span>
+                <span>本条"待处理"将自动标记为"已回复"</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右:元信息 -->
+    <div class="panel meta-panel" id="metaPanel">
+        <div class="chat-empty">
+            <div class="icon">👤</div>
+            <div>选择员工后查看详细信息</div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/admin-session.js"></script>
+<script>
+var API = window.location.origin + '/api';
+var token = window.AdminSession && window.AdminSession.requireValid
+    ? window.AdminSession.requireValid()
+    : (localStorage.getItem('token') || localStorage.getItem('adminToken') || '');
+
+// ============= 常量 =============
+const STATUS_LABELS = { pending: '待处理', processing: '处理中', resolved: '已解决', rejected: '已驳回', viewed: '已查看' };
+const CAT_LABELS = { bug: '功能异常', suggestion: '功能建议', ui: '界面问题', performance: '性能问题', other: '其他' };
+
+// ============= 状态 =============
+let ALL_FEEDBACKS = [];   // 全部反馈
+let CURRENT_STAFF = null; // 当前选中的员工 {id, name, employee_id}
+
+// ============= 工具 =============
+function escapeHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function pad(n) { return n < 10 ? '0' + n : n; }
+// 列表用时间:3 档格式
+//  - 当天只显示 HH:MM
+//  - 昨天显示 "昨天 HH:MM"
+//  - 更早显示 "M月D日 HH:MM"
+function fmtTimeShort(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    const now = new Date();
+    const hh = pad(d.getHours()), mm = pad(d.getMinutes());
+    if (d.toDateString() === now.toDateString()) return hh + ':' + mm;
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    if (d.toDateString() === y.toDateString()) return '昨天 ' + hh + ':' + mm;
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hh + ':' + mm;
+}
+function fmtFull(s) {
+    if (!s) return '';
+    const d = new Date(s);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function fmtDay(s) {
+    const d = new Date(s), now = new Date();
+    if (d.toDateString() === now.toDateString()) return '今天';
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    if (d.toDateString() === y.toDateString()) return '昨天';
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
+}
+// 头像:名字末两字(2 字名两字都显示,3 字以上取后两字)
+function avatarText(name) {
+    if (!name) return '?';
+    if (name.length <= 2) return name;
+    return name.slice(-2);
+}
+
+// ============= 加载数据 =============
+async function loadAllFeedbacks() {
+    try {
+        // 分页拉,先拉 100 条;以后量大再分页
+        const res = await fetch(API + '/feedback?pageSize=100', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (data.code === 0 && data.data && Array.isArray(data.data.items)) {
+            ALL_FEEDBACKS = data.data.items;
+            // 解析 screenshots
+            ALL_FEEDBACKS.forEach(fb => {
+                if (typeof fb.screenshots === 'string') {
+                    try { fb.screenshots = JSON.parse(fb.screenshots); } catch (e) { fb.screenshots = []; }
+                }
+                if (!Array.isArray(fb.screenshots)) fb.screenshots = [];
+            });
+            renderStaffList();
+        } else {
+            document.getElementById('staffList').innerHTML =
+                '<div class="loading">加载失败: ' + (data.msg || '未知错误') + '</div>';
+        }
+    } catch (e) {
+        document.getElementById('staffList').innerHTML =
+            '<div class="loading">网络错误,请刷新</div>';
+    }
+}
+
+// ============= 渲染员工列表 =============
+function renderStaffList() {
+    // 按 staff_id 分组
+    const groups = {};
+    ALL_FEEDBACKS.forEach(fb => {
+        if (!groups[fb.staff_id]) {
+            groups[fb.staff_id] = {
+                staff_id: fb.staff_id,
+                name: fb.staff_name || '匿名',
+                employee_id: fb.employee_id || '',
+                feedbacks: []
+            };
+        }
+        groups[fb.staff_id].feedbacks.push(fb);
+    });
+
+    // 排序:按最后一条反馈时间倒序
+    const list = Object.values(groups).map(g => {
+        g.feedbacks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        g.pendingCount = g.feedbacks.filter(f => f.status === 'pending' || f.status === 'processing').length;
+        g.last = g.feedbacks[0];
+        return g;
+    }).sort((a, b) => {
+        const ta = a.last ? new Date(a.last.created_at) : 0;
+        const tb = b.last ? new Date(b.last.created_at) : 0;
+        return tb - ta;
+    });
+
+    const totalPending = list.reduce((s, x) => s + x.pendingCount, 0);
+    document.getElementById('totalPending').textContent = totalPending;
+
+    if (list.length === 0) {
+        document.getElementById('staffList').innerHTML =
+            '<div class="chat-empty"><div class="icon">📭</div><div>暂无反馈记录</div></div>';
+        return;
+    }
+
+    document.getElementById('staffList').innerHTML = list.map((g, i) => {
+        const preview = g.last ? (g.last.description || '[图片反馈]').replace(/\n/g, ' ').slice(0, 50) : '';
+        const active = CURRENT_STAFF && CURRENT_STAFF.staff_id === g.staff_id;
+        return `
+            <div class="staff-item ${active ? 'active' : ''}" data-id="${g.staff_id}" onclick="selectStaff('${g.staff_id}')">
+                <div class="staff-avatar">${escapeHtml(avatarText(g.name))}</div>
+                <div class="staff-info">
+                    <div class="row1">
+                        <span class="staff-name">${escapeHtml(g.name)}</span>
+                        <div class="time-stack">
+                            ${g.last ? `<span style="font-size:11px;color:var(--text-mute)">${fmtTimeShort(g.last.created_at)}</span>` : ''}
+                            ${g.pendingCount > 0 ? `<div class="badge">${g.pendingCount}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="staff-preview">${escapeHtml(preview) || '暂无消息'}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ============= 选中员工 =============
+function selectStaff(staffId) {
+    const groups = {};
+    ALL_FEEDBACKS.forEach(fb => {
+        if (!groups[fb.staff_id]) {
+            groups[fb.staff_id] = { staff_id: fb.staff_id, name: fb.staff_name || '匿名', employee_id: fb.employee_id || '', feedbacks: [] };
+        }
+        groups[fb.staff_id].feedbacks.push(fb);
+    });
+    CURRENT_STAFF = groups[staffId];
+    if (!CURRENT_STAFF) return;
+
+    document.querySelectorAll('.staff-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.id == staffId);
+    });
+    renderChat();
+    renderMeta();
+    // 启用输入
+    document.getElementById('replyInput').disabled = false;
+    document.getElementById('sendBtn').disabled = false;
+    document.getElementById('inputHint').style.display = 'flex';
+    updateReplyTarget();
+}
+
+function updateReplyTarget() {
+    if (!CURRENT_STAFF) return;
+    const fbs = CURRENT_STAFF.feedbacks.slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const lastPending = fbs.slice().reverse().find(f => f.status === 'pending' || f.status === 'processing' || f.status === 'viewed');
+    const target = lastPending || fbs[fbs.length - 1];
+    if (target) {
+        const desc = (target.description || '[图片]').slice(0, 30) + ((target.description || '').length > 30 ? '...' : '');
+        document.getElementById('replyTarget').textContent = '回复 #' + target.id + ': ' + desc;
+        document.getElementById('replyTarget').dataset.targetId = target.id;
+    }
+}
+
+// ============= 渲染对话 =============
+function renderChat() {
+    if (!CURRENT_STAFF) return;
+    const staff = CURRENT_STAFF;
+    document.getElementById('whoAvatar').textContent = avatarText(staff.name);
+    document.getElementById('whoName').textContent = staff.name;
+    document.getElementById('whoMeta').textContent = staff.employee_id || '(无工号)';
+    document.getElementById('chatCount').textContent = staff.feedbacks.length + ' 条反馈';
+
+    const fbs = staff.feedbacks.slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    let html = '';
+    let lastDay = '';
+    fbs.forEach(fb => {
+        const dayKey = new Date(fb.created_at).toDateString();
+        if (dayKey !== lastDay) {
+            html += `<div class="time-divider">${fmtDay(fb.created_at)}</div>`;
+            lastDay = dayKey;
+        }
+        const catLabel = CAT_LABELS[fb.category] || '其他';
+        const statusLabel = STATUS_LABELS[fb.status] || fb.status;
+
+        // 用户消息
+        html += `<div class="msg user">`;
+        html +=   `<div class="bubble-wrap">`;
+        const hasDesc = fb.description && fb.description.trim();
+        const hasImg = fb.screenshots && fb.screenshots.length;
+        if (hasDesc && hasImg) {
+            html += `<div class="bubble">${escapeHtml(fb.description)}</div>`;
+            html += `<div class="bubble image-bubble" style="margin-top:6px;padding:4px"><div class="img-grid cols-1">`;
+            fb.screenshots.forEach(u => { html += `<img src="${escapeHtml(u)}" onclick="window.open('${escapeHtml(u)}','_blank')">`; });
+            html += `</div></div>`;
+        } else if (hasImg) {
+            html += `<div class="bubble image-bubble"><div class="img-grid cols-1">`;
+            fb.screenshots.forEach(u => { html += `<img src="${escapeHtml(u)}" onclick="window.open('${escapeHtml(u)}','_blank')">`; });
+            html += `</div></div>`;
+        } else {
+            html += `<div class="bubble">${escapeHtml(fb.description || '')}</div>`;
+        }
+        html +=     `<div class="msg-meta">`;
+        html +=       `<span class="tag tag-${escapeHtml(fb.category || 'other')}">${escapeHtml(catLabel)}</span>`;
+        html +=       `<span class="tag tag-${escapeHtml(fb.status || 'pending')}">${escapeHtml(statusLabel)}</span>`;
+        html +=       `<span>${fmtFull(fb.created_at)}</span>`;
+        if (fb.page_url) html += `<span>· ${escapeHtml(fb.page_url)}</span>`;
+        html +=     `</div>`;
+        html +=   `</div>`;
+        html +=   `<div class="avatar">${escapeHtml(avatarText(staff.name))}</div>`;
+        html += `</div>`;
+
+        // 管理员回复
+        if (fb.admin_reply) {
+            html += `<div class="msg admin">`;
+            html +=   `<div class="avatar">客</div>`;
+            html +=   `<div class="bubble-wrap">`;
+            html +=     `<div class="bubble">${escapeHtml(fb.admin_reply)}</div>`;
+            html +=     `<div class="msg-meta"><span>${fmtFull(fb.resolved_at || fb.updated_at || fb.created_at)}</span></div>`;
+            html +=   `</div>`;
+            html += `</div>`;
+        }
+    });
+
+    document.getElementById('chatWrap').innerHTML = html;
+    document.getElementById('chatWrap').scrollTop = document.getElementById('chatWrap').scrollHeight;
+}
+
+// ============= 渲染元信息 =============
+function renderMeta() {
+    if (!CURRENT_STAFF) return;
+    const staff = CURRENT_STAFF;
+    const fbs = staff.feedbacks;
+    const total = fbs.length;
+    const pending = fbs.filter(f => f.status === 'pending').length;
+    const processing = fbs.filter(f => f.status === 'processing').length;
+    const resolved = fbs.filter(f => f.status === 'resolved').length;
+    const rejected = fbs.filter(f => f.status === 'rejected').length;
+    const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
+
+    const recent = fbs.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+
+    document.getElementById('metaPanel').innerHTML = `
+        <div class="meta-section">
+            <h3>员工信息</h3>
+            <div class="meta-row"><span class="label">姓名</span><span class="value">${escapeHtml(staff.name)}</span></div>
+            <div class="meta-row"><span class="label">工号</span><span class="value">${escapeHtml(staff.employee_id || '-')}</span></div>
+            <div class="meta-row"><span class="label">状态</span><span class="value" style="color:var(--primary)">活跃</span></div>
+        </div>
+
+        <div class="meta-section">
+            <h3>反馈统计</h3>
+            <div class="meta-stats">
+                <div class="meta-stat"><div class="num">${total}</div><div class="lbl">总计</div></div>
+                <div class="meta-stat warn"><div class="num">${pending + processing}</div><div class="lbl">待处理</div></div>
+                <div class="meta-stat ok"><div class="num">${resolved}</div><div class="lbl">已解决</div></div>
+                <div class="meta-stat"><div class="num">${rate}%</div><div class="lbl">解决率</div></div>
+            </div>
+        </div>
+
+        <div class="meta-section">
+            <h3>最近反馈</h3>
+            <div class="meta-recent">
+                ${recent.map(fb => `
+                    <div class="item">
+                        <div class="t">${fmtFull(fb.created_at)} · ${escapeHtml(STATUS_LABELS[fb.status] || fb.status)}</div>
+                        <div class="d">${escapeHtml((fb.description || '[图片反馈]').slice(0, 40))}${(fb.description || '').length > 40 ? '...' : ''}</div>
+                    </div>
+                `).join('') || '<div style="color:var(--text-mute);font-size:12px;padding:8px 0">无</div>'}
+            </div>
+        </div>
+    `;
+}
+
+// ============= 发送回复 =============
+async function sendReply() {
+    if (!CURRENT_STAFF) return;
+    const targetId = document.getElementById('replyTarget').dataset.targetId;
+    if (!targetId) {
+        showToast('没有可回复的反馈');
+        return;
+    }
+    const text = document.getElementById('replyInput').value.trim();
+    if (!text) return;
+
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+    btn.textContent = '发送中';
+
+    try {
+        const res = await fetch(API + '/feedback/' + targetId + '/reply', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ reply: text, status: 'resolved' })
+        });
+        const data = await res.json();
+        if (data.code === 0) {
+            document.getElementById('replyInput').value = '';
+            document.getElementById('replyInput').style.height = '38px';
+            // 乐观更新:本地立即更新这条 feedback
+            const fb = ALL_FEEDBACKS.find(f => f.id == targetId);
+            if (fb) {
+                fb.admin_reply = text;
+                fb.status = 'resolved';
+                fb.resolved_at = new Date().toISOString();
+            }
+            renderStaffList();
+            renderChat();
+            renderMeta();
+            updateReplyTarget();
+            showToast('已回复');
+        } else {
+            showToast('发送失败: ' + (data.msg || '未知'));
+        }
+    } catch (e) {
+        showToast('网络错误');
+    }
+    btn.disabled = false;
+    btn.textContent = '发送';
+}
+
+// ============= 搜索 =============
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase().trim();
+    document.querySelectorAll('.staff-item').forEach(el => {
+        const txt = el.textContent.toLowerCase();
+        el.style.display = (!q || txt.includes(q)) ? '' : 'none';
+    });
+});
+
+// ============= 输入框自适应 + 快捷键 =============
+document.getElementById('replyInput').addEventListener('input', function() {
+    this.style.height = '38px';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+document.getElementById('replyInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        sendReply();
+    }
+});
+
+// ============= 启动 =============
+loadAllFeedbacks();
+// 每 30s 自动刷新
+setInterval(loadAllFeedbacks, 30000);
+</script>
+</body>
+</html>

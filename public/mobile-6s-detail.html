@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>6S曝光详情 - 兴利汽车模具</title>
+<style>
+* {margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root {--bg:#F0F7FF;--card:#fff;--border:#D6E9FF;--primary:#4A90E2;--secondary:#65B3FF;--accent:#22C58D;--text:#1D2B5A;--text-soft:#5B72A9;--radius:22px;--shadow:0 8px 24px rgba(74,144,226,0.12);--shadow-hover:0 12px 32px rgba(74,144,226,0.18);--transition:0.3s;--green:#22c55e;--orange:#ff9500;--red:#ff3b30}
+body {font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;background:var(--bg);color:var(--text);padding-bottom:100px;padding-top:20px}
+.container {max-width:480px;margin:0 auto;padding:0 16px}
+@media (min-width:768px){.container{max-width:680px;padding:0 24px}}
+@media (min-width:1024px){.container{max-width:800px}}
+.card {background:var(--card);border-radius:var(--radius);padding:20px 24px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow);transition:var(--transition)}
+.row {display:flex;padding:14px 0;border-bottom:1px solid rgba(0,0,0,0.05)}
+.row:last-child {border-bottom:none}
+.label {font-size:14px;color:var(--text-soft);width:80px;flex-shrink:0}
+.value {font-size:14px;color:var(--text);flex:1;word-break:break-all}
+.badge {display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:600}
+.badge-blue {background:rgba(74,144,226,0.12);color:var(--primary)}
+.badge-orange {background:rgba(255,193,7,0.18);color:#B77900}
+.badge-green {background:rgba(34,197,94,0.12);color:var(--green)}
+.badge-red {background:rgba(255,59,48,0.12);color:#D92D20!important;text-decoration:none!important}
+.review-history {margin-top:12px;border-top:1px solid rgba(0,0,0,0.05);padding-top:12px}
+.review-summary {background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.12);border-radius:14px;padding:4px 14px;margin-bottom:12px}
+.review-summary.rejected {background:rgba(255,59,48,0.06);border-color:rgba(255,59,48,0.16)}
+.review-summary .row {padding:12px 0}
+.review-history-title {font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px}
+.review-history-grid {display:block}
+.review-log {background:rgba(255,59,48,0.06);border:1px solid rgba(255,59,48,0.12);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.review-log:last-child {margin-bottom:0}
+.review-log-head {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.review-log-action {font-size:13px;font-weight:700}
+.review-log-action.approved {color:var(--green)}
+.review-log-action.rejected {color:#D92D20}
+.review-log-time {font-size:12px;color:var(--text-soft);white-space:nowrap}
+.review-log-comment {font-size:13px;color:var(--text);line-height:1.55;word-break:break-word}
+.review-log-photo {position:relative;margin-top:8px;border-radius:12px;overflow:hidden;background:#fff;border:1px solid rgba(74,144,226,0.10);box-shadow:0 8px 18px rgba(29,43,90,0.10),0 2px 6px rgba(74,144,226,0.08)}
+.review-log-photo::after {content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.16)}
+.review-log-photo img {width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:pointer}
+.review-log-photo-caption {font-size:12px;color:var(--text-soft);padding:7px 9px;background:#fff}
+.review-log-photo-group {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.review-log-photo-group.single {grid-template-columns:minmax(0,220px);justify-content:center}
+.review-log-photo-group .review-log-photo {margin-top:0}
+.review-log-photo.thumb {width:100%;max-width:100%;margin-left:auto;margin-right:auto}
+.review-log-photo.thumb img {width:100%;aspect-ratio:4/3;height:auto}
+.review-log-photo.thumb .review-log-photo-caption {padding:6px 8px;line-height:1.4;font-size:11px}
+.review-log-time-overlay {position:absolute;left:0;right:0;bottom:0;height:40px;display:flex;align-items:flex-end;justify-content:center;padding:0 10px 8px;background:linear-gradient(to top,rgba(15,23,42,0.55),rgba(15,23,42,0.20) 58%,rgba(15,23,42,0));color:rgba(255,255,255,0.94);font-size:10px;font-weight:600;line-height:1;letter-spacing:0;text-shadow:0 1px 2px rgba(0,0,0,0.35);pointer-events:none}
+.img-section {background:var(--card);border-radius:var(--radius);padding:20px 24px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.img-section-title {font-size:15px;font-weight:600;margin-bottom:12px}
+.img-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%}
+.img-grid.single {grid-template-columns:minmax(0,320px);justify-content:center}
+.img-item {position:relative;border-radius:14px;overflow:hidden;background:#fff;border:1px solid rgba(74,144,226,0.10);box-shadow:0 12px 28px rgba(29,43,90,0.12),0 2px 8px rgba(74,144,226,0.10)}
+.img-item::after {content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18)}
+.img-item img {width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:pointer}
+.img-time-overlay {position:absolute;left:0;right:0;bottom:0;height:46px;display:flex;align-items:flex-end;justify-content:center;padding:0 12px 9px;background:linear-gradient(to top,rgba(15,23,42,0.58),rgba(15,23,42,0.22) 58%,rgba(15,23,42,0));color:rgba(255,255,255,0.94);font-size:11px;font-weight:600;line-height:1;letter-spacing:0;text-shadow:0 1px 2px rgba(0,0,0,0.35);pointer-events:none}
+.img-more-mask {position:absolute;top:10px;right:10px;display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:30px;padding:0 10px;background:rgba(15,23,42,0.74);color:#fff;font-size:16px;font-weight:700;letter-spacing:0;border-radius:999px;cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,0.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.img-placeholder {border:2px dashed #ccc;border-radius:12px;display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;background:#fafafa}
+.img-placeholder .placeholder-text {color:#bbb;font-size:14px;cursor:pointer}
+.img-meta {padding:8px 10px;background:#fff}
+.img-label {display:block;font-size:12px;font-weight:700;color:var(--text);line-height:1.4}
+.img-time {display:block;margin-top:2px;font-size:11px;color:var(--text-soft);line-height:1.4}
+.img-viewer-overlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;justify-content:center;align-items:center;flex-direction:column}
+.img-viewer-overlay.show {display:flex}
+.img-viewer-stage {position:relative;z-index:1;max-width:95%;max-height:85vh;display:flex;align-items:center;justify-content:center;touch-action:none;overflow:hidden}
+.img-viewer-overlay img {max-width:100%;max-height:85vh;object-fit:contain;border-radius:4px;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none}
+.img-viewer-overlay.zoomed .img-viewer-stage {width:100vw;max-width:100vw;height:100vh;max-height:100vh}
+.img-viewer-overlay.zoomed img {max-width:100vw;max-height:100vh;border-radius:0}
+.viewer-nav {position:absolute;z-index:3;top:50%;transform:translateY(-50%);width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,0.16);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.viewer-nav.prev {left:16px}
+.viewer-nav.next {right:16px}
+.viewer-nav.hidden {display:none}
+.viewer-edge-tip {position:absolute;z-index:4;top:44%;left:50%;transform:translate(-50%,-50%);padding:10px 16px;border-radius:999px;background:rgba(15,23,42,0.66);color:#fff;font-size:14px;font-weight:700;letter-spacing:0;opacity:0;pointer-events:none;transition:opacity .2s ease;box-shadow:0 10px 24px rgba(0,0,0,0.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.viewer-edge-tip.show {opacity:1}
+.img-viewer-overlay .close-btn {position:absolute;top:60px;right:20px;width:40px;height:40px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:1}
+.img-viewer-overlay .viewer-label {color:rgba(255,255,255,0.6);font-size:13px;margin-top:12px}
+.loading {text-align:center;padding:60px 20px;color:var(--text-soft)}
+.loading::after {content:"";display:inline-block;width:18px;height:18px;border:2px solid var(--primary);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-left:10px;vertical-align:middle}
+@keyframes spin {to {transform:rotate(360deg)}}
+.upload-stack {display:flex;flex-direction:column;gap:12px}
+.upload-toolbar {display:none}
+.upload-hint {font-size:12px;color:var(--text-soft);line-height:1.5}
+.upload-count {display:none;font-size:12px;color:var(--primary);font-weight:600;white-space:nowrap}
+.upload-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.upload-tile,.upload-add {position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1/1;background:#f7fbff;border:1px solid rgba(74,144,226,0.14)}
+.upload-tile img {width:100%;height:100%;object-fit:cover;display:block;cursor:pointer}
+.upload-add {display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed rgba(74,144,226,0.28);background:rgba(74,144,226,0.05);color:var(--primary);cursor:pointer}
+.upload-add:active {transform:scale(0.98)}
+.upload-add-icon {font-size:26px;line-height:1;margin-bottom:6px}
+.upload-add-text {font-size:12px;font-weight:600}
+.upload-delete-btn {position:absolute;top:6px;right:6px;width:24px;height:24px;background:rgba(0,0,0,0.52);color:#fff;border:none;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.upload-empty {border:2px dashed rgba(74,144,226,0.22);border-radius:16px;padding:18px 16px;background:rgba(74,144,226,0.04);text-align:center;color:var(--text-soft)}
+.upload-empty-title {font-size:14px;color:var(--text);font-weight:600;margin-bottom:4px}
+.upload-empty-subtitle {font-size:12px;line-height:1.5}
+.upload-preview-overlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;align-items:center;justify-content:center;cursor:zoom-out}
+.upload-preview-overlay.show {display:flex}
+.upload-preview-overlay img {max-width:95%;max-height:95vh;object-fit:contain;border-radius:4px;cursor:zoom-out}
+.btn {display:block;width:100%;padding:14px;border-radius:12px;font-size:16px;font-weight:600;border:none;cursor:pointer;transition:.3s;text-align:center;margin-top:8px}
+.btn:active {transform:scale(0.98)}
+.btn:disabled {opacity:0.5}
+.btn-primary {background:var(--primary);color:#fff}
+.btn-row {display:flex;gap:8px;margin-top:12px}
+.ios-btn {flex:1;padding:14px;border-radius:12px;font-size:17px;font-weight:600;border:none;cursor:pointer;transition:var(--transition)}
+.ios-btn:active {transform:scale(0.98)}
+.ios-btn-secondary {background:rgba(0,0,0,0.06);color:var(--text-soft)}
+.ios-btn-primary {background:linear-gradient(135deg,#4A90E2 0%,#65B3FF 100%);color:#fff;box-shadow:0 4px 12px rgba(74,144,226,0.3)}
+.ios-btn:disabled {opacity:0.5;cursor:not-allowed}
+.toast {position:fixed;top:44%;left:50%;transform:translate(-50%,-50%);background:rgba(15,23,42,0.7);color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;font-weight:700;letter-spacing:0;opacity:0;transition:opacity .2s ease;z-index:10001;pointer-events:none;box-shadow:0 12px 28px rgba(0,0,0,0.22);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.toast.show {opacity:1}
+.modal-overlay {display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;justify-content:center;align-items:center}
+.modal-overlay.show {display:flex}
+.modal-box {background:#fff;border-radius:16px;padding:24px;width:90%;max-width:360px}
+.modal-title {font-size:17px;font-weight:600;margin-bottom:16px;text-align:center}
+.modal-textarea {width:100%;min-height:50px;padding:12px;border-radius:10px;border:1px solid var(--border);font-size:15px;resize:none}
+.modal-message {font-size:15px;color:var(--text);line-height:1.6;text-align:center;margin-bottom:18px}
+.modal-btn-row {display:flex;gap:12px}
+.modal-btn {flex:1;padding:12px;border-radius:10px;font-size:15px;font-weight:600;border:none;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="container">
+<div id="loading" class="loading">加载中</div>
+<div id="content" style="display:none">
+<!-- 字段顺序：检查日期 → 区域 → 检查人 → 状态 → 截止时间 → 问题描述 → 项目编号 → 照片 -->
+<div class="card">
+<div class="row" style="justify-content:space-between;align-items:center;padding:10px 0">
+  <span class="label">项目编号</span><span class="value" id="projectCode"></span>
+  <span id="statusBadge"></span>
+</div>
+<div class="row"><span class="label">检查日期</span><span class="value" id="checkDate"></span></div>
+<div class="row"><span class="label">区域</span><span class="value" id="area"></span></div>
+<div class="row"><span class="label">检查人</span><span class="value" id="createdByUsername"></span></div>
+<div class="row"><span class="label">截止时间</span><span class="value" id="deadline"></span></div>
+<div class="row"><span class="label">问题描述</span><span class="value" id="description" style="line-height:1.6"></span></div>
+</div>
+
+<div id="imageSections"></div>
+
+<div class="card" id="reviewInfoCard" style="display:none">
+<div class="img-section-title" style="margin-bottom:8px">审核意见</div>
+<div id="reviewTextareaWrap" style="display:none">
+  <textarea id="inlineReviewComment" class="modal-textarea" placeholder="请输入审核意见"></textarea>
+</div>
+<div id="reviewInfo" style="margin-top:16px"></div>
+</div>
+
+<div id="actionCard" style="display:none;padding:0;margin:0">
+<div id="actionContent"></div>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<input type="file" accept="image/*" id="placeholderUpload" style="display:none" onchange="handlePlaceholderUpload(this)">
+<div class="img-viewer-overlay" id="imgViewer" onclick="closeImgViewer()">
+  <button class="viewer-nav prev hidden" id="viewerPrevBtn" onclick="event.stopPropagation();showPrevViewerImage()">‹</button>
+  <button class="viewer-nav next hidden" id="viewerNextBtn" onclick="event.stopPropagation();showNextViewerImage()">›</button>
+  <div class="viewer-edge-tip prev" id="viewerPrevTip">这是第一张</div>
+  <div class="viewer-edge-tip next" id="viewerNextTip">这是最后一张</div>
+  <div class="img-viewer-stage" id="viewerStage">
+    <img id="viewerImg" src="" onclick="event.stopPropagation()">
+  </div>
+  <div class="viewer-label" id="viewerLabel"></div>
+  <div class="viewer-label" id="viewerTime"></div>
+</div>
+<div class="upload-preview-overlay" id="uploadPreviewOverlay" onclick="closeUploadPreview()">
+  <img id="uploadPreviewImg" src="">
+</div>
+
+<script src="/js/employee-session.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script src="/js/module-access.js"></script>
+<script>
+var API=window.location.origin+"/api";
+var viewMode=getParam("source")||"";
+var hasEmployeeSession=window.EmployeeSession.ensureValid();
+var needsModuleAuth=hasEmployeeSession&&viewMode==="admin"&&!window.ModuleAccess.has("admin-linked");
+if(needsModuleAuth){window.ModuleAccess.redirectToAuth(window.location.pathname + window.location.search,"admin-linked","6S管理")}
+var token=hasEmployeeSession&&!needsModuleAuth?localStorage.getItem("employee_token"):"";
+var currentRecord=null;
+var isAdminView=false;
+var staffInfo={};
+var viewerGroups={};
+var activeViewerGroupId="";
+var activeViewerIndex=0;
+var viewerTipTimer=null;
+var viewerScale=1;
+var viewerTranslateX=0;
+var viewerTranslateY=0;
+var viewerStartDistance=0;
+var viewerStartScale=1;
+var viewerPanStartX=0;
+var viewerPanStartY=0;
+var viewerPanBaseX=0;
+var viewerPanBaseY=0;
+var viewerSwipeStartX=0;
+var viewerSwipeStartY=0;
+var viewerSwipeCurrentX=0;
+var viewerSwipeAxis="";
+var viewerSwipeStartTime=0;
+var viewerLastTapTime=0;
+var viewerLastTapX=0;
+var viewerLastTapY=0;
+var viewerTapTimer=null;
+var viewerTapMoved=false;
+var viewerSuppressTapUntil=0;
+var viewerIsSwitching=false;
+var viewerTouchMode="";
+var isTouchViewerDevice=("ontouchstart" in window)||navigator.maxTouchPoints>0||(window.matchMedia&&window.matchMedia("(pointer: coarse)").matches);
+var viewerMouseDown=false;
+var viewerMouseMoved=false;
+var viewerMouseStartX=0;
+var viewerMouseStartY=0;
+var viewerMouseBaseX=0;
+var viewerMouseBaseY=0;
+if(!hasEmployeeSession){window.EmployeeSession.redirectToLogin()}
+try{staffInfo=JSON.parse(localStorage.getItem("employee_info")||"{}")}catch(e){}
+
+isAdminView=(viewMode==="admin");
+
+function getParam(name){return new URLSearchParams(window.location.search).get(name)}
+function showToast(msg){var el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");setTimeout(function(){el.classList.remove("show")},2000)}
+function goBack(){if(isAdminView){window.location.href="mobile-6s-list.html"}else{window.location.href="mobile-6s-tasks.html"}}
+
+function statusBadge(r){
+  var rs=r.review_status;
+  var rejectCount=Number(r.reject_count||0);
+  if(!rejectCount&&r.reject_reason){rejectCount=1}
+  if(rs==="approved") return '<span class="badge badge-green">已达标</span>';
+  if(rs==="submitted") return '<span class="badge badge-blue">待审核</span>';
+  if(rs==="rejected"||rejectCount>0) return '<span class="badge badge-red">未达标'+rejectCount+'</span>';
+  if(r.status==="fixed") return '<span class="badge badge-green">已达标</span>';
+  return '<span class="badge badge-orange">待整改</span>';
+}
+
+function escapeHtml(text){
+  return String(text==null?"":text).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]});
+}
+
+function formatTime(str){
+    if(!str)return "";
+    return str.substring(0,16).replace("T"," ");
+}
+
+function parseImageList(images, fallbackImage){
+  if(Array.isArray(images)&&images.length)return images.filter(Boolean);
+  if(typeof images==="string"&&images){
+    try{
+      var parsed=JSON.parse(images);
+      if(Array.isArray(parsed)&&parsed.length)return parsed.filter(Boolean);
+    }catch(e){}
+  }
+  return fallbackImage?[fallbackImage]:[];
+}
+
+function imageViewerSrc(url){
+  return escapeHtml(url||"");
+}
+
+function registerViewerGroup(groupId, items){
+  viewerGroups[groupId]=items;
+}
+
+function renderRecordImages(title, images, time, groupId){
+  var html="";
+  var visibleImages=images.slice(0,2);
+  for(var i=0;i<visibleImages.length;i++){
+    var label=title+(images.length>1?i+1:"");
+    var timeText=formatTime(time);
+    html+="<div class='img-item'><img src='"+imageViewerSrc(visibleImages[i])+"' alt='"+title+"' onclick=\"openImgViewer('"+groupId+"',"+i+")\">";
+    if(images.length>2&&i===1){
+      html+="<div class='img-more-mask' onclick=\"event.stopPropagation();openImgViewer('"+groupId+"',1)\">+"+(images.length-2)+"</div>";
+    }
+    if(images.length===1){
+      if(timeText){html+="<div class='img-time-overlay'>"+timeText+"</div>"}
+      html+="</div>";
+    }else{
+      html+="<div class='img-meta'><span class='img-label'>"+label+"</span>";
+      if(timeText){html+="<span class='img-time'>"+timeText+"</span>"}
+      html+="</div></div>";
+    }
+  }
+  return html;
+}
+
+function renderImageGroup(title, images, time){
+  if(!images.length)return "";
+  var baseLabel=title.replace("照片","");
+  var groupId="record-"+title+"-"+Object.keys(viewerGroups).length;
+  var items=images.map(function(src,index){
+    return {src:src,label:baseLabel+(images.length>1?index+1:""),time:formatTime(time)};
+  });
+  registerViewerGroup(groupId,items);
+  return "<div class='img-section'><div class='img-section-title'>"+title+"</div><div class='img-grid"+(images.length===1?" single":"")+"'>"+renderRecordImages(baseLabel,images,time,groupId)+"</div></div>";
+}
+
+function getLogTime(log){return new Date((log.created_at||"").replace(" ","T")).getTime()||0}
+function findSubmitForReject(logs,rejectLog){
+  var rejectTime=getLogTime(rejectLog);
+  var matched=null;
+  for(var i=0;i<logs.length;i++){
+    var log=logs[i];
+    if(log.action!=="submit"||!parseImageList(log.images,log.image).length)continue;
+    if(getLogTime(log)<=rejectTime){matched=log}
+  }
+  return matched;
+}
+function reviewLogImageHtml(log,caption,isThumb){
+  var images=log?parseImageList(log.images,log.image):[];
+  if(!images.length)return "";
+  var time=formatTime(log.image_time||log.created_at);
+  var groupId="review-"+caption+"-"+Object.keys(viewerGroups).length;
+  var items=images.map(function(src,index){
+    return {src:src,label:"整改照片"+(images.length>1?index+1:""),time:time};
+  });
+  registerViewerGroup(groupId,items);
+  var html="<div class='review-log-photo-group"+(images.length===1?" single":"")+"'>";
+  var visibleImages=images.slice(0,2);
+  for(var i=0;i<visibleImages.length;i++){
+    html+="<div class='review-log-photo"+(isThumb?" thumb":"")+"'><img src='"+imageViewerSrc(visibleImages[i])+"' alt='整改照片' onclick=\"openImgViewer('"+groupId+"',"+i+")\">";
+    if(images.length>2&&i===1){
+      html+="<div class='img-more-mask' onclick=\"event.stopPropagation();openImgViewer('"+groupId+"',1)\">+"+(images.length-2)+"</div>";
+    }
+    if(images.length===1){
+      if(time){html+="<div class='review-log-time-overlay'>"+time+"</div>"}
+      html+="</div>";
+    }else{
+      html+="<div class='review-log-photo-caption'>"+caption+(images.length>1?i+1:"")+(time?" · "+time:"")+"</div></div>";
+    }
+  }
+  return html+"</div>";
+}
+function getLatestRejectedLog(logs){
+  if(!logs||!logs.length)return null;
+  for(var i=0;i<logs.length;i++){if(logs[i].action==="rejected")return logs[i]}
+  return null;
+}
+function renderReviewLogs(logs,skipLatestRejected){
+  if(!logs||!logs.length)return "";
+  var allLogs=logs.slice().sort(function(a,b){return getLogTime(a)-getLogTime(b)});
+  var rejectedLogs=logs.filter(function(log){return log.action==="rejected"});
+  if(skipLatestRejected&&rejectedLogs.length>0){rejectedLogs=rejectedLogs.slice(1)}
+  if(!rejectedLogs.length)return "";
+  var html="<div class='review-history'><div class='review-history-title'>历史审核记录</div><div class='review-history-grid'>";
+  for(var i=0;i<rejectedLogs.length;i++){
+    var log=rejectedLogs[i];
+    var imgLog=log.image?log:findSubmitForReject(allLogs,log);
+    html+="<div class='review-log'>";
+    html+="<div class='review-log-head'><span class='review-log-action rejected'>未达标</span><span class='review-log-time'>"+formatTime(log.created_at)+"</span></div>";
+    html+="<div class='review-log-comment'>"+(log.comment?escapeHtml(log.comment):"无审核意见")+"</div>";
+    html+=reviewLogImageHtml(imgLog,"未达标的整改照片",true);
+    html+="</div>";
+  }
+  html+="</div></div>";
+  return html;
+}
+
+async function loadRecord(){
+  try{
+    var id=getParam("id");
+    if(!id){showToast("参数错误");return}
+    var res=await fetch(API+"/6s/"+id,{headers:{"Authorization":"Bearer "+token}});
+    if(!res.ok){showToast("请求失败");return}
+    var d=await res.json();
+    if(d.code!==0){showToast(d.msg);return}
+    currentRecord=d.data;
+    renderRecord();
+  }catch(e){showToast("加载失败")}
+}
+
+function renderRecord(){
+  var r=currentRecord;
+  viewerGroups={};
+  activeViewerGroupId="";
+  activeViewerIndex=0;
+  document.getElementById("loading").style.display="none";
+  document.getElementById("content").style.display="";
+
+  document.getElementById("checkDate").textContent=r.check_date||"-";
+  document.getElementById("area").textContent=r.area||"-";
+  document.getElementById("createdByUsername").textContent=r.created_by_username||"-";
+  document.getElementById("statusBadge").innerHTML=statusBadge(r);
+  document.getElementById("deadline").textContent=r.deadline||"未设置";
+  document.getElementById("projectCode").textContent=r.project_code||"-";
+  document.getElementById("description").textContent=r.description||"无";
+
+  // 照片区域
+  var imgs="";
+  var beforeImages=parseImageList(r.before_images,r.before_image);
+  if(beforeImages.length){
+    imgs+=renderImageGroup("整改前照片",beforeImages,r.before_image_time);
+  }
+  var afterImages=parseImageList(r.after_images,r.after_image);
+  if(afterImages.length){
+    imgs+=renderImageGroup("整改后照片",afterImages,r.after_image_time);
+  }
+  if(!imgs) imgs="<div class='img-section'><div style='text-align:center;color:var(--text-soft);padding:20px;'>暂无照片</div></div>";
+  document.getElementById("imageSections").innerHTML=imgs;
+
+  // 审核信息
+  var ri=document.getElementById("reviewInfo");
+  var rs=r.review_status;
+  var reviewHtml="";
+  document.getElementById("reviewTextareaWrap").style.display="none";
+  if(rs==="approved"){
+    reviewHtml="<div class='review-summary'><div class='row'><span class='label'>审核结果</span><span class='value' style='color:var(--green)'>审核通过</span></div>"+(r.review_comment?"<div class='row'><span class='label'>审核意见</span><span class='value'>"+escapeHtml(r.review_comment)+"</span></div>":"")+(r.reviewed_at?"<div class='row'><span class='label'>审核时间</span><span class='value'>"+formatTime(r.reviewed_at)+"</span></div>":"")+"</div>";
+    ri.innerHTML=reviewHtml+renderReviewLogs(r.logs);
+    document.getElementById("reviewInfoCard").style.display="";
+  }else if(rs==="submitted"&&isAdminView){
+    // submitted状态+管理员视图显示输入框，即使之前曾被驳回也可以再次审核
+    ri.innerHTML=renderReviewLogs(r.logs);
+    document.getElementById("reviewInfoCard").style.display="";
+    document.getElementById("reviewTextareaWrap").style.display="";
+  }else if(r.reject_reason){
+    // 有驳回理由时显示（即使状态已变回pending）
+    var latestRejected=getLatestRejectedLog(r.logs);
+    var allLogs=(r.logs||[]).slice().sort(function(a,b){return getLogTime(a)-getLogTime(b)});
+    var latestRejectedImage=latestRejected&&parseImageList(latestRejected.images,latestRejected.image).length?latestRejected:findSubmitForReject(allLogs,latestRejected||{});
+    reviewHtml="<div class='review-summary rejected'><div class='row'><span class='label'>未达标原因</span><span class='value' style='color:var(--red)'>"+escapeHtml(r.reject_reason)+"</span></div>"+(r.reviewed_at?"<div class='row'><span class='label'>未达标时间</span><span class='value'>"+formatTime(r.reviewed_at)+"</span></div>":"")+reviewLogImageHtml(latestRejectedImage,"本次未达标的整改照片")+"</div>";
+    ri.innerHTML=reviewHtml+renderReviewLogs(r.logs,true);
+    document.getElementById("reviewInfoCard").style.display="";
+  }else if(r.logs&&r.logs.length){
+    ri.innerHTML=renderReviewLogs(r.logs);
+    document.getElementById("reviewInfoCard").style.display="";
+  }
+  renderActions();
+}
+
+function renderActions(){
+  var r=currentRecord;
+  var ac=document.getElementById("actionContent");
+  var isResp=r.assigned_to&&String(r.assigned_to)===String(staffInfo.id);
+  var hasSPerm=staffInfo.s6_permission===1;
+  var rs=r.review_status;
+  var html="";
+
+  if(isAdminView){
+    if(!parseImageList(r.after_images,r.after_image).length||rs==="pending"){
+      html+="<div class='img-section'>";
+      html+="<div class='img-section-title'>复核整改</div>";
+      html+=renderUploadComposer("admin","请上传整改后照片，未达标时需填写审核意见，最多 9 张");
+      html+="<div id='adminRecheckCommentWrap' style='margin-top:12px'><div class='img-section-title' style='font-size:13px;margin-bottom:8px'>审核意见</div><textarea id='adminRecheckComment' class='modal-textarea' placeholder='未达标时请输入审核意见，已达标可留空'></textarea></div>";
+      html+="<div class='btn-row'><button class='ios-btn' style='background:var(--green);color:#fff' id='adminApproveBtn' onclick='submitAdminRecheck(\"approved\")'>已达标</button><button class='ios-btn' style='background:var(--red);color:#fff' id='adminRejectBtn' onclick='submitAdminRecheck(\"rejected\")'>未达标</button></div>";
+      html+="</div>";
+    }
+    if(rs==="submitted"){
+      html+="<div class='btn-row'><button class='ios-btn' style='background:var(--green);color:#fff' onclick='doReview(\"approved\")'>已达标</button><button class='ios-btn' style='background:var(--red);color:#fff' onclick='doReview(\"rejected\")'>未达标</button></div>";
+    }
+  }
+
+  if(isResp&&!isAdminView){
+    // 待整改状态（包括驳回后变回pending），显示上传整改后照片区域
+    if(!rs||rs==="pending"){
+      var submitText=(rs==="rejected"||r.reject_reason)?"重新提交":"提交整改";
+      html+="<div class='img-section'>";
+      html+="<div class='img-section-title'>提交整改后照片</div>";
+      html+=renderUploadComposer("resp","请使用相机连续拍照，建议覆盖整体、细节和关键角度，最多 9 张");
+      html+="<button class='btn btn-primary' id='submitRectifyBtn' onclick='submitRectification()'>"+submitText+"</button>";
+    }
+    if(rs==="submitted"){html+="<div style='background:rgba(0,122,255,0.06);padding:16px;border-radius:10px;text-align:center;font-size:14px;color:var(--primary)'>整改已提交，等待管理员审核</div>";}
+    if(rs==="approved"){html+="<div style='background:rgba(34,197,94,0.06);padding:16px;border-radius:10px;text-align:center;font-size:14px;color:var(--green)'>审核已通过，整改完成</div>";}
+  }
+
+  if(!isAdminView&&!isResp){html+="<div style='text-align:center;color:var(--text-soft);padding:20px;font-size:14px'>暂无可用操作</div>";}
+  ac.innerHTML=html;
+  document.getElementById("actionCard").style.display="";
+  renderUploadSelection("admin");
+  renderUploadSelection("resp");
+}
+
+var adminUploadFiles=[];
+var respUploadFiles=[];
+
+function renderUploadComposer(kind,hint){
+  return "<div class='upload-stack'>"
+    +"<div class='upload-toolbar'><div class='upload-hint'>"+hint+"</div><div class='upload-count' id='"+kind+"UploadCount'>0/9</div></div>"
+    +"<input type='file' accept='image/*' capture='environment' id='"+kind+"FileInput' style='display:none' onchange='handleUploadFiles(\""+kind+"\",this)'>"
+    +"<div class='upload-grid' id='"+kind+"UploadGrid'></div>"
+    +"</div>";
+}
+
+function getUploadFiles(kind){
+  return kind==="admin"?adminUploadFiles:respUploadFiles;
+}
+
+function setUploadFiles(kind,files){
+  if(kind==="admin"){adminUploadFiles=files}else{respUploadFiles=files}
+}
+
+function handleUploadFiles(kind,input){
+  var current=getUploadFiles(kind).slice();
+  var incoming=Array.prototype.slice.call(input.files||[]);
+  for(var i=0;i<incoming.length&&current.length<9;i++){current.push(incoming[i])}
+  setUploadFiles(kind,current);
+  input.value="";
+  renderUploadSelection(kind);
+}
+
+function removeUploadFile(kind,index){
+  var files=getUploadFiles(kind).slice();
+  files.splice(index,1);
+  setUploadFiles(kind,files);
+  renderUploadSelection(kind);
+}
+
+function openUploadPicker(kind){
+  var input=document.getElementById(kind+"FileInput");
+  if(input)input.click();
+}
+
+function renderUploadSelection(kind){
+  var grid=document.getElementById(kind+"UploadGrid");
+  var count=document.getElementById(kind+"UploadCount");
+  if(!grid||!count)return;
+  var files=getUploadFiles(kind);
+  count.textContent=files.length+"/9";
+  if(!files.length){
+    grid.innerHTML="<div class='upload-empty' style='grid-column:1/-1'><div class='upload-empty-title'>开始拍照</div><div class='upload-empty-subtitle'>单张拍摄，可连续补拍。</div></div>"
+      +"<button type='button' class='upload-add' onclick='openUploadPicker(\""+kind+"\")'><div class='upload-add-icon'>+</div><div class='upload-add-text'>第一张</div></button>"
+      +"<button type='button' class='upload-add' onclick='openUploadPicker(\""+kind+"\")'><div class='upload-add-icon'>+</div><div class='upload-add-text'>第二张</div></button>"
+      +"<button type='button' class='upload-add' onclick='openUploadPicker(\""+kind+"\")'><div class='upload-add-icon'>+</div><div class='upload-add-text'>第三张</div></button>";
+    return;
+  }
+  var html="";
+  for(var i=0;i<files.length;i++){
+    var url=URL.createObjectURL(files[i]);
+    html+="<div class='upload-tile'><img src='"+url+"' alt='整改照片' onclick=\"openUploadPreview('"+url+"')\"><button class='upload-delete-btn' onclick='event.stopPropagation();removeUploadFile(\""+kind+"\","+i+")'>×</button></div>";
+  }
+  if(files.length<9){
+    html+="<button type='button' class='upload-add' onclick='openUploadPicker(\""+kind+"\")'><div class='upload-add-icon'>+</div><div class='upload-add-text'>继续拍照</div></button>";
+  }
+  grid.innerHTML=html;
+}
+
+async function submitAdminRecheck(action){
+    if(!adminUploadFiles.length){showToast("请先选择照片");return}
+    var commentInput=document.getElementById("adminRecheckComment");
+    var comment=commentInput?commentInput.value.trim():"";
+    if(action==="approved"&&!window.confirm("确认代整改并判定已达标？")){
+        return;
+    }
+    if(action==="rejected"&&!comment){
+        if(commentInput){
+            commentInput.style.borderColor="var(--red)";
+            commentInput.style.borderWidth="2px";
+            commentInput.placeholder="未达标请填写审核意见";
+        }
+        showToast("请填写审核意见");
+        return;
+    }
+    if(commentInput){
+        commentInput.style.borderColor="";
+        commentInput.style.borderWidth="";
+    }
+    var approveBtn=document.getElementById("adminApproveBtn");
+    var rejectBtn=document.getElementById("adminRejectBtn");
+    if(approveBtn)approveBtn.disabled=true;
+    if(rejectBtn)rejectBtn.disabled=true;
+    var fd=new FormData();
+    for(var i=0;i<adminUploadFiles.length;i++){fd.append("after_image",adminUploadFiles[i])}
+    fd.append("action",action);
+    fd.append("comment",comment);
+    try{
+        var res=await fetch(API+"/6s/"+currentRecord.id+"/recheck",{method:"PUT",headers:{"Authorization":"Bearer "+token},body:fd});
+        var d=await res.json();
+        if(d.code===0){
+            showToast(d.msg||"复核完成");
+            setTimeout(function(){location.reload()},1000);
+        }else{
+            showToast(d.msg);
+            if(approveBtn)approveBtn.disabled=false;
+            if(rejectBtn)rejectBtn.disabled=false;
+        }
+    }catch(e){
+        showToast("提交失败");
+        if(approveBtn)approveBtn.disabled=false;
+        if(rejectBtn)rejectBtn.disabled=false;
+    }
+}
+
+function openReviewModal(){document.getElementById("inlineReviewComment").value="";}
+function doReviewReject(){document.getElementById("inlineReviewComment").value="";}
+
+async function doReview(action){
+    var ta=document.getElementById("inlineReviewComment");
+    var comment=ta.value.trim();
+    if(action==="rejected"&&!comment){
+        ta.style.borderColor="var(--red)";
+        ta.style.borderWidth="2px";
+        ta.placeholder="请输入审核意见";
+        showToast("请填写审核意见");
+        return;
+    }
+    ta.style.borderColor="";
+    ta.style.borderWidth="";
+    ta.style.color="";
+    try{
+        var res=await fetch(API+"/6s/"+currentRecord.id+"/review",{method:"PUT",headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({action:action,comment:comment})});
+        var d=await res.json();
+        if(d.code===0){
+            if(action==="rejected"&&isAdminView){
+                localStorage.setItem("mobile6s_admin_filter","review");
+                window.location.href="mobile-6s-list.html";
+                return;
+            }
+            showToast(d.msg);
+            setTimeout(function(){location.reload()},1000);
+        }
+        else{showToast(d.msg)}
+    }catch(e){showToast("操作失败")}
+}
+
+async function submitRectification(){
+    if(!respUploadFiles.length){showToast("请先拍照上传整改后照片");return}
+    var btn=document.getElementById("submitRectifyBtn");
+    var submitText=(currentRecord.review_status==="rejected"||currentRecord.reject_reason)?"重新提交":"提交整改";
+    btn.disabled=true;
+    btn.textContent="提交中...";
+    var fd=new FormData();
+    for(var i=0;i<respUploadFiles.length;i++){fd.append("after_image",respUploadFiles[i])}
+    try{
+        var res=await fetch(API+"/6s/"+currentRecord.id+"/submit",{method:"PUT",headers:{"Authorization":"Bearer "+token},body:fd});
+        var d=await res.json();
+        if(d.code===0){showToast("整改已提交，等待审核");setTimeout(function(){window.location.href="mobile-6s-tasks.html"},1000)}
+        else{showToast(d.msg);btn.disabled=false;btn.textContent=submitText}
+    }catch(e){showToast("提交失败");btn.disabled=false;btn.textContent=submitText}
+}
+
+function updateViewerNav(){
+    var items=viewerGroups[activeViewerGroupId]||[];
+    var multi=items.length>1;
+    document.getElementById("viewerPrevBtn").classList.toggle("hidden",!multi);
+    document.getElementById("viewerNextBtn").classList.toggle("hidden",!multi);
+}
+
+function showViewerEdgeTip(kind){
+    var id=kind==="prev"?"viewerPrevTip":"viewerNextTip";
+    var el=document.getElementById(id);
+    if(!el)return;
+    clearTimeout(viewerTipTimer);
+    document.getElementById("viewerPrevTip").classList.remove("show");
+    document.getElementById("viewerNextTip").classList.remove("show");
+    el.classList.add("show");
+    viewerTipTimer=setTimeout(function(){el.classList.remove("show")},900);
+}
+
+function clampViewerScale(scale){
+    return Math.max(1,Math.min(4,scale));
+}
+
+function clampViewerTranslate(x,y){
+    var img=document.getElementById("viewerImg");
+    var maxX=Math.max(0,(img.offsetWidth*(viewerScale-1))/2);
+    var maxY=Math.max(0,(img.offsetHeight*(viewerScale-1))/2);
+    return {
+        x:Math.max(-maxX,Math.min(maxX,x)),
+        y:Math.max(-maxY,Math.min(maxY,y))
+    };
+}
+
+function syncViewerZoomMode(){
+    var overlay=document.getElementById("imgViewer");
+    if(!overlay)return;
+    overlay.classList.toggle("zoomed",viewerScale>1.02);
+}
+
+function applyViewerTransform(){
+    var img=document.getElementById("viewerImg");
+    syncViewerZoomMode();
+    var pos=clampViewerTranslate(viewerTranslateX,viewerTranslateY);
+    viewerTranslateX=pos.x;
+    viewerTranslateY=pos.y;
+    img.style.transform="translate3d("+viewerTranslateX+"px,"+viewerTranslateY+"px,0) scale("+viewerScale+")";
+}
+
+function animateViewerImageTransform(fromScale, fromX, fromY, toScale, toX, toY){
+    var img=document.getElementById("viewerImg");
+    if(!img||!img.animate){
+        viewerScale=toScale;
+        viewerTranslateX=toX;
+        viewerTranslateY=toY;
+        applyViewerTransform();
+        return;
+    }
+    var overlay=document.getElementById("imgViewer");
+    if(overlay){overlay.classList.toggle("zoomed",toScale>1.02)}
+    img.animate([
+        {transform:"translate3d("+fromX+"px,"+fromY+"px,0) scale("+fromScale+")"},
+        {transform:"translate3d("+toX+"px,"+toY+"px,0) scale("+toScale+")"}
+    ],{duration:220,easing:"cubic-bezier(0.22, 0.9, 0.24, 1)"}).finished.catch(function(){});
+    viewerScale=toScale;
+    viewerTranslateX=toX;
+    viewerTranslateY=toY;
+    applyViewerTransform();
+}
+
+function resetViewerTransform(){
+    viewerScale=1;
+    viewerTranslateX=0;
+    viewerTranslateY=0;
+    syncViewerZoomMode();
+    resetViewerStage();
+    viewerTapMoved=false;
+    viewerTouchMode="";
+    applyViewerTransform();
+}
+
+function toggleViewerDoubleTapZoom(clientX, clientY){
+    clearTimeout(viewerTapTimer);
+    viewerTapTimer=null;
+    var fromScale=viewerScale;
+    var fromX=viewerTranslateX;
+    var fromY=viewerTranslateY;
+    if(viewerScale>1.2){
+        animateViewerImageTransform(fromScale, fromX, fromY, 1, 0, 0);
+        return;
+    }
+    var img=document.getElementById("viewerImg");
+    var rect=img.getBoundingClientRect();
+    var targetScale=2.4;
+    var centerX=rect.left + rect.width / 2;
+    var centerY=rect.top + rect.height / 2;
+    var targetX=-(clientX-centerX)*(targetScale-1);
+    var targetY=-(clientY-centerY)*(targetScale-1);
+    viewerScale=targetScale;
+    viewerTranslateX=targetX;
+    viewerTranslateY=targetY;
+    var pos=clampViewerTranslate(targetX,targetY);
+    animateViewerImageTransform(fromScale, fromX, fromY, targetScale, pos.x, pos.y);
+}
+
+function handleViewerTapCloseOrZoom(touch){
+    var now=Date.now();
+    var dx=touch.clientX-viewerLastTapX;
+    var dy=touch.clientY-viewerLastTapY;
+    var isDoubleTap=(now-viewerLastTapTime<280&&Math.abs(dx)<28&&Math.abs(dy)<28);
+    clearTimeout(viewerTapTimer);
+    if(isDoubleTap){
+        viewerLastTapTime=0;
+        viewerSuppressTapUntil=Date.now()+320;
+        toggleViewerDoubleTapZoom(touch.clientX,touch.clientY);
+        return;
+    }
+    viewerLastTapTime=now;
+    viewerLastTapX=touch.clientX;
+    viewerLastTapY=touch.clientY;
+    viewerTapTimer=setTimeout(function(){
+        viewerTapTimer=null;
+        if(document.getElementById("imgViewer").classList.contains("show")&&viewerScale<=1.02){
+            closeImgViewer();
+        }
+    },240);
+}
+
+function isViewerDoubleTapTouch(touch){
+    var now=Date.now();
+    return now-viewerLastTapTime<280&&Math.abs(touch.clientX-viewerLastTapX)<28&&Math.abs(touch.clientY-viewerLastTapY)<28;
+}
+
+function getTouchDistance(touches){
+    if(!touches||touches.length<2)return 0;
+    var dx=touches[0].clientX-touches[1].clientX;
+    var dy=touches[0].clientY-touches[1].clientY;
+    return Math.sqrt(dx*dx+dy*dy);
+}
+
+function renderViewerFrame(){
+    var items=viewerGroups[activeViewerGroupId]||[];
+    if(!items.length)return;
+    var item=items[activeViewerIndex];
+    document.getElementById("viewerImg").src=item.src;
+    document.getElementById("viewerLabel").textContent=item.label||"";
+    document.getElementById("viewerTime").textContent=item.time||"";
+    document.getElementById("viewerTime").style.display=item.time?"block":"none";
+    resetViewerTransform();
+    updateViewerNav();
+    preloadViewerNeighbors();
+}
+
+function resetViewerStage(){
+    var stage=document.getElementById("viewerStage");
+    var overlay=document.getElementById("imgViewer");
+    if(!stage)return;
+    stage.style.transform="";
+    stage.style.opacity="";
+    if(overlay){overlay.style.background=""}
+}
+
+function dragViewerStage(dx){
+    var stage=document.getElementById("viewerStage");
+    if(!stage)return;
+    var width=stage.offsetWidth||window.innerWidth||1;
+    var progress=Math.min(1,Math.abs(dx)/width);
+    var damped=dx*(0.92-(progress*0.18));
+    stage.style.transform="translate3d("+damped+"px,0,0) scale("+(1-progress*0.025)+")";
+    stage.style.opacity=String(1-progress*0.32);
+}
+
+function dragViewerDown(dy){
+    var stage=document.getElementById("viewerStage");
+    var overlay=document.getElementById("imgViewer");
+    if(!stage||dy<0)return;
+    var height=window.innerHeight||640;
+    var progress=Math.min(1,dy/(height*0.34));
+    stage.style.transform="translate3d(0,"+dy*0.82+"px,0) scale("+(1-progress*0.12)+")";
+    stage.style.opacity=String(1-progress*0.28);
+    if(overlay){overlay.style.background="rgba(0,0,0,"+(0.95-progress*0.55)+")"}
+}
+
+function animateViewerReturn(){
+    var stage=document.getElementById("viewerStage");
+    if(!stage||!stage.animate){resetViewerStage();return}
+    var current=stage.style.transform||"translateX(0)";
+    stage.animate([
+        {transform:current,opacity:stage.style.opacity||1},
+        {transform:"translate3d(0,0,0) scale(1)",opacity:1}
+    ],{duration:220,easing:"cubic-bezier(0.2, 0.8, 0.2, 1)"});
+    resetViewerStage();
+}
+
+function animateViewerEnter(direction){
+    var stage=document.getElementById("viewerStage");
+    if(!stage||!stage.animate){resetViewerStage();return Promise.resolve()}
+    var width=Math.min(window.innerWidth||360,520);
+    var enterX=direction==="next"?width:-width;
+    resetViewerStage();
+    return new Promise(function(resolve){requestAnimationFrame(resolve)}).then(function(){
+        return stage.animate([
+            {transform:"translate3d("+enterX+"px,0,0) scale(0.985)",opacity:0.98},
+            {transform:"translate3d(0,0,0) scale(1)",opacity:1}
+        ],{duration:205,easing:"cubic-bezier(0.22, 0.9, 0.24, 1)"}).finished;
+    }).then(function(){resetViewerStage()}).catch(function(){resetViewerStage()});
+}
+
+function preloadViewerNeighbors(){
+    var items=viewerGroups[activeViewerGroupId]||[];
+    [activeViewerIndex-1,activeViewerIndex+1].forEach(function(index){
+        if(index<0||index>=items.length||!items[index]||!items[index].src)return;
+        var img=new Image();
+        img.src=items[index].src;
+    });
+}
+
+function switchViewerImage(direction,fromDrag){
+    var items=viewerGroups[activeViewerGroupId]||[];
+    if(viewerIsSwitching)return;
+    if(items.length<2)return;
+    if(direction==="prev"&&activeViewerIndex<=0){
+        showViewerEdgeTip("prev");
+        animateViewerReturn();
+        return;
+    }
+    if(direction==="next"&&activeViewerIndex>=items.length-1){
+        showViewerEdgeTip("next");
+        animateViewerReturn();
+        return;
+    }
+    viewerIsSwitching=true;
+    activeViewerIndex+=direction==="next"?1:-1;
+    renderViewerFrame();
+    animateViewerEnter(direction).then(function(){viewerIsSwitching=false});
+}
+
+function openImgViewer(groupId,index){
+    activeViewerGroupId=groupId;
+    activeViewerIndex=index||0;
+    renderViewerFrame();
+    document.getElementById("imgViewer").classList.add("show");
+    document.body.style.overflow="hidden";
+}
+function showPrevViewerImage(){
+    switchViewerImage("prev",false);
+}
+function showNextViewerImage(){
+    switchViewerImage("next",false);
+}
+function openUploadPreview(src){
+    document.getElementById("uploadPreviewImg").src=src;
+    document.getElementById("uploadPreviewOverlay").classList.add("show");
+    document.body.style.overflow="hidden";
+}
+function closeUploadPreview(){
+    document.getElementById("uploadPreviewOverlay").classList.remove("show");
+    document.body.style.overflow="";
+}
+
+function handlePlaceholderUpload(input){
+    var f=input.files[0];
+    if(!f)return;
+    var fd=new FormData();
+    fd.append("after_image",f);
+    fetch(API+"/6s/"+currentRecord.id,{method:"PUT",headers:{"Authorization":"Bearer "+token},body:fd}).then(function(r){return r.json()}).then(function(d){
+        if(d.code===0){showToast("上传成功");setTimeout(function(){location.reload()},1000)}
+        else{showToast(d.msg)}
+    }).catch(function(){showToast("上传失败")});
+    input.value="";
+}
+
+function closeImgViewer(){
+    clearTimeout(viewerTapTimer);
+    viewerTapTimer=null;
+    viewerLastTapTime=0;
+    document.getElementById("imgViewer").classList.remove("show");
+    document.getElementById("viewerPrevTip").classList.remove("show");
+    document.getElementById("viewerNextTip").classList.remove("show");
+    resetViewerTransform();
+    document.body.style.overflow="";
+}
+var viewerStage=document.getElementById("viewerStage");
+viewerStage.addEventListener("touchstart",function(e){
+    if(!isTouchViewerDevice)return;
+    viewerTapMoved=false;
+    if(e.touches.length===1&&isViewerDoubleTapTouch(e.touches[0])){
+        e.preventDefault();
+        viewerLastTapTime=0;
+        viewerSuppressTapUntil=Date.now()+320;
+        viewerTouchMode="doubletap";
+        toggleViewerDoubleTapZoom(e.touches[0].clientX,e.touches[0].clientY);
+        return;
+    }
+    if(e.touches.length===2){
+        e.preventDefault();
+        viewerSuppressTapUntil=Date.now()+250;
+        viewerTouchMode="pinch";
+        viewerStartDistance=getTouchDistance(e.touches);
+        viewerStartScale=viewerScale;
+    }else if(e.touches.length===1&&viewerScale>1){
+        viewerSuppressTapUntil=Date.now()+250;
+        viewerTouchMode="pan";
+        viewerPanStartX=e.touches[0].clientX;
+        viewerPanStartY=e.touches[0].clientY;
+        viewerPanBaseX=viewerTranslateX;
+        viewerPanBaseY=viewerTranslateY;
+    }else if(e.touches.length===1){
+        viewerTouchMode="swipe";
+        viewerSwipeAxis="";
+        viewerSwipeStartX=e.touches[0].clientX;
+        viewerSwipeStartY=e.touches[0].clientY;
+        viewerSwipeCurrentX=0;
+        viewerSwipeStartTime=Date.now();
+    }
+},{passive:false});
+viewerStage.addEventListener("touchmove",function(e){
+    if(!isTouchViewerDevice)return;
+    if(viewerTouchMode==="pinch"&&e.touches.length===2){
+        e.preventDefault();
+        viewerTapMoved=true;
+        var distance=getTouchDistance(e.touches);
+        if(!viewerStartDistance)return;
+        viewerScale=clampViewerScale(viewerStartScale*(distance/viewerStartDistance));
+        applyViewerTransform();
+    }else if(viewerTouchMode==="pan"&&e.touches.length===1&&viewerScale>1){
+        e.preventDefault();
+        var panDx=e.touches[0].clientX-viewerPanStartX;
+        var panDy=e.touches[0].clientY-viewerPanStartY;
+        if(Math.abs(panDx)>8||Math.abs(panDy)>8){viewerTapMoved=true}
+        viewerTranslateX=viewerPanBaseX+panDx;
+        viewerTranslateY=viewerPanBaseY+panDy;
+        applyViewerTransform();
+    }else if(viewerTouchMode==="swipe"&&e.touches.length===1){
+        var dx=e.touches[0].clientX-viewerSwipeStartX;
+        var dy=e.touches[0].clientY-viewerSwipeStartY;
+        if(Math.abs(dx)>8||Math.abs(dy)>8){viewerTapMoved=true}
+        if(!viewerSwipeAxis&&Math.max(Math.abs(dx),Math.abs(dy))>12){
+            viewerSwipeAxis=Math.abs(dx)>Math.abs(dy)?"x":"y";
+        }
+        if(viewerSwipeAxis==="x"){
+            e.preventDefault();
+            viewerSwipeCurrentX=dx;
+            dragViewerStage(dx);
+        }else if(viewerSwipeAxis==="y"&&dy>0){
+            e.preventDefault();
+            dragViewerDown(dy);
+        }
+    }
+},{passive:false});
+viewerStage.addEventListener("touchend",function(e){
+    if(!isTouchViewerDevice)return;
+    if(e.touches.length===2){
+        viewerTouchMode="pinch";
+        viewerStartDistance=getTouchDistance(e.touches);
+        viewerStartScale=viewerScale;
+        return;
+    }
+    if(viewerTouchMode==="doubletap"){
+        viewerTouchMode="";
+        return;
+    }
+    if(viewerTouchMode==="pan"&&viewerScale>1){
+        var changedPan=e.changedTouches&&e.changedTouches[0];
+        if(changedPan&&!viewerTapMoved){
+            handleViewerTapCloseOrZoom(changedPan);
+            viewerTouchMode="";
+            return;
+        }
+    }
+    if(e.touches.length===1&&viewerScale>1){
+        viewerTouchMode="pan";
+        viewerPanStartX=e.touches[0].clientX;
+        viewerPanStartY=e.touches[0].clientY;
+        viewerPanBaseX=viewerTranslateX;
+        viewerPanBaseY=viewerTranslateY;
+        return;
+    }
+    if(viewerTouchMode==="swipe"&&viewerScale<=1.02){
+        var changed=e.changedTouches&&e.changedTouches[0];
+        if(changed){
+            var dx=changed.clientX-viewerSwipeStartX;
+            var dy=changed.clientY-viewerSwipeStartY;
+            var elapsed=Math.max(1,Date.now()-viewerSwipeStartTime);
+            var vx=dx/elapsed;
+            var vy=dy/elapsed;
+            if(viewerSwipeAxis==="y"&&dy>0&&Math.abs(dy)>Math.abs(dx)&&(dy>82||vy>0.55)){
+                closeImgViewer();
+                return;
+            }
+            if(viewerSwipeAxis==="x"&&Math.abs(dx)>Math.abs(dy)&&(Math.abs(dx)>48||Math.abs(vx)>0.45&&Math.abs(dx)>24)){
+                viewerSuppressTapUntil=Date.now()+250;
+                if(dx<0){switchViewerImage("next",true)}else{switchViewerImage("prev",true)}
+                viewerTouchMode="";
+                return;
+            }else if(!viewerTapMoved&&Date.now()>=viewerSuppressTapUntil){
+                handleViewerTapCloseOrZoom(changed);
+                return;
+            }else{
+                animateViewerReturn();
+                viewerTouchMode="";
+                return;
+            }
+        }
+    }
+    viewerTouchMode="";
+    if(viewerScale<=1.02){
+        resetViewerTransform();
+    }else{
+        applyViewerTransform();
+    }
+},{passive:false});
+viewerStage.addEventListener("click",function(e){
+    if(isTouchViewerDevice)return;
+    if(viewerScale<=1.02&&Date.now()>=viewerSuppressTapUntil&&!viewerMouseMoved){
+        e.preventDefault();
+        closeImgViewer();
+    }
+});
+viewerStage.addEventListener("wheel",function(e){
+    if(!document.getElementById("imgViewer").classList.contains("show"))return;
+    e.preventDefault();
+    var nextScale=clampViewerScale(viewerScale+(e.deltaY<0?0.18:-0.18));
+    viewerScale=nextScale;
+    if(viewerScale<=1.02){
+        resetViewerTransform();
+    }else{
+        applyViewerTransform();
+    }
+},{passive:false});
+viewerStage.addEventListener("mousedown",function(e){
+    if(viewerScale<=1.02)return;
+    e.preventDefault();
+    viewerMouseDown=true;
+    viewerMouseMoved=false;
+    viewerMouseStartX=e.clientX;
+    viewerMouseStartY=e.clientY;
+    viewerMouseBaseX=viewerTranslateX;
+    viewerMouseBaseY=viewerTranslateY;
+});
+document.addEventListener("mousemove",function(e){
+    if(!viewerMouseDown)return;
+    viewerMouseMoved=true;
+    viewerTranslateX=viewerMouseBaseX+(e.clientX-viewerMouseStartX);
+    viewerTranslateY=viewerMouseBaseY+(e.clientY-viewerMouseStartY);
+    applyViewerTransform();
+});
+document.addEventListener("mouseup",function(){
+    viewerMouseDown=false;
+});
+document.addEventListener("keydown",function(e){
+    if(e.key==="Escape")closeImgViewer();
+    if(!document.getElementById("imgViewer").classList.contains("show"))return;
+    if(e.key==="ArrowLeft")showPrevViewerImage();
+    if(e.key==="ArrowRight")showNextViewerImage();
+});
+
+loadRecord();
+</script>
+</body>
+</html>

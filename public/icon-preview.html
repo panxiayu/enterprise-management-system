@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拟物图标方案预览</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(145deg, #e8e8e8 0%, #d4d4d4 100%); min-height: 100vh; padding: 40px; }
+        h1 { text-align: center; margin-bottom: 40px; font-size: 28px; color: #333; font-weight: 300; letter-spacing: 2px; }
+        .preview-grid { display: flex; flex-direction: column; gap: 50px; max-width: 900px; margin: 0 auto; }
+        .scheme { background: linear-gradient(145deg, #f5f5f5, #e8e8e8); backdrop-filter: blur(20px); border-radius: 24px; padding: 32px; box-shadow: 20px 20px 60px rgba(0,0,0,0.1), -20px -20px 60px rgba(255,255,255,0.8); }
+        .scheme-title { font-size: 16px; font-weight: 500; color: #666; margin-bottom: 24px; letter-spacing: 1px; }
+        .icon-row { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+        .icon-item { width: 80px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; position: relative; }
+
+        /* 方案1：真实按钮风格 */
+        .s1 .icon-item {
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            box-shadow:
+                8px 8px 20px rgba(0,0,0,0.15),
+                -8px -8px 20px rgba(255,255,255,0.9);
+            color: #555;
+            font-size: 32px;
+        }
+        .s1 .icon-item:hover {
+            transform: translateY(-4px);
+            box-shadow:
+                12px 12px 30px rgba(0,0,0,0.2),
+                -8px -8px 20px rgba(255,255,255,0.9);
+        }
+        .s1 .icon-item:active {
+            transform: translateY(2px);
+            box-shadow:
+                4px 4px 10px rgba(0,0,0,0.15),
+                -4px -4px 10px rgba(255,255,255,0.9);
+        }
+        .s1 .icon-item.active {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            box-shadow:
+                6px 6px 15px rgba(102,126,234,0.4),
+                -4px -4px 10px rgba(255,255,255,0.3);
+        }
+
+        /* 方案2：木质纹理 */
+        .s2 .icon-item {
+            background: linear-gradient(145deg, #c9a66b, #a67c52);
+            box-shadow:
+                6px 6px 15px rgba(0,0,0,0.2),
+                inset 0 2px 4px rgba(255,255,255,0.3),
+                inset 0 -2px 4px rgba(0,0,0,0.1);
+            color: #4a3520;
+            font-size: 32px;
+            border-radius: 16px;
+        }
+        .s2 .icon-item::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 13px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.2), transparent);
+            pointer-events: none;
+        }
+        .s2 .icon-item:hover {
+            transform: translateY(-6px) rotateZ(-2deg);
+            box-shadow:
+                12px 16px 25px rgba(0,0,0,0.25),
+                inset 0 2px 4px rgba(255,255,255,0.3);
+        }
+        .s2 .icon-item.active {
+            background: linear-gradient(145deg, #8b5a2b, #5d3a1a);
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* 方案3：金属拉丝 */
+        .s3 .icon-item {
+            background: linear-gradient(145deg, #e0e0e0, #c0c0c0);
+            box-shadow:
+                6px 6px 15px rgba(0,0,0,0.2),
+                -4px -4px 10px rgba(255,255,255,0.8);
+            color: #404040;
+            font-size: 32px;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .s3 .icon-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.3) 2px,
+                rgba(255,255,255,0.3) 4px
+            );
+            pointer-events: none;
+        }
+        .s3 .icon-item:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow:
+                10px 15px 25px rgba(0,0,0,0.25),
+                -4px -4px 10px rgba(255,255,255,0.8);
+        }
+        .s3 .icon-item.active {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* 方案4：毛毡布料 */
+        .s4 .icon-item {
+            background: linear-gradient(145deg, #e85d5d, #c94444);
+            box-shadow:
+                6px 6px 15px rgba(0,0,0,0.2),
+                inset 0 -3px 10px rgba(0,0,0,0.2),
+                inset 0 3px 10px rgba(255,255,255,0.2);
+            color: #fff5f5;
+            font-size: 32px;
+            border-radius: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .s4 .icon-item:hover {
+            transform: translateY(-8px) rotate(-3deg);
+            box-shadow:
+                12px 20px 30px rgba(0,0,0,0.25),
+                inset 0 -3px 10px rgba(0,0,0,0.2),
+                inset 0 3px 10px rgba(255,255,255,0.2);
+        }
+        .s4 .icon-item.active {
+            background: linear-gradient(145deg, #ffd700, #ffaa00);
+            color: #4a3000;
+        }
+
+        /* 方案5：塑料亮面 */
+        .s5 .icon-item {
+            background: linear-gradient(145deg, #ff6b6b, #ee5a5a);
+            box-shadow:
+                8px 8px 20px rgba(0,0,0,0.2),
+                -8px -8px 20px rgba(255,255,255,0.9),
+                inset 0 -5px 15px rgba(0,0,0,0.1),
+                inset 0 5px 15px rgba(255,255,255,0.3);
+            color: white;
+            font-size: 32px;
+            border-radius: 24px;
+        }
+        .s5 .icon-item::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 12px;
+            width: 25px;
+            height: 12px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.6), transparent);
+            border-radius: 10px;
+            pointer-events: none;
+        }
+        .s5 .icon-item:hover {
+            transform: translateY(-6px) scale(1.08);
+            box-shadow:
+                12px 20px 30px rgba(0,0,0,0.25),
+                -8px -8px 20px rgba(255,255,255,0.9);
+        }
+        .s5 .icon-item.active {
+            background: linear-gradient(145deg, #4ecdc4, #44a08d);
+        }
+
+        /* 方案6：透明玻璃 */
+        .s6 .icon-item {
+            background: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.5);
+            box-shadow:
+                8px 8px 20px rgba(0,0,0,0.1),
+                -8px -8px 20px rgba(255,255,255,0.9),
+                inset 0 0 30px rgba(255,255,255,0.5);
+            color: #3b82f6;
+            font-size: 32px;
+            border-radius: 20px;
+        }
+        .s6 .icon-item:hover {
+            transform: translateY(-8px) scale(1.1);
+            box-shadow:
+                15px 25px 40px rgba(59,130,246,0.3),
+                -8px -8px 20px rgba(255,255,255,0.9);
+        }
+        .s6 .icon-item.active {
+            background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+            color: white;
+            border-color: #60a5fa;
+        }
+
+        /* 方案7：皮质皮革 */
+        .s7 .icon-item {
+            background: linear-gradient(145deg, #8b4513, #654321);
+            box-shadow:
+                6px 6px 15px rgba(0,0,0,0.3),
+                inset 0 2px 4px rgba(255,255,255,0.1),
+                inset 0 -2px 4px rgba(0,0,0,0.2);
+            color: #deb887;
+            font-size: 32px;
+            border-radius: 16px;
+            text-shadow: 0 2px 3px rgba(0,0,0,0.4);
+        }
+        .s7 .icon-item::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        .s7 .icon-item:hover {
+            transform: translateY(-6px) rotateX(10deg);
+            box-shadow:
+                10px 18px 30px rgba(0,0,0,0.35),
+                inset 0 2px 4px rgba(255,255,255,0.1);
+        }
+        .s7 .icon-item.active {
+            background: linear-gradient(145deg, #2e8b57, #1e6b47);
+            color: #90ee90;
+        }
+
+        /* 方案8：硅胶软质 */
+        .s8 .icon-item {
+            background: linear-gradient(145deg, #ff9a9e, #fecfef);
+            box-shadow:
+                8px 8px 20px rgba(0,0,0,0.15),
+                -8px -8px 20px rgba(255,255,255,0.9),
+                inset 0 -8px 20px rgba(0,0,0,0.05),
+                inset 0 8px 20px rgba(255,255,255,0.5);
+            color: #c44569;
+            font-size: 32px;
+            border-radius: 28px;
+        }
+        .s8 .icon-item:hover {
+            transform: translateY(-8px) scale(1.1);
+            box-shadow:
+                15px 25px 40px rgba(196,69,105,0.3),
+                -8px -8px 20px rgba(255,255,255,0.9);
+        }
+        .s8 .icon-item.active {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>拟物图标方案</h1>
+    <div class="preview-grid">
+
+        <!-- 方案1：真实按钮 -->
+        <div class="scheme s1">
+            <div class="scheme-title">方案1：真实按钮风格</div>
+            <div class="icon-row">
+                <div class="icon-item active">🏠</div>
+                <div class="icon-item">👥</div>
+                <div class="icon-item">📋</div>
+                <div class="icon-item">📁</div>
+                <div class="icon-item">📝</div>
+                <div class="icon-item">🍱</div>
+            </div>
+        </div>
+
+        <!-- 方案2：木质纹理 -->
+        <div class="scheme s2">
+            <div class="scheme-title">方案2：木质纹理</div>
+            <div class="icon-row">
+                <div class="icon-item">🏠</div>
+                <div class="icon-item">👥</div>
+                <div class="icon-item">📋</div>
+                <div class="icon-item active">📁</div>
+                <div class="icon-item">📝</div>
+                <div class="icon-item">🍱</div>
+            </div>
+        </div>
+
+        <!-- 方案3：金属拉丝 -->
+        <div class="scheme s3">
+            <div class="scheme-title">方案3：金属拉丝</div>
+            <div class="icon-row">
+                <div class="icon-item">🏠</div>
+                <div class="icon-item">👥</div>
+                <div class="icon-item">📋</div>
+                <div class="icon-item">📁</div>
+                <div class="icon-item active">📝</div>
+                <div class="icon-item">🍱</div>
+            </div>
+        </div>
+
+        <!-- 方案4：毛毡布料 -->
+        <div class="scheme s4">
+            <div class="scheme-title">方案4：毛毡布料</div>
+            <div class="icon-row">
+                <div class="icon-item">🏠</div>
+                <div class="icon-item">👥</div>
+                <div class="icon-item active">📋</div>
+                <div class="icon-item">📁</div>
+                <div class="icon-item">📝</div>
+                <div class="icon-item">🍱</div>
+            </div>
+        </div>
+
+        <!-- 方案5：塑料亮面 -->
+        <div class="scheme s5">
+            <div class="scheme-title">方案5：塑料亮面 + 高光</div>
+            <div class="icon-row">
+                <div class="icon-item">🏠</div>
+                <div class="icon-item">👥</div>
+                <div class="icon-item">📋</div>
+                <div class="icon-item">📁</div>
+                <div class="icon-item">📝</div>
+                <div class="icon-item active">🍱</div>
+            </div>
+        </div>
+
+        <!-- 方案6：透明玻璃 -->
+        <div class="scheme s6">
+            <div class="scheme-title">方案6：透明玻璃</div>
+            <div class="icon-row">
+                <div class="icon-item">🏠</div>
+                <div class="icon-item">👥</div>
+                <div class="icon-item">📋</div>
+                <div class="icon-item">📁</div>
+                <div class="icon-item">📝</div>
+                <div class="icon-item">🍱</div>
+            </div>
+        </div>
+
+        <!-- 方案7：皮质皮革 -->
+        <div class="scheme s7">
+            <div class="scheme-title">方案7：皮质皮革</div>
+            <div class="icon-row">
+                <div class="icon-item">🏠</div>
+                <div class="icon-item active">👥</div>
+                <div class="icon-item">📋</div>
+                <div class="icon-item">📁</div>
+                <div class="icon-item">📝</div>
+                <div class="icon-item">🍱</div>
+            </div>
+        </div>
+
+        <!-- 方案8：硅胶软质 -->
+        <div class="scheme s8">
+            <div class="scheme-title">方案8：硅胶软质渐变</div>
+            <div class="icon-row">
+                <div class="icon-item">🏠</div>
+                <div class="icon-item">👥</div>
+                <div class="icon-item">📋</div>
+                <div class="icon-item">📁</div>
+                <div class="icon-item">📝</div>
+                <div class="icon-item active">🍱</div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

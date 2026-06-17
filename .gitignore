@@ -1,0 +1,42 @@
+node_modules/
+npm-debug.log
+data/exam.db
+.env
+*.log
+.DS_Store
+.vscode/
+.idea/
+node_modules/
+npm-debug.log
+data/exam.db
+data/exam.db-wal
+data/exam.db-shm
+data/backups/
+.env
+*.log
+.DS_Store
+.vscode/
+.idea/
+uploads/
+tmp/
+exam.db
+
+# dotfiles / caches
+.*
+!.gitignore
+
+# deploy scripts with credentials
+deploy.bat
+deploy.exp
+push.bat
+push.exp
+push.ps1
+ssh_connect.ps1
+add_key.ps1
+add_key.sh
+
+# misc
+test.txt
+server-test.log
+server.log
+claude-talk-to-figma-mcp/

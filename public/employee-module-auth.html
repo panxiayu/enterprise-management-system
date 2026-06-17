@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>模块验证 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/mobile-theme.css">
+    <style>
+        :root {
+            --bg: #F0F7FF;
+            --card: #fff;
+            --border: #D6E9FF;
+            --primary: #4A90E2;
+            --text: #1D2B5A;
+            --text-soft: #5B72A9;
+            --radius: 22px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+            background: linear-gradient(145deg, #e2f5ff, #f8f1fb);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+        .card {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255,255,255,.86);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 20px;
+            box-shadow: 0 14px 36px rgba(74, 144, 226, 0.14);
+        }
+        .title { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+        .subtitle { color: var(--text-soft); font-size: 14px; line-height: 1.7; margin-bottom: 20px; }
+        .field { margin-bottom: 16px; }
+        .label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 700; }
+        .input {
+            width: 100%;
+            height: 48px;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 0 14px;
+            font-size: 16px;
+            outline: none;
+            background: #fff;
+            color: var(--text);
+        }
+        .input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.12); }
+        .hint { color: var(--text-soft); font-size: 13px; line-height: 1.7; margin-bottom: 18px; }
+        .actions { display: flex; gap: 10px; }
+        .btn {
+            flex: 1;
+            height: 46px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-primary { background: linear-gradient(135deg, #4A90E2, #65B3FF); color: #fff; }
+        .btn-ghost { background: #edf7ff; color: var(--primary); }
+        .msg { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 14px; font-size: 13px; }
+        .msg-error { background: #fff1f2; color: #dc2626; border: 1px solid #fecdd3; }
+        .msg-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <div class="title" id="pageTitle">进入模块验证</div>
+        <div class="subtitle" id="pageSubtitle">请输入与当前工号对应的管理员密码，通过后当天本设备内可直接进入。</div>
+        <form id="verifyForm">
+            <div class="field">
+                <label class="label" for="password">管理员密码</label>
+                <input id="password" class="input" type="password" placeholder="请输入管理员密码" autocomplete="off" required>
+            </div>
+            <div class="hint" id="pageHint">验证通过后，当天再次进入相关模块无需重复输入。</div>
+            <div class="actions">
+                <button type="button" class="btn btn-ghost" onclick="goBack()">返回</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">验证进入</button>
+            </div>
+            <div id="msgError" class="msg msg-error"></div>
+            <div id="msgSuccess" class="msg msg-success"></div>
+        </form>
+    </main>
+
+    <script src="/js/employee-session.js"></script>
+    <script src="/js/auth-guard.js"></script>
+    <script src="/js/module-access.js"></script>
+    <script>
+        const API = window.location.origin + '/api';
+        const params = new URLSearchParams(window.location.search);
+        const scope = params.get('scope') || 'admin-linked';
+        const target = params.get('target') || 'employee.html';
+        const title = params.get('title') || '模块';
+
+        function goBack() {
+            window.history.length > 1 ? window.history.back() : window.location.href = 'employee.html';
+        }
+
+        async function api(path, options = {}) {
+            const token = localStorage.getItem('employee_token');
+            const response = await fetch(API + path, {
+                ...options,
+                headers: {
+                    Authorization: 'Bearer ' + token,
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(options.headers || {})
+                }
+            });
+            const data = await response.json();
+            if (!response.ok || data.code !== 0) {
+                throw new Error(data.msg || '操作失败');
+            }
+            return data.data;
+        }
+
+        function showMessage(id, text) {
+            const errorBox = document.getElementById('msgError');
+            const successBox = document.getElementById('msgSuccess');
+            errorBox.style.display = 'none';
+            successBox.style.display = 'none';
+            const box = document.getElementById(id);
+            box.textContent = text;
+            box.style.display = 'block';
+        }
+
+        function redirectToTarget() {
+            window.location.href = target;
+        }
+
+        async function init() {
+            if (!window.EmployeeSession.ensureValid()) {
+                window.EmployeeSession.redirectToLogin();
+                return;
+            }
+
+            if (window.ModuleAccess.has(scope)) {
+                redirectToTarget();
+                return;
+            }
+
+            document.getElementById('pageTitle').textContent = `${title}验证`;
+
+            try {
+                const info = await api(`/auth/module-access-info?module=${encodeURIComponent(scope)}`);
+                if (!info.requires_password) {
+                    redirectToTarget();
+                    return;
+                }
+                const adminText = info.admin_username ? `当前将校验管理员账号 ${info.admin_username} 的密码。` : '当前将校验对应管理员密码。';
+                document.getElementById('pageSubtitle').textContent = `请输入与当前工号对应的管理员密码，通过后当天本设备内可直接进入。`;
+                document.getElementById('pageHint').textContent = `${adminText} 验证通过后，当天再次进入相关模块无需重复输入。`;
+            } catch (err) {
+                showMessage('msgError', err.message);
+            }
+        }
+
+        document.getElementById('verifyForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = '验证中...';
+            try {
+                await api('/auth/verify-module-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ module: scope, password })
+                });
+                window.ModuleAccess.grant(scope);
+                showMessage('msgSuccess', '验证成功，正在进入...');
+                setTimeout(redirectToTarget, 500);
+            } catch (err) {
+                showMessage('msgError', err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '验证进入';
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>

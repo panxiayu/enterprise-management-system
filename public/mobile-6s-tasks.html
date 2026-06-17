@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>6S曝光任务 - 兴利汽车模具</title>
+<style>
+* {margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root {--bg:#f0f7ff;--card:#fff;--border:#d6e9ff;--primary:#4a90e2;--accent:#22c58d;--text:#1d2b5a;--text-soft:#5b72a9;--radius:22px;--shadow:0 8px 24px rgba(74,144,226,0.12);--shadow-hover:0 12px 32px rgba(74,144,226,0.18);--transition:0.3s;--orange:#ff9500;--red:#ff3b30}
+body {font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;background:var(--bg);color:var(--text);padding-bottom:100px;padding-top:20px}
+.container {max-width:480px;margin:0 auto;padding:0 16px}
+@media (min-width:768px){.container{max-width:680px;padding:0 24px}}
+@media (min-width:1024px){.container{max-width:800px}}
+.header {display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.header-title {font-size:18px;font-weight:700}
+.back-btn {width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(0,122,255,0.1);color:var(--primary);font-size:20px;cursor:pointer}
+.stats-row {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin-bottom:12px;background:rgba(255,255,255,0.9);border:1px solid rgba(74,144,226,0.14);border-radius:20px;box-shadow:0 8px 24px rgba(74,144,226,0.08);overflow:hidden}
+.stat-card {background:transparent;padding:12px 4px 11px;text-align:center;border:0;border-right:1px solid rgba(74,144,226,0.12);transition:var(--transition)}
+.stat-card:last-child {border-right:0}
+.stat-value {font-size:27px;font-weight:700;color:var(--primary);line-height:1.05;margin-bottom:5px}
+.stat-label {font-size:12px;color:var(--text-soft);line-height:1.2;white-space:nowrap}
+.filter-bar {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:16px;padding:6px;background:rgba(255,255,255,0.72);border:1px solid rgba(74,144,226,0.12);border-radius:18px}
+.filter-btn {min-width:0;padding:10px 4px;background:transparent;border:0;border-radius:13px;font-size:13px;font-weight:600;color:var(--text-soft);cursor:pointer;transition:var(--transition);white-space:nowrap}
+.filter-btn.active {background:var(--primary);color:#fff;box-shadow:0 6px 14px rgba(74,144,226,0.22)}
+.fade-item {opacity:0;transform:translateY(30px);transition:all .45s cubic-bezier(0.16,1,0.3,1)}
+.fade-in {opacity:1 !important;transform:translateY(0) !important}
+.ios-card {background:var(--card);border-radius:20px;padding:15px 16px;margin-bottom:12px;border:1px solid rgba(74,144,226,0.16);box-shadow:0 10px 26px rgba(74,144,226,0.1);cursor:pointer;transition:var(--transition)}
+.ios-card:hover {transform:translateY(-4px);box-shadow:var(--shadow-hover);border-color:var(--primary)}
+.ios-card:active {transform:scale(0.98);opacity:0.9}
+.card-header {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-bottom:10px}
+.card-title {font-size:16px;font-weight:700;word-break:break-word;min-width:0;line-height:1.35;letter-spacing:0;color:var(--text)}
+.card-body {background:linear-gradient(180deg,rgba(74,144,226,0.07),rgba(74,144,226,0.04));border:1px solid rgba(74,144,226,0.08);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.card-area {font-size:13px;color:var(--primary);font-weight:700;line-height:1.45;margin-bottom:6px;word-break:break-word}
+.card-desc {font-size:13px;color:var(--text);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.card-info {font-size:12px;color:var(--text-soft);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.card-info span {display:flex;align-items:center;min-height:30px;background:rgba(74,144,226,0.06);border:1px solid rgba(74,144,226,0.08);border-radius:10px;padding:6px 9px;line-height:1.35;word-break:break-word}
+.badge {display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;flex-shrink:0;white-space:nowrap}
+.badge-orange {background:rgba(255,193,7,0.18);color:#B77900}
+.badge-blue {background:rgba(74,144,226,0.12);color:var(--primary)}
+.badge-green {background:rgba(34,197,94,0.12);color:var(--accent)}
+.badge-red {background:rgba(255,59,48,0.12);color:var(--red)}
+@media (max-width:360px){.card-info{grid-template-columns:1fr}}
+@media (max-width:480px){.stat-value{font-size:26px}.filter-btn{font-size:13px}}
+@media (max-width:360px){.stat-label{font-size:11px}.filter-btn{font-size:12px}}
+.empty-state {text-align:center;padding:60px 20px;color:var(--text-soft)}
+.empty-icon {font-size:48px;margin-bottom:12px}
+.loading {text-align:center;padding:60px 20px;color:var(--text-soft)}
+.loading::after {content:"";display:inline-block;width:18px;height:18px;border:2px solid var(--primary);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;margin-left:10px;vertical-align:middle}
+@keyframes spin {to {transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="stats-row">
+<div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">全部</div></div>
+<div class="stat-card"><div class="stat-value" id="statPending">0</div><div class="stat-label">待整改</div></div>
+<div class="stat-card"><div class="stat-value" id="statReview">0</div><div class="stat-label">待审核</div></div>
+<div class="stat-card"><div class="stat-value" id="statFixed">0</div><div class="stat-label">已达标</div></div>
+</div>
+
+<div class="filter-bar">
+<button class="filter-btn active" onclick="setFilter('all',this)">全部</button>
+<button class="filter-btn" onclick="setFilter('pending',this)">待整改</button>
+<button class="filter-btn" onclick="setFilter('review',this)">待审核</button>
+<button class="filter-btn" onclick="setFilter('fixed',this)">已达标</button>
+</div>
+
+<div id="loading" class="loading">加载中</div>
+<div id="emptyState" class="empty-state" style="display:none">
+<div class="empty-icon">✓</div>
+<div>暂无曝光任务</div>
+</div>
+<div id="recordList"></div>
+</div>
+
+<script src="/js/employee-session.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script>
+var API=window.location.origin+"/api";
+var token=window.EmployeeSession.ensureValid()?localStorage.getItem("employee_token"):"";
+if(!token){window.EmployeeSession.redirectToLogin()}
+
+function goBack(){window.location.href="employee.html"}
+
+var allRecords=[];
+var currentFilter="all";
+
+function setFilter(type,btn){
+  currentFilter=type;
+  if(btn){
+    var btns=document.querySelectorAll(".filter-btn");
+    for(var i=0;i<btns.length;i++){btns[i].classList.remove("active")}
+    btn.classList.add("active");
+  }
+  renderRecords();
+}
+
+function renderRecords(){
+  var records=allRecords;
+  if(currentFilter==="pending"){
+    records=allRecords.filter(function(r){return !r.review_status||r.review_status==="pending"||r.review_status==="rejected"});
+  }else if(currentFilter==="review"){
+    records=allRecords.filter(function(r){return r.review_status==="submitted"});
+  }else if(currentFilter==="fixed"){
+    records=allRecords.filter(function(r){return r.review_status==="approved"});
+  }
+
+  if(records.length===0){
+    document.getElementById("emptyState").style.display="";
+    document.getElementById("recordList").innerHTML="";
+    return;
+  }
+  document.getElementById("emptyState").style.display="none";
+
+  var list=document.getElementById("recordList");
+  var html="";
+  for(var i=0;i<records.length;i++){
+    var r=records[i];
+    var rs=r.review_status;
+    var rejectCount=Number(r.reject_count||0);
+    if(!rejectCount&&r.reject_reason){rejectCount=1}
+    var badge="";
+    if(rs==="approved") badge="<span class='badge badge-green'>已通过</span>";
+    else if(rs==="submitted") badge="<span class='badge badge-blue'>待审核</span>";
+    else if(rs==="rejected"||rejectCount>0) badge="<span class='badge badge-red'>未达标"+rejectCount+"</span>";
+    else badge="<span class='badge badge-orange'>待整改</span>";
+
+    var deadlineStr="";
+    if(r.deadline){
+      var dParts=r.deadline.split("T")[0].split("-");
+      if(dParts.length===3){deadlineStr=dParts[0]+"-"+dParts[1]+"-"+dParts[2]}
+      else {deadlineStr=r.deadline}
+    }
+
+    html+="<div class='ios-card fade-item' onclick=\"viewRecord("+r.id+")\">";
+    html+="<div class='card-header'><span class='card-title'>"+(r.project_code||"未编号")+"</span>"+badge+"</div>";
+    html+="<div class='card-body'><div class='card-area'>"+(r.area||"未指定区域")+"</div><div class='card-desc'>"+(r.description||"暂无描述")+"</div></div>";
+    html+="<div class='card-info'>"+(deadlineStr?"<span>截止: "+deadlineStr+"</span>":"<span>截止: -</span>")+"<span>检查人: "+(r.created_by_username||"-")+"</span></div>";
+    html+="</div>";
+  }
+  list.innerHTML=html;
+
+  var items=list.querySelectorAll(".fade-item");
+  for(var j=0;j<items.length;j++){
+    (function(idx){
+      setTimeout(function(){items[idx].classList.add("fade-in")},100*idx);
+    })(j);
+  }
+}
+
+async function loadTasks(){
+  try{
+    var res=await fetch(API+"/6s/my-tasks",{headers:{"Authorization":"Bearer "+token}});
+    var d=await res.json();
+    document.getElementById("loading").style.display="none";
+    if(d.code===0&&d.data){
+      allRecords=d.data||[];
+      document.getElementById("statTotal").textContent=allRecords.length;
+      var pending=0, review=0, fixed=0;
+      for(var i=0;i<allRecords.length;i++){
+        var r=allRecords[i];
+        if(!r.review_status||r.review_status==="pending"||r.review_status==="rejected"){pending++}
+        else if(r.review_status==="submitted"){review++}
+        else if(r.review_status==="approved"){fixed++}
+      }
+      document.getElementById("statPending").textContent=pending;
+      document.getElementById("statReview").textContent=review;
+      document.getElementById("statFixed").textContent=fixed;
+      renderRecords();
+    } else {
+      document.getElementById("emptyState").style.display="";
+    }
+  } catch(e){
+    document.getElementById("loading").textContent="加载失败";
+  }
+}
+
+function viewRecord(id){window.location.href="mobile-6s-detail.html?id="+id+"&source=task"}
+loadTasks();
+</script>
+</body>
+</html>

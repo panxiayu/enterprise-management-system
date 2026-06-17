@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>宁波兴利汽车模具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg: #F0F7FF;
+            --card: #ffffff;
+            --border: #D6E9FF;
+            --primary: #4A90E2;
+            --secondary: #65B3FF;
+            --accent: #22C58D;
+            --text: #1D2B5A;
+            --text-soft: #5B72A9;
+            --orange: #F59E0B;
+            --blue: #3B82F6;
+            --radius: 22px;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .wrap {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+
+        /* 标题区 */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header-date {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .header-weekday {
+            font-size: 14px;
+            color: var(--text-soft);
+            margin-top: 4px;
+        }
+
+        /* 员工餐统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        .stat-card.lunch::before { background: linear-gradient(90deg, var(--orange), #FBBF24); }
+        .stat-card.dinner::before { background: linear-gradient(90deg, var(--blue), #60A5FA); }
+
+        .stat-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-soft);
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .stat-unit {
+            font-size: 13px;
+            color: var(--text-soft);
+            margin-top: 4px;
+        }
+        .stat-card.lunch .stat-value { color: var(--orange); }
+        .stat-card.dinner .stat-value { color: var(--blue); }
+
+        /* 客餐明细 */
+        .guest-section {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .guest-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .guest-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .guest-badge {
+            background: var(--accent);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 12px;
+        }
+
+        .guest-group {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .guest-group:last-child {
+            border-bottom: none;
+        }
+        .guest-group-title {
+            font-size: 12px;
+            color: var(--text-soft);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .guest-card {
+            background: #F0FDF4;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            border: 1px solid #A7F3D0;
+        }
+        .guest-card:last-child {
+            margin-bottom: 0;
+        }
+        .guest-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .guest-reporter {
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 500;
+        }
+        .guest-count {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .guest-reason {
+            font-size: 12px;
+            color: var(--text-soft);
+        }
+
+        /* 底部签名 */
+        .footer {
+            text-align: center;
+            padding: 16px;
+            color: var(--text-soft);
+            font-size: 13px;
+        }
+        .sign-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sign-line {
+            width: 80px;
+            height: 1px;
+            background: #ccc;
+            display: inline-block;
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            color: var(--text-soft);
+        }
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-soft);
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        /* 入场动画 */
+        .fade-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 打印样式 */
+        @media print {
+            body { background: #fff; }
+            .wrap { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <!-- 标题 -->
+        <div class="header fade-in">
+            <div class="header-date" id="currentDate"></div>
+            <div class="header-weekday" id="currentWeekday"></div>
+        </div>
+
+        <!-- 加载状态 -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <div>加载中...</div>
+        </div>
+
+        <!-- 内容 -->
+        <div id="content" style="display: none;">
+            <!-- 员工餐统计 -->
+            <div class="stats-grid" id="statsGrid"></div>
+
+            <!-- 客餐明细 -->
+            <div class="guest-section" id="guestSection" style="display: none;">
+                <div class="guest-header">
+                    <span class="guest-title">👥 客餐明细</span>
+                    <span class="guest-badge" id="guestBadge">0人</span>
+                </div>
+                <div id="guestDetails"></div>
+            </div>
+
+            <!-- 底部 -->
+            <div class="footer fade-in">
+                <div class="sign-box">
+                    <span id="footerDate"></span>
+                    <span class="sign-line"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-icon">🍽️</div>
+            <div>今日暂无报餐</div>
+        </div>
+    </div>
+
+    <script>
+        function formatDateDisplay() {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            return `${month}月${day}日`;
+        }
+
+        function formatWeekday() {
+            const now = new Date();
+            const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()];
+            return weekday;
+        }
+
+        document.getElementById('currentDate').textContent = formatDateDisplay();
+        document.getElementById('currentWeekday').textContent = formatWeekday();
+        document.getElementById('footerDate').textContent = formatDateDisplay();
+
+        async function loadTodayStats() {
+            try {
+                const res = await fetch('/api/meal/canteen-today');
+                const data = await res.json();
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (data.code !== 0 || !data.data) {
+                    document.getElementById('emptyState').style.display = '';
+                    return;
+                }
+
+                const stats = data.data;
+                const cards = [];
+
+                // 员工午餐
+                if (stats.lunch_employee > 0) {
+                    cards.push(`
+                        <div class="stat-card lunch fade-in">
+                            <div class="stat-icon">🍱</div>
+                            <div class="stat-label">员工午餐</div>
+                            <div class="stat-value">${stats.lunch_employee}</div>
+                            <div class="stat-unit">份</div>
+                        </div>
+                    `);
+                }
+
+                // 员工晚餐
+                if (stats.dinner_employee > 0) {
+                    cards.push(`
+                        <div class="stat-card dinner fade-in">
+                            <div class="stat-icon">🍚</div>
+                            <div class="stat-label">员工晚餐</div>
+                            <div class="stat-value">${stats.dinner_employee}</div>
+                            <div class="stat-unit">份</div>
+                        </div>
+                    `);
+                }
+
+                // 检查是否有数据
+                const hasEmployee = stats.lunch_employee > 0 || stats.dinner_employee > 0;
+                const hasGuest = (stats.lunch_guests && stats.lunch_guests.length > 0) ||
+                                 (stats.dinner_guests && stats.dinner_guests.length > 0);
+
+                if (!hasEmployee && !hasGuest) {
+                    document.getElementById('emptyState').style.display = '';
+                    return;
+                }
+
+                document.getElementById('content').style.display = '';
+
+                // 员工餐卡片
+                if (cards.length > 0) {
+                    document.getElementById('statsGrid').innerHTML = cards.join('');
+                }
+
+                // 客餐明细
+                if (hasGuest) {
+                    let guestTotal = 0;
+                    let guestHtml = '';
+
+                    // 午餐客餐
+                    if (stats.lunch_guests && stats.lunch_guests.length > 0) {
+                        guestTotal += stats.lunch_guests.reduce((sum, g) => sum + g.guest_count, 0);
+                        guestHtml += `
+                            <div class="guest-group">
+                                <div class="guest-group-title">🍱 午餐客餐</div>
+                                ${stats.lunch_guests.map(g => {
+                                    const reporter = g.employee_id ? `${g.employee_id} ${g.name}` : '-';
+                                    const reason = g.reason || '';
+                                    return `
+                                        <div class="guest-card">
+                                            <div class="guest-card-header">
+                                                <span class="guest-reporter">${reporter}</span>
+                                                <span class="guest-count">${g.guest_count}人</span>
+                                            </div>
+                                            ${reason ? `<div class="guest-reason">${reason}</div>` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        `;
+                    }
+
+                    // 晚餐客餐
+                    if (stats.dinner_guests && stats.dinner_guests.length > 0) {
+                        guestTotal += stats.dinner_guests.reduce((sum, g) => sum + g.guest_count, 0);
+                        guestHtml += `
+                            <div class="guest-group">
+                                <div class="guest-group-title">🍚 晚餐客餐</div>
+                                ${stats.dinner_guests.map(g => {
+                                    const reporter = g.employee_id ? `${g.employee_id} ${g.name}` : '-';
+                                    const reason = g.reason || '';
+                                    return `
+                                        <div class="guest-card">
+                                            <div class="guest-card-header">
+                                                <span class="guest-reporter">${reporter}</span>
+                                                <span class="guest-count">${g.guest_count}人</span>
+                                            </div>
+                                            ${reason ? `<div class="guest-reason">${reason}</div>` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        `;
+                    }
+
+                    document.getElementById('guestSection').style.display = '';
+                    document.getElementById('guestBadge').textContent = guestTotal + '人';
+                    document.getElementById('guestDetails').innerHTML = guestHtml;
+                }
+
+            } catch (err) {
+                console.error('加载失败:', err);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('emptyState').style.display = '';
+            }
+        }
+
+        loadTodayStats();
+        setInterval(loadTodayStats, 60000);
+    </script>
+</body>
+</html>

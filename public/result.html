@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>考试结果</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <style>
+  </style>
+</head>
+<body>
+  <div class="container result-container">
+    <div class="result-card">
+      <div class="result-icon">🎉</div>
+      <h1>考试完成！</h1>
+      <div class="score-display">
+        <span id="score-label" class="score-label">您的成绩</span>
+        <span id="score" class="score-value">--</span>
+        <span class="score-total">/ 100 分</span>
+      </div>
+      <p id="resultMsg" class="result-msg"></p>
+      <div class="result-actions">
+        <button onclick="goToExamList()" class="btn btn-primary">返回列表</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/result.js"></script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

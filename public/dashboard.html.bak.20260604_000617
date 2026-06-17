@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>宁波兴利汽车模具</title>
+    <link rel="stylesheet" href="css/glass-workbench-theme.css">
+    <style>
+        * { -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --glass-shell: rgba(239, 249, 255, 0.30);
+            --glass-panel: rgba(255, 255, 255, 0.34);
+            --glass-soft: rgba(255, 255, 255, 0.28);
+            --glass-line: rgba(255, 255, 255, 0.82);
+            --line: rgba(107, 148, 184, 0.14);
+            --blue: #1678e6;
+            --blue-deep: #154b8b;
+            --cyan: #19aee6;
+            --green: #39ad72;
+            --red: #e46f72;
+            --text: #24476e;
+            --text-soft: #7290ae;
+            --text-faint: #9db2c8;
+            --transition: all .28s ease;
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body.theme-glass-workbench {
+            min-height: 100vh;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            background:
+              radial-gradient(circle at 12% 16%, rgba(203, 241, 255, .98), transparent 31%),
+              radial-gradient(circle at 77% 55%, rgba(244, 212, 250, .78), transparent 34%),
+              radial-gradient(circle at 54% 112%, rgba(172, 217, 255, .84), transparent 36%),
+              linear-gradient(135deg, #d2effb 0%, #edf8fd 45%, #f7e7f1 100%);
+        }
+        .ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .fullpage-frost {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: rgba(245, 251, 255, 0.08);
+            backdrop-filter: blur(10px) saturate(118%);
+        }
+        .curve { position: absolute; border-radius: 48% 52% 42% 58%; filter: saturate(112%); }
+        .curve-blue {
+            opacity: .48;
+            width: 980px; height: 560px; left: -310px; bottom: -250px; transform: rotate(-9deg);
+            background: linear-gradient(138deg, rgba(67, 182, 247, .68), rgba(79, 142, 242, .66) 54%, rgba(78, 106, 220, .62));
+            box-shadow: inset -24px 28px 52px rgba(255,255,255,.2);
+        }
+        .curve-blue::after {
+            content: ""; position: absolute; inset: 54px -80px -45px 145px; border-radius: inherit;
+            background: linear-gradient(140deg, rgba(119, 214, 255, .38), rgba(129, 125, 226, .44)); transform: rotate(-7deg);
+        }
+        .curve-warm {
+            opacity: .38;
+            width: 760px; height: 470px; right: -270px; top: -205px; transform: rotate(22deg);
+            background: linear-gradient(142deg, rgba(255, 212, 143, .68), rgba(255, 170, 133, .64) 52%, rgba(250, 128, 152, .62));
+            box-shadow: inset 16px -28px 58px rgba(255,255,255,.22);
+        }
+        .curve-warm::after {
+            content: ""; position: absolute; inset: 58px 32px -76px 142px; border-radius: inherit;
+            border: 26px solid rgba(245, 138, 157, .28); transform: rotate(-12deg);
+        }
+        .curve-violet {
+            opacity: .28;
+            width: 600px; height: 390px; left: 34%; bottom: -275px; transform: rotate(-6deg);
+            background: linear-gradient(120deg, rgba(46, 145, 248, .74), rgba(108, 82, 223, .72));
+        }
+        .workbench {
+            position: relative; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) 304px;
+            width: min(1860px, calc(100% - 88px)); height: calc(100vh - 36px); margin: 18px auto;
+            isolation:isolate; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;
+            border: 1px solid var(--glass-line); border-radius: 18px;
+            background:
+              linear-gradient(142deg, rgba(255,255,255,.46), rgba(255,255,255,.10) 38%, rgba(202,231,255,.13) 100%),
+              var(--glass-shell);
+            backdrop-filter: blur(28px) saturate(145%);
+            box-shadow:
+              0 24px 74px rgba(47, 91, 137, .17),
+              0 4px 16px rgba(80, 126, 166, .08);
+        }
+        .workbench::-webkit-scrollbar { width: 0; height: 0; }
+        .workbench::before {
+            content:none;
+        }
+        .fade-item { opacity: 1; transform: none; transition: var(--transition); }
+        .fade-in { opacity: 1 !important; transform: translateY(0) !important; }
+        .sidebar { background:linear-gradient(155deg,rgba(255,255,255,.28),rgba(229,244,255,.15)); backdrop-filter: blur(20px) saturate(132%); }
+        .sidebar { display: none; }
+        .rightbar { align-self:start; padding:14px 12px 0; background:transparent; border-left:0; }
+        .brand { display: flex; align-items: center; gap: 9px; margin: 0 7px 28px; }
+        .brand-mark { width: 80px; height: 80px; display:block; flex:0 0 80px; }
+        .brand-mark img { width:100%; height:100%; display:block; object-fit:contain; transform: translate(-18px, 2px); }
+        .page-logo { display:block; color:#24517f; font-size:15px; font-weight:800; }.brand-subtitle { display:block; margin-top:2px; color:#8da5bb; font-size:8px; font-weight:800; letter-spacing:.16em; }
+        .nav-label { margin: 13px 8px 7px; color:#9ab0c5; font-size:8px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+        .side-nav { display:grid; gap:4px; }.side-link { display:flex; align-items:center; gap:9px; padding:9px 8px; border-radius:9px; color:#6986a2; font-size:11px; font-weight:700; text-decoration:none; transition:var(--transition); }
+        .side-link:hover,.side-link.active { color:#23639f; background:rgba(255,255,255,.48); box-shadow:0 5px 15px rgba(84,127,167,.08); }
+        .side-icon { display:grid; width:17px; height:17px; place-items:center; color:#3d7eb9; font-size:13px; }.side-spacer { flex:1; }
+        .side-note { padding:11px 9px; border:1px solid rgba(255,255,255,.52); border-radius:11px; background:rgba(255,255,255,.25); color:#85a0b8; font-size:10px; line-height:1.55; }
+        .main-panel { min-width:0; padding:14px 16px 28px; }
+        .topbar { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+        .brand-inline { display:flex; align-items:center; gap:0; min-width:238px; }
+        .brand-copy { display:flex; flex-direction:column; transform: translateX(-26px); }
+        .brand-copy .page-logo { font-size:17px; }
+        .brand-copy .brand-subtitle { font-size:9px; }
+        .search { display:flex; align-items:center; gap:8px; flex:1; padding:8px 12px; border:1px solid rgba(255,255,255,.68); border-radius:10px; background:linear-gradient(135deg,rgba(255,255,255,.42),rgba(255,255,255,.22)); backdrop-filter:blur(18px) saturate(132%); box-shadow:inset 0 1px 0 rgba(255,255,255,.48),0 5px 14px rgba(84,127,167,.05); }
+        .search span { color:#88a1b8; font-size:16px; }.search input { width:100%; border:0; outline:0; color:#436784; background:transparent; font:inherit; font-size:13px; }.search input::placeholder { color:#9caec0; }
+        .admin-area { display:flex; align-items:center; gap:9px; }.admin-profile { display:flex; align-items:center; gap:7px; }.admin-dot { width:7px; height:7px; border-radius:50%; background:#38b980; box-shadow:0 0 0 3px rgba(56,185,128,.12); }
+        .admin-name { color:#587793; font-size:12px; font-weight:700; }.admin-logout { position:relative; padding:6px 10px; border:1px solid rgba(255,255,255,.58); border-radius:9px; color:#65839e; background:rgba(255,255,255,.29); font-size:11px; font-weight:700; text-decoration:none; transition:var(--transition); }
+        .admin-logout:hover { color:#276cae; background:rgba(255,255,255,.55); }
+        .notify-badge { display:inline-flex; min-width:16px; height:16px; padding:0 5px; align-items:center; justify-content:center; border-radius:999px; background:#e46f72; color:#fff; font-size:9px; font-weight:800; line-height:1; }
+        .admin-logout .notify-badge { margin-left:6px; vertical-align:middle; }
+        .welcome { display:flex; justify-content:space-between; align-items:flex-end; margin:2px 2px 8px; }
+        .welcome h1 { color:#315878; font-size:22px; letter-spacing:-.03em; line-height:1.15; }.welcome p { margin-top:4px; color:#8aa0b4; font-size:12px; }
+        .date-chip { color:#6f91ac; font-size:12px; }
+        .panel,.system-card,.right-section { border:1px solid rgba(255,255,255,.50); background:rgba(255,255,255,.30); backdrop-filter:blur(10px) saturate(116%); box-shadow:0 4px 12px rgba(73,118,159,.06); }
+        .panel { padding:10px; border-radius:12px; }.panel + .panel { margin-top:10px; }.panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }.panel-title { color:#597791; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }.panel-link { color:#4385bd; font-size:12px; font-weight:700; text-decoration:none; }
+        .systems-panel {
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+        .systems-panel .panel-head {
+            padding: 0 2px;
+            margin-bottom: 8px;
+        }
+        .systems-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; align-items:stretch; }
+        .systems-grid[data-visible-count="1"] { grid-template-columns:minmax(220px,calc((100% - 24px)/4)); }
+        .systems-grid[data-visible-count="2"] { grid-template-columns:repeat(2,minmax(220px,calc((100% - 24px)/4))); }
+        .systems-grid[data-visible-count="3"] { grid-template-columns:repeat(3,minmax(220px,calc((100% - 24px)/4))); }
+        .system-card { position:relative; isolation:isolate; display:grid; grid-template-rows:auto auto 1fr auto; min-width:0; height:152px; padding:11px 12px 10px; overflow:hidden; border-radius:11px; color:inherit; text-decoration:none; transition:transform .28s ease, box-shadow .28s ease, border-color .28s ease, background .28s ease; will-change:transform; }
+        .system-card::before {
+            content:"";
+            position:absolute;
+            inset:-1px;
+            border-radius:inherit;
+            background:linear-gradient(135deg,rgba(255,255,255,.42),rgba(255,255,255,0) 40%,rgba(126,194,255,.16));
+            opacity:0;
+            transform:translateY(10px);
+            transition:opacity .28s ease, transform .28s ease;
+            pointer-events:none;
+            z-index:0;
+        }
+        .system-card > * { position:relative; z-index:1; }
+        .system-card:hover { transform:translateY(-4px) scale(1.01); border-color:rgba(255,255,255,.72); background:rgba(255,255,255,.44); box-shadow:0 14px 26px rgba(67,112,154,.12),0 2px 0 rgba(255,255,255,.30) inset; }
+        .system-card:hover::before { opacity:1; transform:translateY(0); }
+        .system-card:hover .system-icon { transform:translateY(-2px) scale(1.05) rotate(-1.5deg); filter:drop-shadow(0 4px 8px rgba(64,120,170,.10)); }
+        .system-card:hover .system-icon img { transform:rotate(2deg) scale(1.02); }
+        .system-card:hover .system-head-meta { transform:translateY(-1px); }
+        .system-card:hover .count-value { transform:translateY(-1px); color:#2e6c97; }
+        .system-card:hover .system-name::after { transform:translateX(3px); color:#4c9ad8; }
+        .system-card:hover .system-desc { color:#7898af; transform:translateY(-1px); }
+        .system-card:hover .system-stats { border-top-color:rgba(102,145,180,.18); transform:translateY(-1px); }
+        .system-card:hover .sys-stat-value { transform:translateY(-1px); color:#4f7391; }
+        .system-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:4px; }
+        .system-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; background:transparent; transition:transform .28s ease, filter .28s ease; }
+        .system-icon img { width:40px; height:40px; object-fit:contain; transition:transform .28s ease, filter .28s ease; }
+        .system-icon.lg { width:54px; height:54px; }
+        .system-icon.lg img { width:46px; height:46px; }
+        .system-card.todo-card .system-header { margin-bottom:3px; }
+        .system-card.todo-card .system-name { margin-top:-3px; }
+        .system-card.todo-card .system-stats {
+            display:grid;
+            grid-template-columns:repeat(2,minmax(0,1fr));
+            gap:0;
+            align-items:stretch;
+        }
+        .system-card.todo-card .sys-stat {
+            padding:0 12px;
+        }
+        .system-card.todo-card .sys-stat + .sys-stat {
+            border-left:1px solid rgba(102,145,180,.16);
+        }
+        .system-card.permission-card .system-name { margin-top:-2px; }
+        .system-card.permission-card .system-desc { margin-top:-1px; }
+        .system-head-meta { transition:transform .28s ease; }
+        .count-chip { min-width:34px; text-align:right; flex:0 0 auto; }
+        .count-label { display:block; color:#91a9bf; font-size:9px; line-height:1.3; }
+        .count-value { display:block; color:#37688e; font-size:18px; font-weight:800; line-height:1.12; letter-spacing:.01em; transition:transform .28s ease, color .28s ease; }
+        .system-name { color:#3f6585; font-size:14px; font-weight:800; line-height:1.35; letter-spacing:.01em; }
+        .system-name::after { content:"›"; float:right; color:#72a3ca; font-size:17px; line-height:16px; transition:transform .28s ease, color .28s ease; }
+        .system-desc { min-width:0; overflow:hidden; color:#8da4b7; font-size:10px; line-height:1.5; text-overflow:ellipsis; white-space:nowrap; transition:color .28s ease, transform .28s ease; }
+        .system-stats { display:flex; gap:16px; align-items:end; margin-top:auto; padding-top:6px; border-top:1px solid rgba(102,145,180,.10); transition:border-color .28s ease, transform .28s ease; }
+        .sys-stat { display:flex; min-width:34px; flex-direction:column; }
+        .sys-stat-value { color:#637f98; font-size:12px; font-weight:800; line-height:1.2; transition:transform .28s ease, color .28s ease; }
+        .sys-stat-label { margin-top:2px; color:#9cafbf; font-size:9px; line-height:1.2; }
+        .lower-grid { display:grid; grid-template-columns:1.38fr .92fr .86fr; gap:10px; align-items:stretch; margin-top:10px; }
+        .lower-grid > .panel { min-height:196px; height:100%; margin-top:10px; }
+        .chart-wrap { display:flex; align-items:flex-end; gap:8px; height:154px; padding:6px 4px 0; }.chart-empty { margin:auto; color:#a5b4c3; font-size:12px; }.chart-col { display:flex; flex:1; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:4px; }.chart-bars { display:flex; align-items:flex-end; gap:3px; height:122px; }.chart-bar { width:7px; min-height:4px; border-radius:4px 4px 1px 1px; background:linear-gradient(#68c2f0,#4588d6); }.chart-bar.fixed { background:linear-gradient(#92dfbe,#52b989); }.chart-label { color:#9bafc0; font-size:9px; }
+        .mini-list { display:grid; gap:8px; }.mini-row { display:flex; align-items:center; justify-content:space-between; gap:8px; color:#7893aa; font-size:12px; }.mini-row strong { color:#4f7391; font-size:14px; }.mini-track { flex:1; height:6px; overflow:hidden; border-radius:9px; background:rgba(138,173,199,.15); }.mini-fill { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#65b6ed,#74d5be); transition:width .5s ease; }
+        .shortcut-list { display:grid; gap:8px; }
+        .shortcut-card { display:flex; gap:8px; align-items:flex-start; padding:9px; border-radius:10px; text-decoration:none; color:#6b88a3; background:linear-gradient(135deg,rgba(255,255,255,.42),rgba(255,255,255,.2)); border:1px solid rgba(255,255,255,.62); box-shadow:inset 0 1px 0 rgba(255,255,255,.4); transition:var(--transition); }
+        .shortcut-card:hover { transform:translateY(-2px); background:linear-gradient(135deg,rgba(255,255,255,.62),rgba(255,255,255,.3)); box-shadow:0 8px 16px rgba(79,123,164,.09),inset 0 1px 0 rgba(255,255,255,.64); }
+        .shortcut-badge { display:grid; place-items:center; width:24px; height:24px; border-radius:8px; color:#2876b7; background:rgba(229,243,255,.8); font-size:12px; font-weight:800; }
+        .shortcut-card strong { display:block; color:#4d7393; font-size:12px; margin-bottom:1px; }
+        .shortcut-card span { display:block; font-size:11px; line-height:1.4; }
+        .right-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; color:#597791; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }.right-plus { color:#fff; display:grid; width:18px; height:18px; place-items:center; border:0; border-radius:50%; background:#298bdc; cursor:pointer; font-size:12px; line-height:1; }
+        .right-section { padding:10px; border-radius:11px; }.right-section + .right-section { margin-top:10px; }
+        .task-section { min-height:254px; }
+        .task-section .right-head { margin-bottom:9px; }
+        .task-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-bottom:8px; }
+        .task-summary-item { padding:6px 5px; border-radius:8px; color:#91a8ba; background:rgba(255,255,255,.28); font-size:9px; text-align:center; }
+        .task-summary-item strong { display:block; margin-bottom:1px; color:#4b7395; font-size:15px; line-height:1; }
+        .task-summary-item.warn strong { color:#d88a49; }.task-summary-item.danger strong { color:#d56f75; }
+        .quick-task { display:flex; gap:5px; margin-bottom:8px; }
+        .quick-task input { min-width:0; flex:1; padding:7px 8px; border:1px solid rgba(255,255,255,.62); border-radius:8px; outline:0; color:#55738d; background:rgba(255,255,255,.30); font:inherit; font-size:11px; }
+        .quick-task input::placeholder { color:#9cafbf; }
+        .quick-task button { width:28px; border:0; border-radius:8px; color:#fff; background:#3a94d8; cursor:pointer; font-size:16px; }
+        .task-section .reminder-list { gap:5px; }
+        .task-section .reminder-empty { font-size:11px; line-height:1.55; }
+        .task-preview { display:flex; align-items:flex-start; gap:6px; padding:5px 3px; border-radius:7px; color:#7892a8; background:transparent; font-size:10px; line-height:1.35; }
+        .task-preview:hover { background:rgba(255,255,255,.27); }
+        .task-check { display:block; width:14px; height:14px; flex:0 0 auto; margin-top:1px; border:1px solid rgba(93,145,183,.36); border-radius:50%; background:rgba(255,255,255,.35); cursor:pointer; }
+        .task-preview-main { min-width:0; flex:1; cursor:pointer; }
+        .task-preview strong { display:block; overflow:hidden; color:#58758f; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
+        .task-preview small { display:block; margin-top:1px; color:#9aafc0; font-size:9px; }
+        .task-preview.overdue small { color:#d66f75; }.task-preview.today small { color:#d78a43; }
+        .task-more { display:block; margin:7px auto 0; border:0; color:#4281b5; background:transparent; cursor:pointer; font-size:10px; font-weight:700; }
+        .reminder-list { display:grid; gap:8px; }.reminder { display:flex; gap:7px; color:#7590a7; font-size:11px; line-height:1.4; text-decoration:none; }.reminder-dot { width:6px; height:6px; flex:0 0 auto; margin-top:5px; border-radius:50%; background:#49a9e2; }.reminder-dot.green { background:#50bd8a; }.reminder-dot.orange { background:#f0a65e; }.reminder-dot.red { background:#ea7f85; }.reminder strong { display:block; color:#58758f; font-size:12px; }.reminder-empty { color:#a1b4c3; font-size:11px; line-height:1.55; }
+        .notice-summary { display:flex; gap:6px; margin-bottom:8px; }
+        .notice-pill { flex:1; padding:8px; border-radius:9px; background:rgba(255,255,255,.24); color:#8aa0b3; font-size:10px; text-align:center; }
+        .notice-pill strong { display:block; color:#4e718d; font-size:14px; }
+        .notice-list { display:grid; gap:6px; }
+        .notice-item { display:flex; gap:8px; align-items:flex-start; padding:8px; border-radius:9px; color:#7490a8; text-decoration:none; background:rgba(255,255,255,.18); }
+        .notice-item:hover { background:rgba(255,255,255,.30); }
+        .notice-item strong { display:block; color:#58758f; font-size:11px; }
+        .notice-item small { display:block; margin-top:2px; color:#95aabd; font-size:9px; line-height:1.45; }
+        .notice-mark { width:7px; height:7px; flex:0 0 auto; margin-top:5px; border-radius:50%; background:#3d97d8; }
+        .notice-mark.warn { background:#e5964e; }
+        .notice-mark.success { background:#41b480; }
+        .task-modal { position:fixed; inset:0; z-index:20; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(56,91,126,.16); backdrop-filter:blur(10px); }
+        .task-modal.show { display:flex; }
+        .task-modal-card { width:min(980px,calc(100vw - 32px)); max-height:min(760px,calc(100vh - 32px)); overflow:auto; padding:16px; border:1px solid rgba(255,255,255,.78); border-radius:16px; background:rgba(242,250,255,.78); box-shadow:0 22px 70px rgba(53,91,130,.20); backdrop-filter:blur(26px) saturate(138%); }
+        .task-modal-head,.task-modal-actions,.task-form-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .task-modal-head h2 { color:#416985; font-size:17px; }.task-close { border:0; color:#7290aa; background:transparent; cursor:pointer; font-size:22px; }
+        .task-toolbar { display:flex; flex-wrap:wrap; gap:7px; margin:13px 0 11px; }
+        .task-tab,.task-btn { padding:7px 11px; border:1px solid rgba(255,255,255,.72); border-radius:8px; color:#64829b; background:rgba(255,255,255,.34); cursor:pointer; font-size:11px; font-weight:700; }
+        .task-tab.active,.task-btn.primary { color:#fff; border-color:#3a91d1; background:#3a91d1; }
+        .task-workspace { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(270px,.8fr); gap:12px; }
+        .task-workspace-panel { padding:11px; border:1px solid rgba(255,255,255,.72); border-radius:12px; background:rgba(255,255,255,.27); }
+        .task-filter-row { display:flex; gap:6px; margin-bottom:8px; }
+        .task-filter-row select,.task-field input,.task-field select,.task-field textarea { width:100%; padding:8px; border:1px solid rgba(117,158,190,.18); border-radius:8px; outline:0; color:#52738f; background:rgba(255,255,255,.50); font:inherit; font-size:11px; }
+        .task-list-full { display:grid; gap:6px; max-height:470px; overflow:auto; }
+        .task-list-item { display:flex; gap:8px; padding:9px; border:1px solid rgba(255,255,255,.64); border-radius:9px; background:rgba(255,255,255,.30); cursor:pointer; }
+        .task-list-item:hover { background:rgba(255,255,255,.50); }.task-list-item.done { opacity:.64; }
+        .task-list-copy { min-width:0; flex:1; }.task-list-copy strong { display:block; overflow:hidden; color:#4e708c; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }.task-list-copy small { display:block; margin-top:3px; color:#8ea5b8; font-size:10px; }
+        .task-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }.task-tag { padding:2px 5px; border-radius:5px; color:#67869f; background:rgba(221,239,251,.68); font-size:9px; }.task-tag.red { color:#bd666d; background:rgba(255,225,226,.72); }
+        .task-form-title { margin-bottom:9px; color:#4e718d; font-size:13px; font-weight:800; }.task-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }.task-field { display:grid; gap:4px; }.task-field.wide { grid-column:1 / -1; }.task-field label { color:#7894aa; font-size:10px; font-weight:700; }.task-field textarea { min-height:76px; resize:vertical; }
+        .task-form-actions { margin-top:10px; justify-content:flex-end; }.task-btn.danger { color:#c0676c; }
+        .page-footer { display:none; }
+        @media(max-width:1380px){.lower-grid{grid-template-columns:1.12fr .88fr}.lower-grid .panel:last-child{grid-column:1 / -1}.systems-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.systems-grid[data-visible-count="1"]{grid-template-columns:minmax(220px,calc((100% - 16px)/3))}.systems-grid[data-visible-count="2"]{grid-template-columns:repeat(2,minmax(220px,calc((100% - 16px)/3)))}}
+        @media(max-width:1179px){.workbench{grid-template-columns:minmax(0,1fr);width:min(1180px,calc(100% - 24px));height:calc(100vh - 24px);margin:12px auto}.rightbar{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 14px 14px}.right-section + .right-section{margin-top:0}.task-section{min-height:254px}.main-panel{padding:14px}.topbar{gap:10px}.brand-inline{min-width:0}.brand-mark{width:40px;height:40px;flex:0 0 40px}.systems-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.systems-grid[data-visible-count="1"]{grid-template-columns:minmax(220px,calc((100% - 8px)/2))}.systems-grid[data-visible-count="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}.lower-grid{grid-template-columns:1fr 1fr}.lower-grid .panel:last-child{grid-column:1 / -1}}
+        @media(min-width:768px) and (max-width:1179px), (min-width:768px) and (max-height:820px){.workbench{width:min(100% - 16px,1180px);height:calc(100vh - 16px);margin:8px auto;border-radius:16px}.main-panel{padding:12px 12px 20px}.rightbar{gap:8px;padding:0 12px 12px}.topbar{flex-wrap:wrap;gap:8px;margin-bottom:8px}.brand-inline{min-width:0;align-items:flex-start}.brand-mark{width:36px;height:36px;flex:0 0 36px}.brand-mark img{transform:translate(-10px,-5px)}.brand-copy{transform:translateX(-18px)}.brand-copy .page-logo{font-size:15px}.brand-copy .brand-subtitle{font-size:8px}.search{order:3;width:100%}.admin-area{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}.welcome{align-items:flex-start;gap:6px;margin-bottom:6px}.welcome h1{font-size:18px}.welcome p,.date-chip{font-size:11px}.panel,.right-section{padding:9px;border-radius:10px}.panel-head{margin-bottom:6px}.systems-grid{gap:8px}.system-card{height:136px;padding:10px 10px 9px}.system-icon{width:42px;height:42px}.system-icon img{width:34px;height:34px}.system-icon.lg{width:46px;height:46px}.system-icon.lg img{width:38px;height:38px}.count-value{font-size:16px}.system-name{font-size:13px}.system-name::after{font-size:15px;line-height:14px}.system-desc{font-size:9px}.lower-grid{gap:8px;margin-top:8px}.lower-grid>.panel{min-height:168px;margin-top:8px}.task-section{min-height:220px}.task-summary-item strong,.notice-pill strong{font-size:13px}.notice-item strong,.reminder strong{font-size:11px}.notice-item small,.task-preview small{font-size:9px}}
+        body.projector-mode .workbench{width:min(100% - 16px,1180px);height:calc(100vh - 16px);margin:8px auto;border-radius:16px}
+        body.projector-mode .main-panel{padding:12px 12px 20px}
+        body.projector-mode .rightbar{gap:8px;padding:0 12px 12px}
+        body.projector-mode .topbar{flex-wrap:wrap;gap:8px;margin-bottom:8px}
+        body.projector-mode .brand-inline{min-width:0;align-items:flex-start}
+        body.projector-mode .brand-mark{width:36px;height:36px;flex:0 0 36px}
+        body.projector-mode .brand-mark img{transform:translate(-10px,-5px)}
+        body.projector-mode .brand-copy{transform:translateX(-18px)}
+        body.projector-mode .brand-copy .page-logo{font-size:15px}
+        body.projector-mode .brand-copy .brand-subtitle{font-size:8px}
+        body.projector-mode .search{order:3;width:100%}
+        body.projector-mode .admin-area{margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+        body.projector-mode .welcome{align-items:flex-start;gap:6px;margin-bottom:6px}
+        body.projector-mode .welcome h1{font-size:18px}
+        body.projector-mode .welcome p,body.projector-mode .date-chip{font-size:11px}
+        body.projector-mode .panel,body.projector-mode .right-section{padding:9px;border-radius:10px}
+        body.projector-mode .panel-head{margin-bottom:6px}
+        body.projector-mode .systems-grid{gap:8px}
+        body.projector-mode .system-card{height:136px;padding:10px 10px 9px}
+        body.projector-mode .system-icon{width:42px;height:42px}
+        body.projector-mode .system-icon img{width:34px;height:34px}
+        body.projector-mode .system-icon.lg{width:46px;height:46px}
+        body.projector-mode .system-icon.lg img{width:38px;height:38px}
+        body.projector-mode .count-value{font-size:16px}
+        body.projector-mode .system-name{font-size:13px}
+        body.projector-mode .system-name::after{font-size:15px;line-height:14px}
+        body.projector-mode .system-desc{font-size:9px}
+        body.projector-mode .lower-grid{gap:8px;margin-top:8px}
+        body.projector-mode .lower-grid>.panel{min-height:168px;margin-top:8px}
+        body.projector-mode .task-section{min-height:220px}
+        body.projector-mode .task-summary-item strong,body.projector-mode .notice-pill strong{font-size:13px}
+        body.projector-mode .notice-item strong,body.projector-mode .reminder strong{font-size:11px}
+        body.projector-mode .notice-item small,body.projector-mode .task-preview small{font-size:9px}
+        .projector-toggle{position:fixed;right:18px;bottom:18px;z-index:9998;display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid rgba(61,126,185,.22);border-radius:999px;background:rgba(255,255,255,.94);color:#315878;box-shadow:0 10px 24px rgba(47,91,137,.14);backdrop-filter:blur(12px);font-size:12px;font-weight:800;line-height:1;cursor:pointer;transition:var(--transition)}
+        .projector-toggle:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(47,91,137,.18)}
+        .projector-toggle.is-active{background:linear-gradient(135deg,#1678e6,#5baef7);color:#fff;border-color:transparent}
+        .projector-toggle__state{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 8px;border-radius:999px;background:rgba(22,120,230,.12);color:#1678e6;font-size:11px;font-weight:800}
+        .projector-toggle.is-active .projector-toggle__state{background:rgba(255,255,255,.22);color:#fff}
+        @media(max-width:767px){body{background:linear-gradient(145deg,#d9f0fb,#f7e9f0)}.curve-blue{width:560px;height:330px;left:-230px;bottom:-150px}.curve-warm{width:440px;height:290px;right:-220px;top:-130px}.curve-violet{display:none}.workbench{display:block;width:min(100% - 20px,680px);height:calc(100vh - 20px);margin:10px auto;border-radius:16px}.main-panel{padding:12px}.topbar{margin-bottom:12px}.brand-inline{min-width:0}.brand-mark{width:34px;height:34px;flex:0 0 34px}.brand-copy .brand-subtitle{display:none}.search{display:none}.welcome h1{font-size:18px}.date-chip{display:none}.systems-grid{grid-template-columns:repeat(2,1fr);gap:8px}.lower-grid{display:none}.rightbar{display:block;padding:12px;border-top:1px solid var(--line);border-left:0}.right-section + .right-section{margin-top:8px}.task-workspace{grid-template-columns:1fr}.page-footer{display:none}}
+        @media(max-width:767px){.projector-toggle{display:none}}
+        @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important}}
+    </style>
+</head>
+<body class="theme-glass-workbench">
+    <div class="ambient" aria-hidden="true">
+        <span class="curve curve-blue"></span>
+        <span class="curve curve-warm"></span>
+        <span class="curve curve-violet"></span>
+    </div>
+    <div class="fullpage-frost" aria-hidden="true"></div>
+
+    <div class="workbench fade-item">
+        <main class="main-panel">
+            <div class="topbar">
+                <div class="brand-inline">
+                    <span class="brand-mark"><img src="/icons/兴利logo.svg" alt="兴利公司 Logo"></span>
+                    <span class="brand-copy">
+                        <span class="page-logo">兴利汽车管理后台</span>
+                        <span class="brand-subtitle">XINGLI CONTROL CENTER</span>
+                    </span>
+                </div>
+                <label class="search">
+                    <span>⌕</span>
+                    <input id="moduleSearch" type="search" placeholder="搜索管理模块...">
+                </label>
+                <div class="admin-area" id="adminArea">
+                    <span class="admin-profile">
+                        <i class="admin-dot"></i>
+                        <span id="adminName" class="admin-name">管理员</span>
+                    </span>
+                    <a href="message-center.html" class="admin-logout">消息<span id="adminNoticeBadge" class="notify-badge" style="display:none">0</span></a>
+                    <a href="javascript:;" id="adminBtn" class="admin-logout">注销</a>
+                </div>
+            </div>
+
+            <div class="welcome">
+                <div>
+                    <h1 id="welcomeTitle">欢迎回来，管理员</h1>
+                    <p>兴利汽车模具数字化管理工作台</p>
+                </div>
+                <span class="date-chip" id="currentTime">加载中...</span>
+            </div>
+
+            <section class="panel systems-panel">
+                <div class="panel-head">
+                    <h2 class="panel-title">管理系统入口</h2>
+                    <span class="panel-link">选择模块进入后台</span>
+                </div>
+                <div class="systems-grid" id="systemsGrid">
+            <a href="staff-list.html" class="system-card fade-item">
+                <div class="system-header">
+                    <div class="system-icon staff"><img src="icons/icon-staff-mgmt.svg" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">在职员工</span><span class="count-value" id="staffMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">员工管理</div>
+                <div class="system-desc">管理员工信息、部门、职位等基础数据</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="staffActive">-</span>
+                        <span class="sys-stat-label">在职员工</span>
+                    </div>
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="deptCount">-</span>
+                        <span class="sys-stat-label">部门数量</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="exam.html" class="system-card fade-item">
+                <div class="system-header">
+                    <div class="system-icon exam"><img src="icons/icon-exam.svg" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">试卷数量</span><span class="count-value" id="examMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">培训管理</div>
+                <div class="system-desc">学习任务、考试管理、成绩统计</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="examPapers">-</span>
+                        <span class="sys-stat-label">试卷数量</span>
+                    </div>
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="examRecords">-</span>
+                        <span class="sys-stat-label">考试记录</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="meal-list.html" class="system-card fade-item">
+                <div class="system-header">
+                    <div class="system-icon meal"><img src="icons/icon-meal.svg" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">活动数量</span><span class="count-value" id="mealMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">报餐系统</div>
+                <div class="system-desc">员工每日报餐、菜单管理、订单统计</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="mealActivities">-</span>
+                        <span class="sys-stat-label">活动数量</span>
+                    </div>
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="mealOrders">-</span>
+                        <span class="sys-stat-label">报餐订单</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="voting-list.html" class="system-card fade-item">
+                <div class="system-header">
+                    <div class="system-icon voting"><img src="icons/icon-voting.svg" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">投票活动</span><span class="count-value" id="votingMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">投票系统</div>
+                <div class="system-desc">发起投票、收集意见、统计结果</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="votingActivities">-</span>
+                        <span class="sys-stat-label">投票活动</span>
+                    </div>
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="votingRecords">-</span>
+                        <span class="sys-stat-label">投票记录</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="6s-list.html" class="system-card fade-item">
+                <div class="system-header">
+                    <div class="system-icon staff"><img src="icons/icon-6s.svg" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">曝光总数</span><span class="count-value" id="sixSMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">6S管理</div>
+                <div class="system-desc">6S检查曝光记录，整改追踪管理</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="6sTotal">-</span>
+                        <span class="sys-stat-label">曝光总数</span>
+                    </div>
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="6sPending">-</span>
+                        <span class="sys-stat-label">待整改</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="permission-list.html" class="system-card fade-item permission-card">
+                <div class="system-header">
+                    <div class="system-icon permission lg"><img src="icons/icon-permission.svg" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">权限数量</span><span class="count-value" id="permMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">权限管理</div>
+                <div class="system-desc">管理系统权限、用户权限配置</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="permCount">-</span>
+                        <span class="sys-stat-label">权限数量</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="file-manager.html" class="system-card fade-item">
+                <div class="system-header">
+                    <div class="system-icon staff"><img src="icons/icon-file.svg" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">文件数量</span><span class="count-value" id="fileMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">文件管理</div>
+                <div class="system-desc">上传、下载、管理系统文件资料</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="fileCount">-</span>
+                        <span class="sys-stat-label">文件数量</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="personal-todo.html" class="system-card fade-item todo-card">
+                <div class="system-header">
+                    <div class="system-icon exam lg"><img src="icons/icon-personal-todo.svg?v=20260602" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">待处理任务</span><span class="count-value" id="taskMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">个人待办</div>
+                <div class="system-desc">进入完整工作台，管理个人待办、分派任务与跟进进度</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="taskPendingMain">-</span>
+                        <span class="sys-stat-label">待处理</span>
+                    </div>
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="taskCreatedMain">-</span>
+                        <span class="sys-stat-label">我分派的</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="feedback-list.html" class="system-card fade-item">
+                <div class="system-header">
+                    <div class="system-icon"><img src="icons/icon-feedback.svg" alt=""></div>
+                    <div class="system-head-meta">
+                        <span class="count-chip"><span class="count-label">反馈总数</span><span class="count-value" id="feedbackMain">-</span></span>
+                    </div>
+                </div>
+                <div class="system-name">问题反馈</div>
+                <div class="system-desc">查看用户反馈、处理问题、回复建议</div>
+                <div class="system-stats">
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="feedbackTotal">-</span>
+                        <span class="sys-stat-label">反馈总数</span>
+                    </div>
+                    <div class="sys-stat">
+                        <span class="sys-stat-value" id="feedbackPending">-</span>
+                        <span class="sys-stat-label">待处理</span>
+                    </div>
+                </div>
+            </a>
+                </div>
+            </section>
+
+            <section class="lower-grid">
+                <article class="panel">
+                    <div class="panel-head">
+                        <h2 class="panel-title">6S 曝光趋势</h2>
+                        <a class="panel-link" href="6s-list.html">查看详情 ›</a>
+                    </div>
+                    <div class="chart-wrap" id="trendChart"><span class="chart-empty">正在加载趋势数据...</span></div>
+                </article>
+                <article class="panel">
+                    <div class="panel-head">
+                        <h2 class="panel-title">业务概览</h2>
+                        <span class="panel-link">实时</span>
+                    </div>
+                    <div class="mini-list">
+                        <div class="mini-row"><span>在职员工</span><span class="mini-track"><i class="mini-fill" id="staffProgress" style="width:0"></i></span><strong id="overviewStaff">-</strong></div>
+                        <div class="mini-row"><span>6S 已整改</span><span class="mini-track"><i class="mini-fill" id="s6Progress" style="width:0"></i></span><strong id="overviewS6">-</strong></div>
+                        <div class="mini-row"><span>反馈待处理</span><span class="mini-track"><i class="mini-fill" id="feedbackProgress" style="width:0"></i></span><strong id="overviewFeedback">-</strong></div>
+                        <div class="mini-row"><span>系统模块</span><span class="mini-track"><i class="mini-fill" style="width:100%"></i></span><strong>8</strong></div>
+                    </div>
+                </article>
+                <article class="panel">
+                    <div class="panel-head">
+                        <h2 class="panel-title">常用直达</h2>
+                        <span class="panel-link">高频操作</span>
+                    </div>
+                    <div class="shortcut-list">
+                        <a class="shortcut-card" href="6s-list.html"><i class="shortcut-badge">6S</i><span><strong>6S 管理</strong><span>查看曝光、整改和审核进度</span></span></a>
+                        <a class="shortcut-card" href="feedback-list.html"><i class="shortcut-badge">反</i><span><strong>问题反馈</strong><span>集中处理用户建议与异常问题</span></span></a>
+                        <a class="shortcut-card" href="meal-list.html"><i class="shortcut-badge">餐</i><span><strong>报餐系统</strong><span>查看近期活动与报餐状态</span></span></a>
+                    </div>
+                </article>
+            </section>
+        </main>
+
+        <aside class="rightbar">
+            <section class="right-section">
+                <div class="right-head"><span>站内消息</span><a class="task-more" href="message-center.html" style="margin:0">查看全部 ›</a></div>
+                <div class="notice-summary">
+                    <span class="notice-pill"><strong id="noticeUnreadCount">0</strong>未读</span>
+                    <span class="notice-pill"><strong id="noticeTaskCount">0</strong>待办消息</span>
+                    <span class="notice-pill"><strong id="noticeTotalCount">0</strong>全部消息</span>
+                </div>
+                <div class="notice-list" id="dashboardNoticeList"><span class="reminder-empty">正在加载消息...</span></div>
+            </section>
+            <section class="right-section task-section">
+                <div class="right-head"><span>个人工作台</span><button class="right-plus" type="button" onclick="openTaskWorkbench()">+</button></div>
+                <div class="task-summary">
+                    <span class="task-summary-item"><strong id="taskPendingCount">0</strong>待处理</span>
+                    <span class="task-summary-item warn"><strong id="taskTodayCount">0</strong>今日到期</span>
+                    <span class="task-summary-item danger"><strong id="taskOverdueCount">0</strong>已逾期</span>
+                </div>
+                <form class="quick-task" id="quickTaskForm">
+                    <input id="quickTaskTitle" type="text" maxlength="120" placeholder="快速记录个人待办...">
+                    <button type="submit" title="添加待办">+</button>
+                </form>
+                <div class="reminder-list" id="taskReminders"><span class="reminder-empty">正在加载任务...</span></div>
+                <button class="task-more" type="button" onclick="openTaskWorkbench()">查看全部待办 ›</button>
+            </section>
+            <section class="right-section">
+                <div class="right-head"><span>业务提醒</span><span class="right-plus">+</span></div>
+                <div class="reminder-list" id="businessReminders"><span class="reminder-empty">正在加载提醒...</span></div>
+            </section>
+        </aside>
+    </div>
+
+    <div class="task-modal" id="taskWorkbenchModal" onclick="closeTaskWorkbench(event)">
+        <section class="task-modal-card" onclick="event.stopPropagation()">
+            <div class="task-modal-head">
+                <div>
+                    <h2>个人待办工作台</h2>
+                    <span class="reminder-empty">记录自己的事项，也可以按岗位级别向员工分派任务</span>
+                </div>
+                <button class="task-close" type="button" onclick="closeTaskWorkbench()">×</button>
+            </div>
+            <div class="task-modal-actions">
+                <div class="task-toolbar">
+                    <button class="task-tab active" type="button" data-task-view="inbox" onclick="switchTaskView('inbox')">我的待办</button>
+                    <button class="task-tab" type="button" data-task-view="created" onclick="switchTaskView('created')">我创建的</button>
+                    <button class="task-tab" type="button" data-task-view="completed" onclick="switchTaskView('completed')">已完成</button>
+                </div>
+                <button class="task-btn primary" type="button" onclick="resetTaskForm()">+ 新建任务</button>
+            </div>
+            <div class="task-workspace">
+                <div class="task-workspace-panel">
+                    <div class="task-filter-row">
+                        <select id="taskCategoryFilter" onchange="loadTaskWorkbenchTasks()">
+                            <option value="">全部分类</option>
+                            <option value="daily">日常</option><option value="production">生产</option>
+                            <option value="quality">质量</option><option value="training">培训</option>
+                            <option value="meal">报餐</option><option value="s6">6S</option><option value="other">其他</option>
+                        </select>
+                        <select id="taskPriorityFilter" onchange="loadTaskWorkbenchTasks()">
+                            <option value="">全部优先级</option>
+                            <option value="high">高优先级</option><option value="medium">普通</option><option value="low">低优先级</option>
+                        </select>
+                    </div>
+                    <div class="task-list-full" id="taskWorkbenchList"><span class="reminder-empty">正在加载任务...</span></div>
+                </div>
+                <form class="task-workspace-panel" id="taskEditorForm">
+                    <div class="task-form-title" id="taskEditorTitle">新建任务</div>
+                    <input type="hidden" id="taskEditorId">
+                    <div class="task-form-grid">
+                        <div class="task-field wide"><label>任务标题</label><input id="taskTitleInput" maxlength="120" required placeholder="请输入任务内容"></div>
+                        <div class="task-field"><label>任务分类</label><select id="taskCategoryInput"><option value="daily">日常</option><option value="production">生产</option><option value="quality">质量</option><option value="training">培训</option><option value="meal">报餐</option><option value="s6">6S</option><option value="other">其他</option></select></div>
+                        <div class="task-field"><label>优先级</label><select id="taskPriorityInput"><option value="medium">普通</option><option value="high">高</option><option value="low">低</option></select></div>
+                        <div class="task-field wide"><label>负责人</label><select id="taskAssigneeInput"><option value="">仅自己可见的个人待办</option></select></div>
+                        <div class="task-field wide"><label>截止时间</label><input id="taskDueInput" type="datetime-local"></div>
+                        <div class="task-field wide"><label>备注</label><textarea id="taskDescriptionInput" maxlength="2000" placeholder="补充处理要求或上下文，可留空"></textarea></div>
+                    </div>
+                    <div class="task-form-actions">
+                        <button class="task-btn danger" id="taskDeleteBtn" type="button" onclick="deleteCurrentTask()" style="display:none">删除</button>
+                        <button class="task-btn" id="taskCompleteBtn" type="button" onclick="completeCurrentWorkbenchTask()" style="display:none">标记完成</button>
+                        <button class="task-btn primary" type="submit">保存任务</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+    <footer class="page-footer">NINGBO XINGLI AUTOMOTIVE MOULD · DIGITAL MANAGEMENT CENTER</footer>
+
+    <script src="/js/admin-session.js"></script>
+    <script>
+        const API_URL = window.location.origin + '/api';
+        const token = window.AdminSession.ensureValid()
+            ? (localStorage.getItem('token') || localStorage.getItem('adminToken'))
+            : '';
+        (function initProjectorMode() {
+            const STORAGE_KEY = 'projectorMode';
+            const BUTTON_ID = 'projectorModeToggle';
+            function enabled() {
+                return localStorage.getItem(STORAGE_KEY) === '1';
+            }
+            function updateButton() {
+                const button = document.getElementById(BUTTON_ID);
+                if (!button) return;
+                const active = enabled();
+                button.classList.toggle('is-active', active);
+                button.setAttribute('aria-pressed', active ? 'true' : 'false');
+                button.title = active ? '关闭低分辨率模式' : '开启低分辨率模式';
+                button.innerHTML = `<span class="projector-toggle__label">低分辨率</span><span class="projector-toggle__state">${active ? '开' : '关'}</span>`;
+            }
+            function ensureButton() {
+                if (!document.body || document.getElementById(BUTTON_ID)) return;
+                const button = document.createElement('button');
+                button.id = BUTTON_ID;
+                button.type = 'button';
+                button.className = 'projector-toggle';
+                button.addEventListener('click', () => {
+                    window.toggleProjectorMode();
+                });
+                document.body.appendChild(button);
+                updateButton();
+            }
+            function apply() {
+                document.body.classList.toggle('projector-mode', enabled());
+                document.body.setAttribute('data-projector-mode', enabled() ? 'on' : 'off');
+                ensureButton();
+                updateButton();
+            }
+            window.toggleProjectorMode = function toggleProjectorMode(forceValue) {
+                const nextValue = typeof forceValue === 'boolean' ? forceValue : !enabled();
+                localStorage.setItem(STORAGE_KEY, nextValue ? '1' : '0');
+                apply();
+                return nextValue;
+            };
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', apply, { once: true });
+            } else {
+                apply();
+            }
+            document.addEventListener('keydown', (event) => {
+                if (event.altKey && event.key.toLowerCase() === 'p') {
+                    const state = window.toggleProjectorMode();
+                    console.log(`projector mode: ${state ? 'on' : 'off'}`);
+                }
+            });
+        })();
+        const dashboardMetrics = {
+            primary: {
+                staffMain: 'staffActive',
+                examMain: 'examPapers',
+                mealMain: 'mealActivities',
+                votingMain: 'votingActivities',
+                sixSMain: '6sTotal',
+                permMain: 'permCount',
+                fileMain: 'fileCount',
+                feedbackMain: 'feedbackTotal'
+            },
+            secondary: [
+                'staffActive', 'deptCount', 'examPapers', 'examRecords',
+                'mealActivities', 'mealOrders', 'votingActivities', 'votingRecords',
+                '6sTotal', '6sPending', 'permCount', 'fileCount',
+                'feedbackTotal', 'feedbackPending'
+            ]
+        };
+
+        // 权限检查 - 根据权限过滤系统卡片
+        function filterSystemCards() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const systemsGrid = document.getElementById('systemsGrid');
+            const cards = systemsGrid.querySelectorAll('.system-card');
+            const sideLinks = document.querySelectorAll('.module-side-link');
+            const isSuperAdmin = currentUser.username === 'admin' || currentUser.id === 7;
+            const isFileManagerAllowed = isSuperAdmin
+                || currentUser.username === '10013';
+
+            const permMap = {
+                'staff-list.html': 'can_manage_staff',
+                'exam.html': 'can_manage_training',
+                'meal-list.html': 'can_manage_meal',
+                'voting-list.html': 'can_manage_voting',
+                '6s-list.html': 'can_manage_6s',
+                'permission-list.html': 'can_manage_permission',
+                'file-manager.html': 'can_manage_file',
+                'feedback-list.html': 'can_manage_feedback'
+            };
+
+            cards.forEach(card => {
+                const href = card.getAttribute('href');
+                const permKey = permMap[href];
+                // feedback-list.html 默认显示给所有管理员
+                if (href === 'feedback-list.html') return;
+                if (href === 'file-manager.html' && !isFileManagerAllowed) {
+                    card.dataset.permissionHidden = '1';
+                    card.style.display = 'none';
+                    return;
+                }
+                if (permKey && currentUser[permKey] !== 1) {
+                    card.dataset.permissionHidden = '1';
+                    card.style.display = 'none';
+                }
+            });
+            sideLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                const permKey = permMap[href];
+                if (href !== 'feedback-list.html' && permKey && currentUser[permKey] !== 1) {
+                    link.style.display = 'none';
+                }
+            });
+            updateSystemsGridDensity();
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            document.getElementById('currentTime').textContent = now.toLocaleString('zh-CN', options);
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        function updateSystemsGridDensity() {
+            const grid = document.getElementById('systemsGrid');
+            if (!grid) return;
+            const visibleCount = Array.from(grid.querySelectorAll('.system-card'))
+                .filter((card) => card.style.display !== 'none')
+                .length;
+            grid.dataset.visibleCount = String(Math.min(4, Math.max(1, visibleCount || 1)));
+        }
+
+        function safeSetText(id, value) {
+            const el = document.getElementById(id);
+            if (!el) {
+                console.debug('[dashboard] missing node:', id);
+                return;
+            }
+            el.textContent = value ?? '-';
+        }
+
+        function updateMetrics(values) {
+            dashboardMetrics.secondary.forEach((id) => safeSetText(id, values[id] ?? '-'));
+            Object.entries(dashboardMetrics.primary).forEach(([primaryId, secondaryId]) => {
+                safeSetText(primaryId, values[secondaryId] ?? '-');
+            });
+            safeSetText('overviewStaff', values.staffActive);
+            safeSetText('overviewS6', values['6sApproved']);
+            safeSetText('overviewFeedback', values.feedbackPending);
+            updateOverviewBars(values);
+        }
+
+        function updateOverviewBars(values) {
+            const activeStaff = Number(values.staffActive) || 0;
+            const s6Total = Number(values['6sTotal']) || 0;
+            const s6Approved = Number(values['6sApproved']) || 0;
+            const feedbackTotal = Number(values.feedbackTotal) || 0;
+            const feedbackPending = Number(values.feedbackPending) || 0;
+            document.getElementById('staffProgress').style.width = `${Math.min(100, activeStaff / 250 * 100)}%`;
+            document.getElementById('s6Progress').style.width = `${s6Total ? s6Approved / s6Total * 100 : 0}%`;
+            document.getElementById('feedbackProgress').style.width = `${feedbackTotal ? feedbackPending / feedbackTotal * 100 : 0}%`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+
+        function renderTrend(monthly) {
+            const container = document.getElementById('trendChart');
+            const rows = Array.isArray(monthly) ? [...monthly].reverse().slice(-8) : [];
+            if (!rows.length) {
+                container.innerHTML = '<span class="chart-empty">暂无趋势数据</span>';
+                return;
+            }
+            const max = Math.max(1, ...rows.map(row => Math.max(Number(row.c) || 0, Number(row.fixed) || 0)));
+            container.innerHTML = rows.map(row => {
+                const total = Number(row.c) || 0;
+                const fixed = Number(row.fixed) || 0;
+                const totalHeight = Math.max(3, total / max * 72);
+                const fixedHeight = Math.max(3, fixed / max * 72);
+                return `<div class="chart-col">
+                    <div class="chart-bars">
+                        <i class="chart-bar" style="height:${totalHeight}px" title="曝光 ${total}"></i>
+                        <i class="chart-bar fixed" style="height:${fixedHeight}px" title="已整改 ${fixed}"></i>
+                    </div>
+                    <span class="chart-label">${escapeHtml(String(row.period || '').slice(5) || '-')}</span>
+                </div>`;
+            }).join('');
+        }
+
+        let dashboardTaskRows = [];
+        let taskWorkbenchRows = [];
+        let taskWorkbenchView = 'inbox';
+        let dashboardNotificationRows = [];
+
+        function taskDateKey(value) {
+            return value ? String(value).slice(0, 10) : '';
+        }
+
+        function taskDueState(task) {
+            const due = taskDateKey(task.due_at || task.due_date);
+            const today = new Date().toISOString().slice(0, 10);
+            if (!due || task.status === 'completed') return '';
+            if (due < today) return 'overdue';
+            if (due === today) return 'today';
+            return '';
+        }
+
+        function formatTaskDue(task) {
+            const value = task.due_at || task.due_date;
+            if (!value) return '未设置截止时间';
+            const state = taskDueState(task);
+            const text = String(value).replace('T', ' ').slice(0, 16);
+            return state === 'overdue' ? `已逾期 · ${text}` : state === 'today' ? `今日到期 · ${text.slice(11) || text}` : text;
+        }
+
+        function renderTaskSummary(tasks) {
+            const rows = (Array.isArray(tasks) ? tasks : []).filter(task => task.status !== 'completed');
+            safeSetText('taskPendingCount', rows.length);
+            safeSetText('taskTodayCount', rows.filter(task => taskDueState(task) === 'today').length);
+            safeSetText('taskOverdueCount', rows.filter(task => taskDueState(task) === 'overdue').length);
+        }
+
+        function renderTaskReminders(tasks) {
+            const container = document.getElementById('taskReminders');
+            dashboardTaskRows = (Array.isArray(tasks) ? tasks : [])
+                .filter(task => task.status !== 'completed')
+                .slice(0, 4);
+            renderTaskSummary(tasks);
+            const rows = dashboardTaskRows;
+            if (!rows.length) {
+                container.innerHTML = '<span class="reminder-empty">暂无个人待办<br>可以在上方快速记录事项</span>';
+                return;
+            }
+            container.innerHTML = rows.map(task => `
+                <div class="task-preview ${taskDueState(task)}">
+                    <button class="task-check" type="button" title="标记完成" onclick="completeDashboardTask(${Number(task.id)}, event)"></button>
+                    <span class="task-preview-main" onclick="openTaskWorkbench(${Number(task.id)})">
+                        <strong>${escapeHtml(task.title || '待办任务')}</strong>
+                        <small>${escapeHtml(formatTaskDue(task))}</small>
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        async function taskApi(path, options = {}) {
+            if (!token) throw new Error('请先登录后台');
+            const response = await fetch(`${API_URL}/task${path}`, {
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(options.headers || {})
+                }
+            });
+            const data = await response.json();
+            if (!response.ok || data.code !== 0) throw new Error(data.msg || '任务操作失败');
+            return data.data;
+        }
+
+        async function notificationApi(path = '', options = {}) {
+            if (!token) throw new Error('请先登录后台');
+            const response = await fetch(`${API_URL}/notifications${path}`, {
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(options.headers || {})
+                }
+            });
+            const data = await response.json();
+            if (!response.ok || data.code !== 0) throw new Error(data.msg || '通知操作失败');
+            return data.data;
+        }
+
+        function formatNoticeTime(value) {
+            if (!value) return '';
+            return String(value).replace('T', ' ').slice(5, 16);
+        }
+
+        function buildNoticeSummary(item) {
+            const parts = [];
+            if (item.content) parts.push(escapeHtml(item.content));
+            if (item.module === 'task' && item.task_due_at) parts.push(`截止 ${escapeHtml(formatNoticeTime(item.task_due_at))}`);
+            if (item.created_at) parts.push(escapeHtml(formatNoticeTime(item.created_at)));
+            return parts.join(' · ');
+        }
+
+        function renderDashboardNotifications(rows) {
+            dashboardNotificationRows = Array.isArray(rows) ? rows.slice(0, 4) : [];
+            const container = document.getElementById('dashboardNoticeList');
+            if (!dashboardNotificationRows.length) {
+                container.innerHTML = '<span class="reminder-empty">暂无新消息<br>任务和系统动态会显示在这里</span>';
+                return;
+            }
+            container.innerHTML = dashboardNotificationRows.map((item) => `
+                <a class="notice-item" href="${escapeHtml(item.link || 'message-center.html')}" onclick="markNoticeRead(${Number(item.id)}, event)">
+                    <i class="notice-mark ${item.level === 'warning' ? 'warn' : item.level === 'success' ? 'success' : ''}"></i>
+                    <span>
+                        <strong>${escapeHtml(item.title || '系统消息')}</strong>
+                        <small>${buildNoticeSummary(item)}</small>
+                    </span>
+                </a>
+            `).join('');
+        }
+
+        async function markNoticeRead(id, event) {
+            if (event) event.stopPropagation();
+            try {
+                await notificationApi(`/${id}/read`, { method: 'POST' });
+                await refreshDashboardNotifications();
+            } catch (err) {
+                console.error('标记消息失败:', err);
+            }
+        }
+
+        async function refreshDashboardNotifications() {
+            try {
+                const [summary, list] = await Promise.all([
+                    notificationApi('/summary'),
+                    notificationApi('?unread=1&limit=4')
+                ]);
+                safeSetText('noticeUnreadCount', summary.unread || 0);
+                safeSetText('noticeTaskCount', summary.task_unread || 0);
+                safeSetText('noticeTotalCount', summary.total || 0);
+                const badge = document.getElementById('adminNoticeBadge');
+                if (badge) {
+                    const unread = Number(summary.unread || 0);
+                    badge.style.display = unread > 0 ? 'inline-flex' : 'none';
+                    badge.textContent = unread > 99 ? '99+' : String(unread);
+                }
+                renderDashboardNotifications(list);
+            } catch (err) {
+                console.error('刷新站内消息失败:', err);
+            }
+        }
+
+        async function refreshDashboardTasks() {
+            try {
+                renderTaskReminders(await taskApi('?view=inbox'));
+            } catch (err) {
+                console.error('刷新待办失败:', err);
+            }
+        }
+
+        async function completeDashboardTask(id, event) {
+            if (event) event.stopPropagation();
+            if (!confirm('确定将这条任务标记为已完成吗？')) return;
+            try {
+                await taskApi(`/${id}/status`, { method: 'POST', body: JSON.stringify({ status: 'completed' }) });
+                await refreshDashboardTasks();
+                await refreshDashboardNotifications();
+                if (document.getElementById('taskWorkbenchModal').classList.contains('show')) await loadTaskWorkbenchTasks();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function createQuickTask(event) {
+            event.preventDefault();
+            const input = document.getElementById('quickTaskTitle');
+            const title = input.value.trim();
+            if (!title) return;
+            try {
+                await taskApi('', { method: 'POST', body: JSON.stringify({ title, category: 'daily', priority: 'medium' }) });
+                input.value = '';
+                await refreshDashboardTasks();
+                await refreshDashboardNotifications();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function openTaskWorkbench(taskId) {
+            if (!token) {
+                alert('请先登录后台');
+                return;
+            }
+            document.getElementById('taskWorkbenchModal').classList.add('show');
+            await Promise.all([loadTaskWorkbenchTasks(), loadTaskAssignees()]);
+            if (taskId) editTaskInWorkbench(taskId);
+        }
+
+        function closeTaskWorkbench(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('taskWorkbenchModal').classList.remove('show');
+        }
+
+        function switchTaskView(view) {
+            taskWorkbenchView = view;
+            document.querySelectorAll('[data-task-view]').forEach(button => button.classList.toggle('active', button.dataset.taskView === view));
+            loadTaskWorkbenchTasks();
+        }
+
+        async function loadTaskWorkbenchTasks() {
+            const container = document.getElementById('taskWorkbenchList');
+            if (!container) return;
+            container.innerHTML = '<span class="reminder-empty">正在加载任务...</span>';
+            const category = document.getElementById('taskCategoryFilter').value;
+            const priority = document.getElementById('taskPriorityFilter').value;
+            const params = new URLSearchParams({ view: taskWorkbenchView });
+            if (category) params.set('category', category);
+            if (priority) params.set('priority', priority);
+            try {
+                taskWorkbenchRows = await taskApi(`?${params.toString()}`);
+                renderTaskWorkbenchList();
+            } catch (err) {
+                container.innerHTML = `<span class="reminder-empty">${escapeHtml(err.message)}</span>`;
+            }
+        }
+
+        function renderTaskWorkbenchList() {
+            const container = document.getElementById('taskWorkbenchList');
+            if (!taskWorkbenchRows.length) {
+                container.innerHTML = '<span class="reminder-empty">当前视图暂无任务</span>';
+                return;
+            }
+            const categoryNames = { daily: '日常', production: '生产', quality: '质量', training: '培训', meal: '报餐', s6: '6S', other: '其他' };
+            const statusNames = { pending: '待处理', in_progress: '进行中', completed: '已完成' };
+            container.innerHTML = taskWorkbenchRows.map(task => `
+                <article class="task-list-item ${task.status === 'completed' ? 'done' : ''}" onclick="editTaskInWorkbench(${Number(task.id)})">
+                    <span class="task-check" onclick="event.stopPropagation();completeDashboardTask(${Number(task.id)}, event)"></span>
+                    <span class="task-list-copy">
+                        <strong>${escapeHtml(task.title || '待办任务')}</strong>
+                        <small>${escapeHtml(formatTaskDue(task))}${task.assigned_staff_name ? ` · ${escapeHtml(task.assigned_staff_name)}` : ''}</small>
+                        <span class="task-tags">
+                            <i class="task-tag">${escapeHtml(categoryNames[task.category] || '其他')}</i>
+                            <i class="task-tag ${task.priority === 'high' ? 'red' : ''}">${task.priority === 'high' ? '高优先级' : task.priority === 'low' ? '低优先级' : '普通'}</i>
+                            <i class="task-tag">${escapeHtml(statusNames[task.status] || task.status)}</i>
+                        </span>
+                    </span>
+                </article>
+            `).join('');
+        }
+
+        async function loadTaskAssignees() {
+            const select = document.getElementById('taskAssigneeInput');
+            try {
+                const rows = await taskApi('/assignees');
+                select.innerHTML = '<option value="">仅自己可见的个人待办</option>' + rows.map(staff => `
+                    <option value="${Number(staff.id)}">${escapeHtml(staff.department || '未分组')} · ${escapeHtml(staff.name)}${staff.position ? ` · ${escapeHtml(staff.position)}` : ''}</option>
+                `).join('');
+            } catch (err) {
+                select.innerHTML = '<option value="">仅自己可见的个人待办</option>';
+            }
+        }
+
+        function resetTaskForm() {
+            document.getElementById('taskEditorForm').reset();
+            document.getElementById('taskEditorId').value = '';
+            document.getElementById('taskEditorTitle').textContent = '新建任务';
+            document.getElementById('taskDeleteBtn').style.display = 'none';
+            document.getElementById('taskCompleteBtn').style.display = 'none';
+        }
+
+        async function editTaskInWorkbench(id) {
+            try {
+                const task = taskWorkbenchRows.find(row => Number(row.id) === Number(id)) || await taskApi(`/${id}`);
+                document.getElementById('taskEditorId').value = task.id;
+                document.getElementById('taskEditorTitle').textContent = '编辑任务';
+                document.getElementById('taskTitleInput').value = task.title || '';
+                document.getElementById('taskCategoryInput').value = task.category || 'other';
+                document.getElementById('taskPriorityInput').value = task.priority || 'medium';
+                document.getElementById('taskAssigneeInput').value = task.assigned_staff_id || '';
+                document.getElementById('taskDueInput').value = task.due_at ? String(task.due_at).replace(' ', 'T').slice(0, 16) : '';
+                document.getElementById('taskDescriptionInput').value = task.description || '';
+                document.getElementById('taskDeleteBtn').style.display = '';
+                document.getElementById('taskCompleteBtn').style.display = task.status === 'completed' ? 'none' : '';
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function completeCurrentWorkbenchTask() {
+            const id = document.getElementById('taskEditorId').value;
+            if (!id) return;
+            await completeDashboardTask(id);
+            resetTaskForm();
+        }
+
+        async function saveTaskEditor(event) {
+            event.preventDefault();
+            const id = document.getElementById('taskEditorId').value;
+            const assignedStaffId = document.getElementById('taskAssigneeInput').value;
+            const payload = {
+                title: document.getElementById('taskTitleInput').value.trim(),
+                category: document.getElementById('taskCategoryInput').value,
+                priority: document.getElementById('taskPriorityInput').value,
+                assigned_staff_id: assignedStaffId ? Number(assignedStaffId) : null,
+                due_at: document.getElementById('taskDueInput').value || null,
+                description: document.getElementById('taskDescriptionInput').value.trim()
+            };
+            try {
+                await taskApi(id ? `/${id}` : '', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+                resetTaskForm();
+                await Promise.all([loadTaskWorkbenchTasks(), refreshDashboardTasks()]);
+                await refreshDashboardNotifications();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function deleteCurrentTask() {
+            const id = document.getElementById('taskEditorId').value;
+            if (!id || !confirm('确定删除这条任务吗？')) return;
+            try {
+                await taskApi(`/${id}`, { method: 'DELETE' });
+                resetTaskForm();
+                await Promise.all([loadTaskWorkbenchTasks(), refreshDashboardTasks()]);
+                await refreshDashboardNotifications();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function renderBusinessReminders(values) {
+            const rows = [];
+            if (Number(values['6sPending']) > 0) rows.push(`<a class="reminder" href="6s-list.html"><i class="reminder-dot red"></i><span><strong>6S 待整改 ${Number(values['6sPending'])} 项</strong>请及时跟进整改状态</span></a>`);
+            if (Number(values.feedbackPending) > 0) rows.push(`<a class="reminder" href="feedback-list.html"><i class="reminder-dot orange"></i><span><strong>待处理反馈 ${Number(values.feedbackPending)} 条</strong>查看用户问题与建议</span></a>`);
+            if (Number(values.mealActivities) > 0) rows.push(`<a class="reminder" href="meal-list.html"><i class="reminder-dot green"></i><span><strong>报餐活动 ${Number(values.mealActivities)} 个</strong>查看当前活动状态</span></a>`);
+            document.getElementById('businessReminders').innerHTML = rows.join('') || '<span class="reminder-empty">暂无业务提醒</span>';
+        }
+
+        async function loadDashboardData() {
+            if (!token) {
+                loadPublicData();
+                return;
+            }
+
+            const headers = { 'Authorization': `Bearer ${token}` };
+
+            try {
+                const [
+                    staffRes,
+                    examListRes,
+                    mealRes,
+                    votingRes,
+                    fileRes,
+                    permRes,
+                    sixSRes,
+                    feedbackRes,
+                    feedbackPendingRes,
+                    taskRes,
+                    taskSummaryRes,
+                    createdTaskRes
+                ] = await Promise.all([
+                    fetch(`${API_URL}/staff/`, { headers }).then(r => r.json()),
+                    fetch(`${API_URL}/exam/list`, { headers }).then(r => r.json()),
+                    fetch(`${API_URL}/meal/list`, { headers }).then(r => r.json()),
+                    fetch(`${API_URL}/voting/list`, { headers }).then(r => r.json()),
+                    fetch(`${API_URL}/files/list`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${API_URL}/admin/permissions`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${API_URL}/6s/stats/summary`, { headers }).then(r => r.json()).catch(() => ({ data: { total: 0, pending: 0, fixed: 0 } })),
+                    fetch(`${API_URL}/feedback?pageSize=1`, { headers }).then(r => r.json()).catch(() => ({ data: { total: 0, items: [] } })),
+                    fetch(`${API_URL}/feedback?status=pending&pageSize=4`, { headers }).then(r => r.json()).catch(() => ({ data: { total: 0 } })),
+                    fetch(`${API_URL}/task`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${API_URL}/task/summary`, { headers }).then(r => r.json()).catch(() => ({ data: { pending: 0 } })),
+                    fetch(`${API_URL}/task?view=created`, { headers }).then(r => r.json()).catch(() => ({ data: [] }))
+                ]);
+
+                const staffList = Array.isArray(staffRes?.data) ? staffRes.data : [];
+                const examList = Array.isArray(examListRes?.data) ? examListRes.data : [];
+                const mealList = Array.isArray(mealRes?.data) ? mealRes.data : [];
+                const votingList = Array.isArray(votingRes?.data) ? votingRes.data : [];
+                const fileList = Array.isArray(fileRes?.data) ? fileRes.data : [];
+                const permList = Array.isArray(permRes?.data) ? permRes.data : [];
+
+                const activeStaff = staffList.filter((s) => s.status === 'active').length;
+                const deptCount = new Set(staffList.map((s) => s.department_id).filter(Boolean)).size;
+                const mealOrders = mealList.reduce((sum, item) => sum + Number(item?.employee_count || 0) + Number(item?.guest_count || 0), 0);
+                const votingRecords = votingList.reduce((sum, item) => sum + Number(item?.vote_count || item?.total_votes || 0), 0);
+
+                const metricValues = {
+                    staffActive: activeStaff,
+                    deptCount,
+                    examPapers: examList.length,
+                    examRecords: 0,
+                    mealActivities: mealList.length,
+                    mealOrders,
+                    votingActivities: votingList.length,
+                    votingRecords,
+                    '6sTotal': sixSRes?.data?.total || 0,
+                    '6sPending': sixSRes?.data?.pending || 0,
+                    '6sApproved': sixSRes?.data?.approved || 0,
+                    permCount: permList.length,
+                    fileCount: fileList.length,
+                    feedbackTotal: feedbackRes?.data?.total || 0,
+                    feedbackPending: feedbackPendingRes?.data?.total || 0
+                };
+                updateMetrics(metricValues);
+                renderTrend(sixSRes?.data?.monthly);
+                renderTaskReminders(taskRes?.data);
+                renderBusinessReminders(metricValues);
+                safeSetText('taskMain', taskSummaryRes?.data?.pending || 0);
+                safeSetText('taskPendingMain', taskSummaryRes?.data?.pending || 0);
+                safeSetText('taskCreatedMain', Array.isArray(createdTaskRes?.data) ? createdTaskRes.data.length : 0);
+                refreshDashboardNotifications();
+
+                loadDetailedStats();
+
+            } catch (err) {
+                console.error('加载数据失败:', err);
+                loadPublicData();
+            }
+        }
+
+        async function loadDetailedStats() {
+            const headers = { 'Authorization': `Bearer ${token}` };
+
+            try {
+                const [examStatsRes] = await Promise.all([
+                    fetch(`${API_URL}/exam/stats/user`, { headers }).then(r => r.json()).catch(() => ({ data: {} }))
+                ]);
+                const totalExams = examStatsRes?.data?.summary?.total_exams || 0;
+                safeSetText('examRecords', totalExams);
+            } catch (err) {
+                console.error('加载详细统计失败:', err);
+            }
+        }
+
+        async function loadPublicData() {
+            try {
+                const [staffRes, votingRes] = await Promise.all([
+                    fetch(`${API_URL}/staff/`).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${API_URL}/voting/list`).then(r => r.json()).catch(() => ({ data: [] }))
+                ]);
+                const staffList = Array.isArray(staffRes?.data) ? staffRes.data : [];
+                const votingList = Array.isArray(votingRes?.data) ? votingRes.data : [];
+                const activeStaff = staffList.filter((s) => s.status === 'active').length;
+                const deptCount = new Set(staffList.map((s) => s.department_id).filter(Boolean)).size;
+                const votingRecords = votingList.reduce((sum, item) => sum + Number(item?.vote_count || item?.total_votes || 0), 0);
+                const metricValues = {
+                    staffActive: activeStaff,
+                    deptCount,
+                    examPapers: '-',
+                    examRecords: '-',
+                    mealActivities: '-',
+                    mealOrders: '-',
+                    votingActivities: votingList.length,
+                    votingRecords,
+                    '6sTotal': '-',
+                    '6sPending': '-',
+                    '6sApproved': '-',
+                    permCount: '-',
+                    fileCount: '-',
+                    feedbackTotal: '-',
+                    feedbackPending: '-'
+                };
+                updateMetrics(metricValues);
+                renderTrend([]);
+                renderTaskReminders([]);
+                renderBusinessReminders(metricValues);
+                renderDashboardNotifications([]);
+            } catch (err) {
+                console.log('加载公共数据失败');
+            }
+        }
+
+        function loadUserInfo() {
+            const user = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || '{}');
+            if (user.nickname) {
+                const userNameEl = document.getElementById('userName');
+                const userAvatarEl = document.getElementById('userAvatar');
+                if (userNameEl) userNameEl.textContent = user.nickname;
+                if (userAvatarEl) userAvatarEl.textContent = user.nickname.charAt(0);
+            }
+        }
+
+        function updateAdminButton() {
+            const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+            const adminBtn = document.getElementById('adminBtn');
+            const adminName = document.getElementById('adminName');
+            const adminArea = document.getElementById('adminArea');
+            if (token) {
+                adminArea.style.display = 'flex';
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const displayName = user.nickname || user.username || '管理员';
+                adminName.textContent = displayName;
+                document.getElementById('welcomeTitle').textContent = `欢迎回来，${displayName}`;
+            } else {
+                adminArea.style.display = 'none';
+            }
+        }
+
+        function bindModuleSearch() {
+            const search = document.getElementById('moduleSearch');
+            if (!search) return;
+            search.addEventListener('input', () => {
+                const keyword = search.value.trim().toLowerCase();
+                document.querySelectorAll('.system-card').forEach(card => {
+                    const hiddenByPermission = card.dataset.permissionHidden === '1';
+                    const matched = !keyword || card.textContent.toLowerCase().includes(keyword);
+                    card.style.display = !hiddenByPermission && matched ? '' : 'none';
+                });
+                updateSystemsGridDensity();
+            });
+        }
+
+        // 绑定按钮事件
+        function bindAdminBtn() {
+            const btn = document.getElementById('adminBtn');
+            if (btn) {
+                btn.onclick = function() {
+                    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
+                    if (token) {
+                        window.AdminSession.clear();
+                        // 清除后跳转到首页
+                        window.location.href = window.location.origin + '/';
+                    } else {
+                        window.location.href = window.location.origin + '/admin/login.html';
+                    }
+                };
+            }
+        }
+
+        // 执行更新按钮
+        updateAdminButton();
+        bindAdminBtn();
+        bindModuleSearch();
+        document.getElementById('quickTaskForm').addEventListener('submit', createQuickTask);
+        document.getElementById('taskEditorForm').addEventListener('submit', saveTaskEditor);
+
+        loadUserInfo();
+        loadDashboardData();
+        filterSystemCards();
+
+        // ContraQuest 序列入场动画
+        const items = document.querySelectorAll('.fade-item');
+        items.forEach((el, i) => {
+            setTimeout(() => el.classList.add('fade-in'), 100 * i);
+        });
+    </script>
+</body>
+</html>

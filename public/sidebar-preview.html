@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拟物3D图标预览</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(145deg, #e8e8e8 0%, #d4d4d4 100%); min-height: 100vh; padding: 40px; }
+        h1 { text-align: center; margin-bottom: 12px; font-size: 28px; color: #333; font-weight: 300; }
+        h2 { text-align: center; margin-bottom: 40px; font-size: 14px; color: #888; }
+        .preview-container { display: flex; gap: 50px; flex-wrap: wrap; justify-content: center; }
+        .preview-item { text-align: center; }
+        .preview-title { font-size: 13px; color: #666; margin-bottom: 16px; font-weight: 500; }
+        .preview-box { width: 85px; background: linear-gradient(145deg, #f5f5f5, #e8e8e8); border-radius: 24px; padding: 16px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; box-shadow: 20px 20px 60px rgba(0,0,0,0.1), -20px -20px 60px rgba(255,255,255,0.8); }
+        .icon-3d { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.35s ease; position: relative; }
+
+        .material-icon {
+            font-family: 'Material Symbols Rounded';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 26px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+        }
+
+        /* 方案1：真实按钮 */
+        .real-btn .icon-3d {
+            background: linear-gradient(145deg, #ffffff, #e6e6e6);
+            border-radius: 14px;
+            color: #555;
+            box-shadow:
+                8px 8px 20px rgba(0,0,0,0.15),
+                -8px -8px 20px rgba(255,255,255,0.9),
+                inset 0 1px 0 rgba(255,255,255,1);
+        }
+        .real-btn .icon-3d::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 6px; right: 6px; height: 6px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.8), transparent);
+            border-radius: 6px;
+        }
+        .real-btn .icon-3d:hover {
+            transform: translateY(-4px);
+            box-shadow:
+                12px 12px 25px rgba(0,0,0,0.18),
+                -8px -8px 20px rgba(255,255,255,0.9);
+        }
+        .real-btn .icon-3d:active {
+            transform: translateY(2px);
+            box-shadow:
+                4px 4px 10px rgba(0,0,0,0.12),
+                -4px -4px 10px rgba(255,255,255,0.9);
+        }
+        .real-btn .icon-3d.active {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+            box-shadow:
+                6px 6px 15px rgba(102,126,234,0.4),
+                -4px -4px 10px rgba(255,255,255,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        /* 方案2：木质纹理 */
+        .wood .icon-3d {
+            background: linear-gradient(145deg, #c9a66b, #a67c52);
+            border-radius: 12px;
+            color: #4a3520;
+            box-shadow:
+                6px 6px 15px rgba(0,0,0,0.25),
+                -3px -3px 8px rgba(255,255,255,0.2),
+                inset 0 2px 4px rgba(255,255,255,0.3),
+                inset 0 -2px 4px rgba(0,0,0,0.15);
+        }
+        .wood .icon-3d::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 3px,
+                rgba(139,90,43,0.15) 3px,
+                rgba(139,90,43,0.15) 4px
+            );
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        .wood .icon-3d:hover {
+            transform: translateY(-6px) rotateZ(-2deg);
+            box-shadow:
+                12px 16px 25px rgba(0,0,0,0.3),
+                -3px -3px 8px rgba(255,255,255,0.2);
+        }
+        .wood .icon-3d.active {
+            background: linear-gradient(145deg, #8b5a2b, #5d3a1a);
+            color: #ffd700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        /* 方案3：金属拉丝 */
+        .metal .icon-3d {
+            background: linear-gradient(145deg, #d4d4d4, #a8a8a8);
+            border-radius: 12px;
+            color: #404040;
+            box-shadow:
+                6px 6px 15px rgba(0,0,0,0.2),
+                -4px -4px 10px rgba(255,255,255,0.8),
+                inset 0 2px 4px rgba(255,255,255,0.5),
+                inset 0 -2px 4px rgba(0,0,0,0.1);
+        }
+        .metal .icon-3d::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.25) 2px,
+                rgba(255,255,255,0.25) 3px
+            );
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        .metal .icon-3d::after {
+            content: '';
+            position: absolute;
+            top: 5px; left: 8px; right: 8px; height: 8px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.5), transparent);
+            border-radius: 6px;
+        }
+        .metal .icon-3d:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow:
+                10px 15px 25px rgba(0,0,0,0.25),
+                -4px -4px 10px rgba(255,255,255,0.8);
+        }
+        .metal .icon-3d.active {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* 方案4：皮质皮革 */
+        .leather .icon-3d {
+            background: linear-gradient(145deg, #8b4513, #654321);
+            border-radius: 14px;
+            color: #deb887;
+            box-shadow:
+                6px 6px 15px rgba(0,0,0,0.35),
+                inset 0 2px 4px rgba(255,255,255,0.1),
+                inset 0 -3px 8px rgba(0,0,0,0.25);
+        }
+        .leather .icon-3d::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            pointer-events: none;
+        }
+        .leather .icon-3d::after {
+            content: '';
+            position: absolute;
+            top: 6px; left: 10px; right: 10px; height: 4px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
+            border-radius: 4px;
+        }
+        .leather .icon-3d:hover {
+            transform: translateY(-6px) rotateX(10deg);
+            box-shadow:
+                10px 18px 30px rgba(0,0,0,0.4),
+                inset 0 2px 4px rgba(255,255,255,0.1);
+        }
+        .leather .icon-3d.active {
+            background: linear-gradient(145deg, #2e8b57, #1e6b47);
+            color: #90ee90;
+        }
+
+        /* 方案5：塑料亮面 */
+        .plastic .icon-3d {
+            background: linear-gradient(145deg, #ff6b6b, #ee5a5a);
+            border-radius: 16px;
+            color: white;
+            box-shadow:
+                8px 8px 20px rgba(0,0,0,0.2),
+                -8px -8px 20px rgba(255,255,255,0.9),
+                inset 0 -5px 15px rgba(0,0,0,0.15),
+                inset 0 5px 15px rgba(255,255,255,0.3);
+        }
+        .plastic .icon-3d::before {
+            content: '';
+            position: absolute;
+            top: 6px; left: 10px; width: 20px; height: 10px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.6), transparent);
+            border-radius: 10px;
+            pointer-events: none;
+        }
+        .plastic .icon-3d:hover {
+            transform: translateY(-6px) scale(1.08);
+            box-shadow:
+                12px 20px 30px rgba(0,0,0,0.25),
+                -8px -8px 20px rgba(255,255,255,0.9);
+        }
+        .plastic .icon-3d.active {
+            background: linear-gradient(145deg, #4ecdc4, #44a08d);
+        }
+
+        /* 方案6：毛毡布料 */
+        .felt .icon-3d {
+            background: linear-gradient(145deg, #e85d5d, #c94444);
+            border-radius: 18px;
+            color: #fff5f5;
+            box-shadow:
+                6px 6px 15px rgba(0,0,0,0.2),
+                inset 0 -4px 12px rgba(0,0,0,0.2),
+                inset 0 4px 12px rgba(255,255,255,0.15);
+        }
+        .felt .icon-3d::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent);
+            border-radius: 18px;
+            pointer-events: none;
+        }
+        .felt .icon-3d:hover {
+            transform: translateY(-8px) rotate(-3deg);
+            box-shadow:
+                12px 20px 30px rgba(0,0,0,0.25),
+                inset 0 -4px 12px rgba(0,0,0,0.2),
+                inset 0 4px 12px rgba(255,255,255,0.15);
+        }
+        .felt .icon-3d.active {
+            background: linear-gradient(145deg, #ffd700, #ffaa00);
+            color: #4a3000;
+        }
+
+        /* 方案7：透明玻璃 */
+        .glass .icon-3d {
+            background: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 14px;
+            color: #3b82f6;
+            box-shadow:
+                8px 8px 20px rgba(0,0,0,0.1),
+                -8px -8px 20px rgba(255,255,255,0.9),
+                inset 0 0 30px rgba(255,255,255,0.5);
+        }
+        .glass .icon-3d::before {
+            content: '';
+            position: absolute;
+            top: 4px; left: 8px; right: 8px; height: 6px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.8), transparent);
+            border-radius: 6px;
+        }
+        .glass .icon-3d:hover {
+            transform: translateY(-8px) scale(1.1);
+            box-shadow:
+                15px 25px 40px rgba(59,130,246,0.25),
+                -8px -8px 20px rgba(255,255,255,0.9);
+        }
+        .glass .icon-3d.active {
+            background: linear-gradient(145deg, #3b82f6, #1d4ed8);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* 方案8：硅胶软质 */
+        .silicone .icon-3d {
+            background: linear-gradient(145deg, #ff9a9e, #fecfef);
+            border-radius: 20px;
+            color: #c44569;
+            box-shadow:
+                8px 8px 20px rgba(0,0,0,0.12),
+                -8px -8px 20px rgba(255,255,255,0.9),
+                inset 0 -8px 20px rgba(0,0,0,0.05),
+                inset 0 8px 20px rgba(255,255,255,0.5);
+        }
+        .silicone .icon-3d:hover {
+            transform: translateY(-8px) scale(1.1);
+            box-shadow:
+                15px 25px 40px rgba(196,69,105,0.25),
+                -8px -8px 20px rgba(255,255,255,0.9);
+        }
+        .silicone .icon-3d.active {
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>拟物 3D 图标预览</h1>
+    <h2>使用 Material Symbols 图标 + 拟物质感</h2>
+    <div class="preview-container">
+
+        <!-- 方案1：真实按钮 -->
+        <div class="preview-item">
+            <div class="preview-title">方案1：真实按钮</div>
+            <div class="preview-box real-btn">
+                <div class="icon-3d active"><span class="material-icon">home</span></div>
+                <div class="icon-3d"><span class="material-icon">group</span></div>
+                <div class="icon-3d"><span class="material-icon">assignment_turned_in</span></div>
+                <div class="icon-3d"><span class="material-icon">folder</span></div>
+                <div class="icon-3d"><span class="material-icon">quiz</span></div>
+                <div class="icon-3d"><span class="material-icon">restaurant</span></div>
+            </div>
+        </div>
+
+        <!-- 方案2：木质纹理 -->
+        <div class="preview-item">
+            <div class="preview-title">方案2：木质纹理</div>
+            <div class="preview-box wood">
+                <div class="icon-3d"><span class="material-icon">home</span></div>
+                <div class="icon-3d"><span class="material-icon">group</span></div>
+                <div class="icon-3d"><span class="material-icon">assignment_turned_in</span></div>
+                <div class="icon-3d active"><span class="material-icon">folder</span></div>
+                <div class="icon-3d"><span class="material-icon">quiz</span></div>
+                <div class="icon-3d"><span class="material-icon">restaurant</span></div>
+            </div>
+        </div>
+
+        <!-- 方案3：金属拉丝 -->
+        <div class="preview-item">
+            <div class="preview-title">方案3：金属拉丝</div>
+            <div class="preview-box metal">
+                <div class="icon-3d"><span class="material-icon">home</span></div>
+                <div class="icon-3d"><span class="material-icon">group</span></div>
+                <div class="icon-3d"><span class="material-icon">assignment_turned_in</span></div>
+                <div class="icon-3d"><span class="material-icon">folder</span></div>
+                <div class="icon-3d active"><span class="material-icon">quiz</span></div>
+                <div class="icon-3d"><span class="material-icon">restaurant</span></div>
+            </div>
+        </div>
+
+        <!-- 方案4：皮质皮革 -->
+        <div class="preview-item">
+            <div class="preview-title">方案4：皮质皮革</div>
+            <div class="preview-box leather">
+                <div class="icon-3d"><span class="material-icon">home</span></div>
+                <div class="icon-3d"><span class="material-icon">group</span></div>
+                <div class="icon-3d"><span class="material-icon">assignment_turned_in</span></div>
+                <div class="icon-3d"><span class="material-icon">folder</span></div>
+                <div class="icon-3d"><span class="material-icon">quiz</span></div>
+                <div class="icon-3d active"><span class="material-icon">restaurant</span></div>
+            </div>
+        </div>
+
+        <!-- 方案5：塑料亮面 -->
+        <div class="preview-item">
+            <div class="preview-title">方案5：塑料亮面</div>
+            <div class="preview-box plastic">
+                <div class="icon-3d"><span class="material-icon">home</span></div>
+                <div class="icon-3d"><span class="material-icon">group</span></div>
+                <div class="icon-3d"><span class="material-icon">assignment_turned_in</span></div>
+                <div class="icon-3d"><span class="material-icon">folder</span></div>
+                <div class="icon-3d"><span class="material-icon">quiz</span></div>
+                <div class="icon-3d"><span class="material-icon">restaurant</span></div>
+            </div>
+        </div>
+
+        <!-- 方案6：毛毡布料 -->
+        <div class="preview-item">
+            <div class="preview-title">方案6：毛毡布料</div>
+            <div class="preview-box felt">
+                <div class="icon-3d"><span class="material-icon">home</span></div>
+                <div class="icon-3d active"><span class="material-icon">group</span></div>
+                <div class="icon-3d"><span class="material-icon">assignment_turned_in</span></div>
+                <div class="icon-3d"><span class="material-icon">folder</span></div>
+                <div class="icon-3d"><span class="material-icon">quiz</span></div>
+                <div class="icon-3d"><span class="material-icon">restaurant</span></div>
+            </div>
+        </div>
+
+        <!-- 方案7：透明玻璃 -->
+        <div class="preview-item">
+            <div class="preview-title">方案7：透明玻璃</div>
+            <div class="preview-box glass">
+                <div class="icon-3d"><span class="material-icon">home</span></div>
+                <div class="icon-3d"><span class="material-icon">group</span></div>
+                <div class="icon-3d"><span class="material-icon">assignment_turned_in</span></div>
+                <div class="icon-3d"><span class="material-icon">folder</span></div>
+                <div class="icon-3d"><span class="material-icon">quiz</span></div>
+                <div class="icon-3d"><span class="material-icon">restaurant</span></div>
+            </div>
+        </div>
+
+        <!-- 方案8：硅胶软质 -->
+        <div class="preview-item">
+            <div class="preview-title">方案8：硅胶软质</div>
+            <div class="preview-box silicone">
+                <div class="icon-3d"><span class="material-icon">home</span></div>
+                <div class="icon-3d"><span class="material-icon">group</span></div>
+                <div class="icon-3d"><span class="material-icon">assignment_turned_in</span></div>
+                <div class="icon-3d"><span class="material-icon">folder</span></div>
+                <div class="icon-3d"><span class="material-icon">quiz</span></div>
+                <div class="icon-3d"><span class="material-icon">restaurant</span></div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>我的反馈</title>
+<style>
+:root {
+  --bg: #F0F7FF;
+  --primary: #4A90E2;
+  --primary-dark: #3B7DD8;
+  --text: #1D2B5A;
+  --text-soft: #8896B3;
+  --gray-light: #F5F7FA;
+  --gray-border: #E8ECF1;
+  --accent: #22C58D;
+  --accent-light: #D1FAE5;
+  --orange: #F59E0B;
+  --orange-light: #FEF3C7;
+  --red: #EF4444;
+  --red-light: #FEE2E2;
+  --green: #22C58D;
+  --green-light: #D1FAE5;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 页面容器 */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--bg);
+}
+
+/* 聊天区域 */
+.chat-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chat-wrap::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-wrap::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 2px;
+}
+
+/* 日期分隔 */
+.date-divider {
+  text-align: center;
+  margin: 16px 0 12px;
+}
+.date-label {
+  display: inline-block;
+  background: rgba(255,255,255,0.8);
+  color: var(--text-soft);
+  font-size: 11px;
+  padding: 4px 14px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* 消息 */
+.msg {
+  display: flex;
+  margin-bottom: 12px;
+  animation: msgIn 0.25s ease;
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.msg.user { justify-content: flex-end; }
+.msg.admin { justify-content: flex-start; }
+
+/* 头像 */
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.avatar.user { background: linear-gradient(135deg, var(--primary), #6BA8F5); color: white; }
+.avatar.admin { background: linear-gradient(135deg, #94A3B8, #64748B); color: white; }
+
+/* 气泡 */
+.bubble-wrap {
+  max-width: 78%;
+  margin: 0 8px;
+}
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  word-break: break-word;
+}
+.msg.user .bubble {
+  background: linear-gradient(135deg, var(--primary), #5B9EF4);
+  color: white;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 8px rgba(74,144,226,0.3);
+}
+.msg.admin .bubble {
+  background: white;
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* 消息状态行 */
+.msg-status {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 10px;
+}
+.msg.user .msg-status { justify-content: flex-end; }
+.msg.admin .msg-status { justify-content: flex-start; }
+.msg-time { color: var(--text-soft); margin-right: 5px; }
+.msg-admin-time { color: var(--text-soft); margin-left: 5px; }
+.msg-status-tag {
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+.tag-pending { background: var(--red-light); color: var(--red); }
+.tag-processing { background: var(--orange-light); color: var(--orange); }
+.tag-resolved { background: var(--green-light); color: var(--green); }
+.tag-rejected { background: var(--gray-light); color: var(--text-soft); }
+.tag-viewed { background: var(--gray-light); color: var(--text-soft); }
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: var(--text-soft);
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.6; }
+.empty-text { font-size: 14px; }
+
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-soft);
+}
+
+/* 输入区域 */
+.input-area {
+  background: white;
+  border-top: 1px solid var(--gray-border);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.04);
+}
+
+.input-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.input-box input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1.5px solid var(--gray-border);
+  border-radius: 22px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  background: var(--gray-light);
+}
+.input-box input:focus {
+  border-color: var(--primary);
+  background: white;
+}
+
+.send-btn {
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--primary), #5B9EF4);
+  color: white;
+  border: none;
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(74,144,226,0.35);
+  transition: transform 0.15s, opacity 0.15s;
+}
+.send-btn:active { transform: scale(0.95); }
+.send-btn:disabled { opacity: 0.6; }
+
+.category-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cat-btn {
+  padding: 5px 12px;
+  border: 1.5px solid var(--gray-border);
+  border-radius: 14px;
+  background: white;
+  font-size: 12px;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.cat-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<div class="page-container">
+  <div id="chat" class="chat-wrap">
+    <div class="loading-state">加载中...</div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-box">
+      <input type="text" id="descInput" placeholder="输入问题或建议..." maxlength="500">
+      <button class="send-btn" id="sendBtn" onclick="submitQuickFeedback()">发送</button>
+    </div>
+    <div class="category-row">
+      <button class="cat-btn" data-cat="功能异常" onclick="toggleCat(this)">功能异常</button>
+      <button class="cat-btn" data-cat="功能建议" onclick="toggleCat(this)">功能建议</button>
+      <button class="cat-btn" data-cat="界面问题" onclick="toggleCat(this)">界面问题</button>
+      <button class="cat-btn" data-cat="性能问题" onclick="toggleCat(this)">性能问题</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/auth-guard.js"></script>
+<script>
+var API = window.location.origin + '/api';
+var token = localStorage.getItem('employee_token');
+
+if (!token) {
+  window.location.href = window.location.origin + '/';
+}
+
+var selectedCats = [];
+
+var statusMap = {
+  pending: ['待处理', 'tag-pending'],
+  processing: ['处理中', 'tag-processing'],
+  resolved: ['已解决', 'tag-resolved'],
+  rejected: ['已驳回', 'tag-rejected'],
+  viewed: ['已查看', 'tag-viewed']
+};
+
+function pad(n) { return n < 10 ? '0' + n : n; }
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr);
+  var now = new Date();
+  var diff = now - d;
+  // 超过2天显示完整日期
+  if (diff > 2 * 24 * 60 * 60 * 1000) {
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+  }
+  // 昨天
+  var yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) {
+    return '昨天';
+  }
+  // 今天
+  if (d.toDateString() === now.toDateString()) {
+    return '今天';
+  }
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr);
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+}
+
+function getDateKey(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function scrollToBottom() {
+  var chat = document.getElementById('chat');
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function loadMyFeedback() {
+  try {
+    var res = await fetch(API + '/feedback/my', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    var data = await res.json();
+
+    if (data.code !== 0 || !data.data || !data.data.items) {
+      document.getElementById('chat').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">加载失败</div></div>';
+      return;
+    }
+
+    var items = data.data.items;
+    if (items.length === 0) {
+      document.getElementById('chat').innerHTML = '<div class="empty-state"><div class="empty-icon">💬</div><div class="empty-text">暂无反馈记录</div></div>';
+      return;
+    }
+
+    var html = '';
+    var lastDate = '';
+
+    items.forEach(function(item) {
+      var dateKey = getDateKey(item.created_at);
+
+      if (dateKey !== lastDate) {
+        html += '<div class="date-divider"><span class="date-label">' + formatDate(item.created_at) + '</span></div>';
+        lastDate = dateKey;
+      }
+
+      var status = statusMap[item.status] || ['待处理', 'tag-pending'];
+
+      // 用户消息（蓝色气泡右侧，头像在最右）
+      html += '<div class="msg user">';
+      html += '<div class="bubble-wrap">';
+      html += '<div class="bubble">' + escapeHtml(item.description) + '</div>';
+      html += '<div class="msg-status">';
+      html += '<span class="msg-time">' + formatTime(item.created_at) + '</span>';
+      html += '<span class="msg-status-tag ' + status[1] + '">' + status[0] + '</span>';
+      html += '</div></div>';
+      html += '<div class="avatar user">我</div>';
+      html += '</div>';
+
+      // 管理员回复（白色气泡左侧，头像在最左）
+      if (item.admin_reply) {
+        html += '<div class="msg admin">';
+        html += '<div class="avatar admin">官</div>';
+        html += '<div class="bubble-wrap">';
+        html += '<div class="bubble">' + escapeHtml(item.admin_reply) + '</div>';
+        html += '<div class="msg-status">';
+        html += '<span class="msg-status-tag tag-viewed">已回复</span>';
+        html += '<span class="msg-admin-time">' + formatTime(item.resolved_at || item.created_at) + '</span>';
+        html += '</div></div>';
+        html += '</div>';
+      }
+    });
+
+    document.getElementById('chat').innerHTML = html;
+    setTimeout(scrollToBottom, 100);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('chat').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">加载失败</div></div>';
+  }
+}
+
+function toggleCat(btn) {
+  var cat = btn.getAttribute('data-cat');
+  btn.classList.toggle('active');
+  if (btn.classList.contains('active')) {
+    if (selectedCats.indexOf(cat) === -1) selectedCats.push(cat);
+  } else {
+    selectedCats = selectedCats.filter(function(c) { return c !== cat; });
+  }
+}
+
+// 回车发送
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('descInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitQuickFeedback();
+    }
+  });
+});
+
+async function submitQuickFeedback() {
+  var desc = document.getElementById('descInput').value.trim();
+  if (!desc) return;
+
+  if (!token) {
+    alert('请先登录');
+    window.location.href = '/';
+    return;
+  }
+
+  var btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  var categories = selectedCats.join(',') || '功能异常';
+  var pageName = document.title || '我的反馈';
+  var now = new Date();
+  var timeStr = pad(now.getHours()) + ':' + pad(now.getMinutes());
+
+  // 乐观更新：立即显示
+  var chat = document.getElementById('chat');
+  var emptyDiv = chat.querySelector('.empty-state');
+  if (emptyDiv) emptyDiv.remove();
+
+  var newMsg = '<div class="msg user">';
+  newMsg += '<div class="bubble-wrap">';
+  newMsg += '<div class="bubble">' + escapeHtml(desc) + '</div>';
+  newMsg += '<div class="msg-status">';
+  newMsg += '<span class="msg-time">' + timeStr + '</span>';
+  newMsg += '<span class="msg-status-tag tag-pending">待处理</span>';
+  newMsg += '</div></div>';
+  newMsg += '<div class="avatar user">我</div>';
+  newMsg += '</div>';
+
+  chat.insertAdjacentHTML('beforeend', newMsg);
+  scrollToBottom();
+
+  // 清空输入
+  document.getElementById('descInput').value = '';
+  selectedCats = [];
+  document.querySelectorAll('.cat-btn').forEach(function(b) { b.classList.remove('active'); });
+
+  // 发送请求
+  try {
+    var res = await fetch(API + '/feedback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({
+        category: categories,
+        description: desc,
+        page_name: pageName
+      })
+    });
+    var data = await res.json();
+    if (data.code !== 0) {
+      alert(data.msg || '提交失败');
+    }
+  } catch (e) {
+    alert('提交失败');
+  }
+
+  btn.disabled = false;
+  btn.textContent = '发送';
+}
+
+loadMyFeedback();
+</script>
+
+</body>
+</html>

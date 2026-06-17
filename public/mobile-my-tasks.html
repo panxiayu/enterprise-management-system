@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>我的待办 - 兴利汽车模具</title>
+  <style>
+    :root{--bg:#f0f7ff;--card:#fff;--line:#d6e9ff;--blue:#4a90e2;--green:#22b985;--orange:#e49a42;--red:#df6a72;--text:#26416e;--soft:#7188ac}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{min-height:100vh;padding:18px 14px 36px;color:var(--text);background:linear-gradient(145deg,#e2f5ff,#f8f1fb);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif}
+    .wrap{max-width:680px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.back{border:0;color:var(--blue);background:transparent;font-size:14px;font-weight:700}.top h1{font-size:20px}.hero,.task,.empty,.modal-card{border:1px solid rgba(255,255,255,.85);background:rgba(255,255,255,.72);box-shadow:0 9px 24px rgba(74,144,226,.10);backdrop-filter:blur(14px)}
+    .hero{padding:16px;border-radius:20px}.hero p{margin-top:5px;color:var(--soft);font-size:12px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.metric{padding:10px 6px;border-radius:14px;background:rgba(236,247,255,.72);color:var(--soft);font-size:11px;text-align:center}.metric strong{display:block;margin-bottom:2px;color:var(--text);font-size:21px}.metric.warn strong{color:var(--orange)}.metric.danger strong{color:var(--red)}
+    .tabs{display:flex;gap:7px;margin:14px 0 10px}.tab{flex:1;padding:9px 5px;border:1px solid var(--line);border-radius:12px;color:var(--soft);background:rgba(255,255,255,.56);font-size:13px;font-weight:700}.tab.active{color:#fff;border-color:var(--blue);background:var(--blue)}
+    .list{display:grid;gap:9px}.task{padding:13px;border-radius:17px}.task-head{display:flex;align-items:flex-start;gap:9px}.dot{width:9px;height:9px;flex:0 0 auto;margin-top:5px;border-radius:50%;background:var(--blue)}.dot.high{background:var(--red)}.dot.low{background:var(--green)}.task-copy{min-width:0;flex:1}.task-title{font-size:15px;font-weight:800}.task-meta{margin-top:4px;color:var(--soft);font-size:11px;line-height:1.5}.task-meta.overdue{color:var(--red)}.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.tag{padding:3px 7px;border-radius:8px;color:#6484a4;background:#edf7ff;font-size:10px}.actions{display:flex;gap:7px;margin-top:11px}.btn{padding:8px 11px;border:0;border-radius:10px;color:#fff;background:var(--blue);font-size:12px;font-weight:700}.btn.green{background:var(--green)}.btn.light{color:var(--blue);background:#edf7ff}.empty{padding:32px 16px;border-radius:18px;color:var(--soft);font-size:13px;text-align:center}
+    .modal{position:fixed;inset:0;z-index:10;display:none;align-items:flex-end;background:rgba(37,68,104,.22);backdrop-filter:blur(5px)}.modal.show{display:flex}.modal-card{width:100%;max-height:78vh;overflow:auto;padding:18px;border-radius:22px 22px 0 0}.modal-card h2{font-size:18px}.detail{margin-top:12px;color:var(--soft);font-size:13px;line-height:1.7}.detail strong{color:var(--text)}.close{float:right;border:0;color:var(--soft);background:transparent;font-size:22px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top"><button class="back" onclick="location.href='employee.html'">‹ 返回</button><h1>我的待办</h1><span></span></header>
+    <section class="hero">
+      <strong id="welcome">任务工作台</strong>
+      <p>及时查看分配给你的事项，完成后更新处理状态。</p>
+      <div class="summary">
+        <span class="metric"><strong id="pendingCount">0</strong>待处理</span>
+        <span class="metric warn"><strong id="todayCount">0</strong>今日到期</span>
+        <span class="metric danger"><strong id="overdueCount">0</strong>已逾期</span>
+      </div>
+    </section>
+    <nav class="tabs">
+      <button class="tab active" data-view="inbox" onclick="switchView('inbox')">待办任务</button>
+      <button class="tab" data-view="completed" onclick="switchView('completed')">已完成</button>
+    </nav>
+    <section class="list" id="taskList"><div class="empty">正在加载任务...</div></section>
+  </main>
+  <div class="modal" id="detailModal" onclick="closeDetail(event)">
+    <section class="modal-card" onclick="event.stopPropagation()">
+      <button class="close" onclick="closeDetail()">×</button>
+      <h2 id="detailTitle">任务详情</h2>
+      <div class="detail" id="detailBody"></div>
+      <div class="actions" id="detailActions"></div>
+    </section>
+  </div>
+  <script src="/js/employee-session.js"></script>
+  <script src="/js/auth-guard.js"></script>
+  <script src="/js/module-access.js"></script>
+  <script>
+    const API = window.location.origin + '/api';
+    const hasEmployeeSession = window.EmployeeSession.ensureValid();
+    const needsModuleAuth = hasEmployeeSession && !window.ModuleAccess.has('admin-linked');
+    if (needsModuleAuth) {
+      window.ModuleAccess.redirectToAuth('mobile-my-tasks.html', 'admin-linked', '我的待办');
+    }
+    const token = hasEmployeeSession && !needsModuleAuth ? localStorage.getItem('employee_token') : '';
+    const staff = JSON.parse(localStorage.getItem('employee_info') || '{}');
+    let currentView = 'inbox';
+    let tasks = [];
+    const categoryNames = {daily:'日常',production:'生产',quality:'质量',training:'培训',meal:'报餐',s6:'6S',other:'其他'};
+    const statusNames = {pending:'待处理',in_progress:'进行中',completed:'已完成'};
+    function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    function dateKey(v){return v?String(v).slice(0,10):''}
+    function dueState(t){const d=dateKey(t.due_at||t.due_date),today=new Date().toISOString().slice(0,10);if(!d||t.status==='completed')return'';return d<today?'overdue':d===today?'today':''}
+    function dueText(t){const v=t.due_at||t.due_date;if(!v)return'未设置截止时间';const text=String(v).replace('T',' ').slice(0,16),state=dueState(t);return state==='overdue'?'已逾期 · '+text:state==='today'?'今日到期 · '+text:'截止 '+text}
+    async function api(path,options={}){const r=await fetch(API+'/task'+path,{...options,headers:{Authorization:'Bearer '+token,...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}});const d=await r.json();if(!r.ok||d.code!==0)throw new Error(d.msg||'操作失败');return d.data}
+    async function loadSummary(){try{const d=await api('/summary');pendingCount.textContent=d.pending;todayCount.textContent=d.due_today;overdueCount.textContent=d.overdue}catch(e){}}
+    async function loadTasks(){taskList.innerHTML='<div class="empty">正在加载任务...</div>';try{tasks=await api('?view='+currentView);render();loadSummary()}catch(e){taskList.innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+    function render(){if(!tasks.length){taskList.innerHTML='<div class="empty">当前没有任务</div>';return}taskList.innerHTML=tasks.map(t=>`<article class="task"><div class="task-head"><i class="dot ${esc(t.priority||'')}"></i><div class="task-copy" onclick="showDetail(${Number(t.id)})"><div class="task-title">${esc(t.title)}</div><div class="task-meta ${dueState(t)}">${esc(dueText(t))}</div><div class="tags"><span class="tag">${esc(categoryNames[t.category]||'其他')}</span><span class="tag">${esc(statusNames[t.status]||t.status)}</span>${t.parent_task_title?`<span class="tag">总任务 ${esc(t.parent_task_title)}</span>`:''}${t.created_by_name?`<span class="tag">来自 ${esc(t.created_by_name)}</span>`:''}</div></div></div>${t.status!=='completed'?`<div class="actions">${t.status==='pending'?`<button class="btn light" onclick="setStatus(${Number(t.id)},'in_progress')">开始处理</button>`:''}<button class="btn green" onclick="setStatus(${Number(t.id)},'completed')">标记完成</button></div>`:''}</article>`).join('')}
+    function switchView(view){currentView=view;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view===view));loadTasks()}
+    async function setStatus(id,status){try{await api('/'+id+'/status',{method:'POST',body:JSON.stringify({status})});await loadTasks();closeDetail()}catch(e){alert(e.message)}}
+    function showDetail(id){const t=tasks.find(x=>Number(x.id)===Number(id));if(!t)return;detailTitle.textContent=t.title;detailBody.innerHTML=`${t.parent_task_title?`<p><strong>所属总任务：</strong>${esc(t.parent_task_title)}</p>`:''}<p><strong>状态：</strong>${esc(statusNames[t.status]||t.status)}</p><p><strong>分类：</strong>${esc(categoryNames[t.category]||'其他')}</p><p><strong>截止：</strong>${esc(dueText(t))}</p><p><strong>创建人：</strong>${esc(t.created_by_name||t.created_by_username||'-')}</p><p><strong>备注：</strong>${esc(t.description||'暂无备注')}</p>`;detailActions.innerHTML=t.status==='completed'?'':`${t.status==='pending'?`<button class="btn light" onclick="setStatus(${Number(t.id)},'in_progress')">开始处理</button>`:''}<button class="btn green" onclick="setStatus(${Number(t.id)},'completed')">标记完成</button>`;detailModal.classList.add('show')}
+    function closeDetail(e){if(e&&e.target!==e.currentTarget)return;detailModal.classList.remove('show')}
+    if(!hasEmployeeSession){window.EmployeeSession.redirectToLogin()}else if(!needsModuleAuth){welcome.textContent=(staff.name||'员工')+'，你好';loadTasks()}
+  </script>
+</body>
+</html>

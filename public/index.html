@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
+    <title>员工登录 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/glass-workbench-theme.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html, body {
+            height: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+        body.theme-glass-workbench {
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 18px;
+        }
+
+        .fade-item {
+            opacity: 0;
+            transform: translateY(18px);
+            transition: all .45s cubic-bezier(0.16,1,0.3,1);
+        }
+        .fade-in {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        .login-box {
+            border-radius: 18px;
+            padding: 34px 30px 28px;
+            width: 100%;
+            max-width: 440px;
+            border: 1px solid var(--gw-glass-line);
+            background: rgba(245, 251, 255, 0.38);
+            backdrop-filter: blur(24px) saturate(135%);
+            box-shadow: 0 22px 50px rgba(68, 110, 158, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.56);
+            box-sizing: border-box;
+        }
+        .logo {
+            width: 176px;
+            height: 176px;
+            margin-bottom: 6px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+        }
+        .logo img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: contain;
+        }
+        .title {
+            font-size: 30px;
+            font-weight: 800;
+            text-align: center;
+            color: #315878;
+            margin-top: -8px;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #8aa0b4;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .form-label {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: #3f6688;
+            margin-bottom: 8px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 16px 16px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1.5px solid rgba(122, 158, 192, 0.5);
+            border-radius: 14px;
+            font-size: 16px;
+            color: #31597c;
+            transition: all .28s ease;
+            outline: none;
+            backdrop-filter: blur(14px);
+            box-shadow: inset 0 1px 2px rgba(123, 152, 181, 0.14), 0 1px 0 rgba(255, 255, 255, 0.65);
+        }
+        .form-control:focus {
+            border-color: rgba(22, 120, 230, 0.78);
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.18), inset 0 1px 2px rgba(123, 152, 181, 0.08);
+        }
+        .form-control::placeholder {
+            color: #7f99b1;
+        }
+        .form-control.name-input {
+            background: rgba(245, 251, 255, 0.86);
+            cursor: not-allowed;
+            min-height: 54px;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, #2587dd, #3ba4e8);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .28s ease;
+            margin-top: 8px;
+            box-shadow: 0 10px 24px rgba(48, 129, 205, 0.28);
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(48, 129, 205, 0.32);
+        }
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .msg {
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            margin-top: 16px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .msg-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        .msg-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+        .msg-expired {
+            background: #F0F7FF;
+            color: #4A90E2;
+            border: 1px solid #D6E9FF;
+        }
+        .admin-link {
+            text-align: center;
+            margin-top: 28px;
+        }
+        .admin-link a {
+            font-size: 14px;
+            color: #6d8ba7;
+            text-decoration: none;
+            padding: 8px 20px;
+            display: inline-block;
+            border-radius: 20px;
+            transition: all .28s ease;
+        }
+        .admin-link a:hover {
+            color: #2f6ca4;
+            background: rgba(255,255,255,.36);
+        }
+        .hint {
+            font-size: 12px;
+            color: #7f99b1;
+            text-align: center;
+            margin-top: 20px;
+        }
+        @media (max-width: 767px) {
+            body.theme-glass-workbench {
+                background: linear-gradient(160deg, #e8f3fb 0%, #eff6fb 100%);
+            }
+            .gw-ambient {
+                display: none;
+            }
+            .container { padding: 12px; }
+            .login-box {
+                padding: 24px 18px 20px;
+                border-radius: 16px;
+                background: rgba(252, 255, 255, 0.86);
+                border-color: rgba(196, 215, 232, 0.74);
+                box-shadow: 0 10px 28px rgba(89, 124, 161, 0.12);
+            }
+            .logo { width: 150px; height: 150px; margin-bottom: 4px; }
+            .title { font-size: 24px; }
+            .subtitle { font-size: 13px; margin-bottom: 24px; }
+            .form-control { padding: 14px 14px; font-size: 15px; }
+        }
+        #feedback-fab { display: none !important; }
+    </style>
+</head>
+<body class="theme-glass-workbench">
+    <div class="gw-ambient" aria-hidden="true">
+        <span class="gw-curve gw-curve-blue"></span>
+        <span class="gw-curve gw-curve-warm"></span>
+        <span class="gw-curve gw-curve-violet"></span>
+    </div>
+    <div class="container">
+        <div class="login-box fade-item">
+            <div class="logo"><img src="/icons/兴利logo.svg" alt="兴利公司 Logo"></div>
+            <div class="title">兴利汽车模具</div>
+            <div class="subtitle">企业管理系统</div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div id="msgExpired" class="msg msg-expired">登录已过期，请重新登录</div>
+                <div class="form-group">
+                    <label class="form-label">工号</label>
+                    <input type="text" id="employeeId" class="form-control" placeholder="请输入工号" required autocomplete="off" inputmode="numeric" pattern="[0-9]*" oninput="onEmployeeIdInput()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">姓名</label>
+                    <input type="text" id="name" class="form-control name-input" placeholder="输入工号后自动填充" readonly>
+                </div>
+                <button type="submit" class="login-btn" id="loginBtn">登 录</button>
+                <div id="msgError" class="msg msg-error"></div>
+                <div id="msgSuccess" class="msg msg-success"></div>
+            </form>
+
+            <div class="admin-link">
+                <a href="/admin/login.html">管理员登录</a>
+            </div>
+
+            <div class="hint">输入工号和姓名即可登录，无需密码</div>
+        </div>
+    </div>
+
+    <script src="/js/employee-session.js"></script>
+    <script>
+        const API = window.location.origin + '/api';
+
+        // 序列入场动画
+        const items = document.querySelectorAll('.fade-item');
+        items.forEach((el, i) => {
+            setTimeout(() => el.classList.add('fade-in'), 150 * i);
+        });
+
+        let lookupTimer = null;
+
+        function onEmployeeIdInput() {
+            const nameInput = document.getElementById('name');
+            nameInput.value = '';
+            nameInput.placeholder = '输入工号后自动填充';
+
+            const id = document.getElementById('employeeId').value.trim();
+            if (!id) {
+                return;
+            }
+
+            clearTimeout(lookupTimer);
+            lookupTimer = setTimeout(() => {
+                lookupName(id);
+            }, 500);
+        }
+
+        async function lookupName(id) {
+            const nameInput = document.getElementById('name');
+
+            try {
+                const res = await fetch(API + '/auth/lookup?employee_id=' + encodeURIComponent(id));
+                const data = await res.json();
+                if (data.code === 0 && data.data && data.data.name) {
+                    nameInput.value = data.data.name;
+                    nameInput.placeholder = data.data.name;
+                } else {
+                    nameInput.value = '';
+                    nameInput.placeholder = '未找到该工号';
+                }
+            } catch {
+                nameInput.placeholder = '请输入姓名';
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const employeeId = document.getElementById('employeeId').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const btn = document.getElementById('loginBtn');
+            const msgError = document.getElementById('msgError');
+            const msgSuccess = document.getElementById('msgSuccess');
+
+            msgError.style.display = 'none';
+            msgSuccess.style.display = 'none';
+
+            if (!employeeId) {
+                msgError.textContent = '请输入工号';
+                msgError.style.display = 'block';
+                return;
+            }
+
+            if (!name) {
+                msgError.textContent = '请输入姓名';
+                msgError.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+
+            try {
+                const res = await fetch(API + '/auth/employee-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employee_id: employeeId, name })
+                });
+                const data = await res.json();
+
+                if (data.code === 0) {
+                    msgSuccess.textContent = '登录成功，正在跳转...';
+                    msgSuccess.style.display = 'block';
+                    window.EmployeeSession.save(data.data.staff, data.data.token);
+                    setTimeout(() => { window.location.href = window.location.origin + '/employee.html'; }, 600);
+                } else {
+                    msgError.textContent = data.msg || '工号或姓名不匹配，无登录权限';
+                    msgError.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = '登 录';
+                }
+            } catch (err) {
+                msgError.textContent = '网络错误，请检查网络';
+                msgError.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = '登 录';
+            }
+        }
+
+        // 显示登录过期提示
+        if (window.location.search.indexOf('expired=1') !== -1) {
+            document.getElementById('msgExpired').style.display = 'block';
+            // 清除 URL 中的参数，避免刷新时重复显示
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', '/index.html');
+            }
+        }
+
+        // 检查是否已登录
+        if (window.EmployeeSession.ensureValid()) {
+            window.location.href = window.location.origin + '/employee.html';
+        }
+    </script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>6S管理 - 兴利汽车模具</title>
+    <style>
+        * {margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        :root {
+            --bg: #F0F7FF;
+            --card: #ffffff;
+            --border: #D6E9FF;
+            --primary: #4A90E2;
+            --secondary: #65B3FF;
+            --accent: #22C58D;
+            --text: #1D2B5A;
+            --text-soft: #5B72A9;
+            --radius: 22px;
+            --transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 0;
+        }
+        .wrap {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+        @media (min-width: 768px) {.wrap {max-width: 680px; padding: 20px 24px;}}
+        @media (min-width: 1024px) {.wrap {max-width: 800px;}}
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--primary);
+            font-size: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .back-btn:hover {
+            transform: scale(1.05);
+            border-color: var(--primary);
+        }
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0;
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(74, 144, 226, 0.14);
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(74, 144, 226, 0.08);
+            overflow: hidden;
+        }
+        .stat-card {
+            background: transparent;
+            padding: 12px 4px 11px;
+            text-align: center;
+            border: 0;
+            border-right: 1px solid rgba(74, 144, 226, 0.12);
+            transition: var(--transition);
+        }
+        .stat-card:last-child {
+            border-right: 0;
+        }
+        .stat-value {
+            font-size: 27px;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1.05;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-soft);
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .filter-bar {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 16px;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(74, 144, 226, 0.12);
+            border-radius: 18px;
+        }
+        .filter-btn {
+            min-width: 0;
+            padding: 10px 4px;
+            background: transparent;
+            border: 0;
+            border-radius: 13px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-soft);
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 6px 14px rgba(74, 144, 226, 0.22);
+        }
+        .record-card {
+            background: var(--card);
+            border: 1px solid rgba(74, 144, 226, 0.16);
+            border-radius: 20px;
+            padding: 15px 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 10px 26px rgba(74, 144, 226, 0.1);
+        }
+        .record-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 12px 24px rgba(74, 144, 226, 0.08);
+        }
+        .card-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: 0;
+            line-height: 1.35;
+            word-break: break-word;
+            background: linear-gradient(135deg, var(--primary), #e74c3c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 12px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+            min-height: 24px;
+            white-space: nowrap;
+        }
+        .status-success {
+            background: rgba(34, 197, 141, 0.12);
+            color: var(--accent);
+        }
+        .status-warning {
+            background: rgba(74, 144, 226, 0.12);
+            color: var(--primary);
+        }
+        .status-danger {
+            background: rgba(255, 59, 48, 0.12);
+            color: #D92D20;
+        }
+        .status-pending {
+            background: rgba(255, 193, 7, 0.18);
+            color: #B77900;
+        }
+        .card-meta {
+            font-size: 12px;
+            color: var(--text-soft);
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .card-meta span {
+            display: flex;
+            align-items: center;
+            min-height: 30px;
+            background: rgba(74, 144, 226, 0.06);
+            border: 1px solid rgba(74, 144, 226, 0.08);
+            border-radius: 10px;
+            padding: 6px 9px;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+        .card-body {
+            background: linear-gradient(180deg, rgba(74, 144, 226, 0.07), rgba(74, 144, 226, 0.04));
+            border: 1px solid rgba(74, 144, 226, 0.08);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+        .card-area {
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 700;
+            line-height: 1.45;
+            margin-bottom: 6px;
+            word-break: break-word;
+        }
+        .card-desc {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.55;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+        }
+        @media (max-width: 360px) {.card-meta {grid-template-columns: 1fr;}}
+        .fab {
+            position: fixed;
+            bottom: 100px;
+            right: 12px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(74, 144, 226, 0.3);
+            cursor: pointer;
+            z-index: 998;
+            border: none;
+            transition: var(--transition);
+        }
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(74, 144, 226, 0.4);
+        }
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-soft);
+            font-size: 15px;
+        }
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {to {transform:rotate(360deg)}}
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-soft);
+        }
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.16);
+            position: relative;
+        }
+        .empty-icon::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 24px;
+            height: 32px;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            background: #fff;
+            box-shadow: 0 8px 18px rgba(74, 144, 226, 0.12);
+            transform: translate(-50%, -50%);
+        }
+        .empty-icon::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 12px;
+            height: 7px;
+            border-left: 3px solid var(--accent);
+            border-bottom: 3px solid var(--accent);
+            transform: translate(-50%, -35%) rotate(-45deg);
+        }
+        .empty-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .empty-hint {
+            font-size: 13px;
+            color: var(--text-soft);
+        }
+        .toast {
+            position: fixed;
+            top: 44%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15,23,42,0.7);
+            color: #fff;
+            padding: 11px 18px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 700;
+            opacity: 0;
+            transition: opacity .2s ease;
+            z-index: 10001;
+            pointer-events: none;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.22);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        @media (max-width: 480px) {
+            .wrap {
+                padding: 16px;
+            }
+            .stat-value {
+                font-size: 26px;
+            }
+            .filter-btn {
+                font-size: 13px;
+            }
+        }
+        @media (max-width: 360px) {
+            .stat-label {
+                font-size: 11px;
+            }
+            .filter-btn {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div id="loading" class="loading" style="display:none">加载中...</div>
+
+        <div id="statsSection" style="display:none">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-value" id="statTotal">0</div>
+                    <div class="stat-label">曝光总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statPending">0</div>
+                    <div class="stat-label">待整改</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statReview">0</div>
+                    <div class="stat-label">待审核</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statFixed">0</div>
+                    <div class="stat-label">已达标</div>
+                </div>
+            </div>
+
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="setFilter('all',this)">全部</button>
+                <button class="filter-btn" onclick="setFilter('pending',this)">待整改</button>
+                <button class="filter-btn" onclick="setFilter('review',this)">待审核</button>
+                <button class="filter-btn" onclick="setFilter('fixed',this)">已达标</button>
+            </div>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display:none">
+            <div class="empty-icon" aria-hidden="true"></div>
+            <div class="empty-text">暂无曝光记录</div>
+            <div class="empty-hint">显示近15天全部6S记录</div>
+        </div>
+
+        <div id="recordList"></div>
+    </div>
+
+    <button class="fab" onclick="addRecord()">+</button>
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/employee-session.js"></script>
+    <script src="/js/auth-guard.js"></script>
+    <script src="/js/module-access.js"></script>
+    <script>
+    var API=window.location.origin+"/api";
+    var hasEmployeeSession=window.EmployeeSession.ensureValid();
+    var needsModuleAuth=hasEmployeeSession&&!window.ModuleAccess.has("admin-linked");
+    if(needsModuleAuth){window.ModuleAccess.redirectToAuth("mobile-6s-list.html","admin-linked","6S管理")}
+    var token=hasEmployeeSession&&!needsModuleAuth?localStorage.getItem("employee_token"):"";
+    var currentFilter="all";
+    var allRecords=[];
+
+    if(!hasEmployeeSession){window.EmployeeSession.redirectToLogin()}
+
+    function goBack(){window.location.href="employee.html"}
+
+    function showToast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},2000)}
+
+    async function loadRecords(){
+        try{
+            var res=await fetch(API+"/6s",{headers:{"Authorization":"Bearer "+token}});
+            var data=await res.json();
+            document.getElementById("loading").style.display="none";
+            if(data.code===0&&data.data){
+                allRecords=data.data.records||[];
+                document.getElementById("statTotal").textContent=data.data.stats&&data.data.stats.total?data.data.stats.total:0;
+                document.getElementById("statPending").textContent=data.data.stats&&data.data.stats.pending?data.data.stats.pending:0;
+                document.getElementById("statReview").textContent=data.data.stats&&data.data.stats.submitted?data.data.stats.submitted:0;
+                document.getElementById("statFixed").textContent=data.data.stats&&data.data.stats.approved?data.data.stats.approved:0;
+                document.getElementById("statsSection").style.display="";
+                renderRecords();
+                applyInitialFilter();
+            } else {
+                document.getElementById("emptyState").style.display="";
+            }
+        } catch(err){
+            document.getElementById("loading").textContent="加载失败";
+        }
+    }
+
+    function setFilter(status, btn){
+        currentFilter=status;
+        var btns=document.querySelectorAll(".filter-btn");
+        for(var i=0;i<btns.length;i++){btns[i].classList.remove("active")}
+        if(btn){btn.classList.add("active")}
+        renderRecords();
+    }
+
+    function applyInitialFilter(){
+        var savedFilter=localStorage.getItem("mobile6s_admin_filter");
+        if(!savedFilter)return;
+        localStorage.removeItem("mobile6s_admin_filter");
+        var btns=document.querySelectorAll(".filter-btn");
+        for(var i=0;i<btns.length;i++){
+            var onclickText=btns[i].getAttribute("onclick")||"";
+            if(onclickText.indexOf("'" + savedFilter + "'")!==-1){
+                setFilter(savedFilter, btns[i]);
+                return;
+            }
+        }
+    }
+
+    function renderRecords(){
+        var records=allRecords;
+        if(currentFilter!=="all"){
+            if(currentFilter==="pending"){
+                records=records.filter(function(r){return !r.review_status||r.review_status==="pending"||r.review_status==="rejected"});
+            } else if(currentFilter==="review"){
+                records=records.filter(function(r){return r.review_status==="submitted"});
+            } else if(currentFilter==="fixed"){
+                records=records.filter(function(r){return r.review_status==="approved"});
+            }
+        }
+        if(records.length===0){
+            document.getElementById("emptyState").style.display="";
+            document.getElementById("recordList").style.display="none";
+            return;
+        }
+        document.getElementById("emptyState").style.display="none";
+        document.getElementById("recordList").style.display="";
+        var list=document.getElementById("recordList");
+        var html="";
+        for(var i=0;i<records.length;i++){
+            var r=records[i];
+            var rs=r.review_status;
+            var rejectCount=Number(r.reject_count||0);
+            if(!rejectCount&&r.reject_reason){rejectCount=1}
+            var statusText="待整改";
+            var statusClass="status-pending";
+            if(rs==="approved"){statusText="已达标";statusClass="status-success"}
+            else if(rs==="submitted"){statusText="待审核";statusClass="status-warning"}
+            else if(rs==="rejected"||rejectCount>0){statusText="未达标"+rejectCount;statusClass="status-danger"}
+            html+="<div class='record-card' onclick=\"viewRecord("+r.id+")\">";
+            html+="<div class='card-header'>";
+            html+="<span class='card-title'>"+(r.project_code||"-")+"</span>";
+            html+="<span class='status-badge "+statusClass+"'>"+statusText+"</span>";
+            html+="</div>";
+            html+="<div class='card-body'><div class='card-area'>"+(r.area||"-")+"</div><div class='card-desc'>"+(r.description||"-")+"</div></div>";
+            html+="<div class='card-meta'><span>检查日期: "+(r.check_date||"-")+"</span><span>责任人: "+(r.person_charge||"-")+"</span></div>";
+            html+="</div>";
+        }
+        list.innerHTML=html;
+    }
+
+    function viewRecord(id){window.location.href="mobile-6s-detail.html?id="+id+"&source=admin"}
+    function addRecord(){window.location.href="mobile-6s-add.html"}
+    loadRecords();
+    </script>
+</body>
+</html>

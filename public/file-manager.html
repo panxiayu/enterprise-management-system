@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件管理 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/glass-workbench-theme.css">
+    <style>
+        body.theme-glass-workbench {
+            min-height: 100vh;
+            padding: 26px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .fullpage-frost {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: rgba(245, 251, 255, 0.24);
+            backdrop-filter: blur(22px) saturate(132%);
+        }
+
+        .fm-shell {
+            width: min(1920px, calc(100% - 32px));
+            height: calc(100vh - 32px);
+            margin: 0 auto;
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .fm-shell .container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            max-width: none !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .fm-shell .toolbar,
+        .fm-shell .card,
+        .fm-shell #content,
+        .fm-shell .modal-box {
+            border: 1px solid rgba(255, 255, 255, 0.56);
+            border-radius: var(--gw-radius-md);
+            background: var(--gw-glass-panel);
+            backdrop-filter: blur(16px) saturate(125%);
+            box-shadow: 0 8px 22px rgba(90, 129, 164, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
+
+        .fm-shell .toolbar,
+        .fm-shell .card {
+            padding: 18px 20px;
+        }
+
+        .fm-shell #content {
+            flex: 1;
+            min-height: 0;
+            padding: 8px;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.36);
+            backdrop-filter: blur(18px) saturate(126%);
+        }
+
+        .fm-shell .modal {
+            background: rgba(120, 156, 192, 0.22);
+            backdrop-filter: blur(8px);
+        }
+
+        .fm-shell #content .table-container {
+            height: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.28);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        .fm-shell #content thead {
+            background: rgba(232, 244, 255, 0.42);
+            backdrop-filter: blur(10px);
+        }
+
+        .fm-shell #content tbody tr:hover td {
+            background: rgba(255, 255, 255, 0.34);
+        }
+    </style>
+</head>
+<body class="theme-glass-workbench">
+    <div class="gw-ambient" aria-hidden="true">
+        <div class="gw-curve gw-curve-blue"></div>
+        <div class="gw-curve gw-curve-warm"></div>
+        <div class="gw-curve gw-curve-violet"></div>
+    </div>
+    <div class="fullpage-frost" aria-hidden="true"></div>
+    <div class="glass-workbench fm-shell">
+    <div class="container">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <span class="page-title">文件管理</span>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-secondary btn-sm" onclick="location.href='dashboard.html'">返回</button>
+                <button class="btn btn-secondary btn-sm" onclick="showDevLog()">更新日志</button>
+                <button class="btn btn-primary btn-sm" onclick="loadFiles()">刷新</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">上传文件</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="file" id="fileInput" class="form-control" style="flex: 1;" multiple>
+                <button class="btn btn-primary" onclick="uploadFile()">上传</button>
+            </div>
+            <div class="progress-wrap" id="progress" style="display: none; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 15px;">
+                <div class="progress-bar" id="progressBar" style="height: 100%; background: var(--accent); width: 0%; transition: width 0.3s;"></div>
+            </div>
+            <div id="uploadStatus" style="font-size: 12px; color: var(--text-muted);"></div>
+        </div>
+
+        <div id="content">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+    </div>
+
+    <!-- 更新日志弹窗 -->
+    <div class="modal" id="devLogModal">
+        <div class="modal-box">
+            <div class="modal-title">更新日志 <button class="btn btn-sm" onclick="closeDevLog()" style="float: right;">×</button></div>
+            <div style="margin-top: 20px;">
+                <h4>V0.0.7 (2026-04-03)</h4>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>文件管理支持批量上传</li>
+                    <li>修复文件列表接口匹配问题</li>
+                    <li>上传进度和状态显示</li>
+                </ul>
+                <h4>V0.0.6 (2026-04-02)</h4>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>员工管理表头支持拖拽排序</li>
+                    <li>拖拽时其他列平滑"挤过"动画效果</li>
+                    <li>列顺序配置持久化到LocalStorage</li>
+                    <li>冻结列保持sticky定位</li>
+                    <li>下拉菜单添加淡入动画</li>
+                    <li>下拉菜单关闭延迟0.4秒</li>
+                </ul>
+                <h4>V0.0.5 (2026-04-01)</h4>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>员工管理列表优化排版</li>
+                    <li>员工详情页重新排版优化</li>
+                    <li>显示列下拉菜单支持搜索过滤</li>
+                    <li>同步时工号匹配不上自动标记离职</li>
+                    <li>支持显示Excel所有字段</li>
+                </ul>
+                <h4 style="margin-top: 20px;">V0.0.4 (2026-03-30)</h4>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>员工管理列表字号改小</li>
+                    <li>批量删除添加错误处理</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/file-manager.js"></script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

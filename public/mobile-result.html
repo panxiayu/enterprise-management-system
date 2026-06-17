@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>考试成绩 - 兴利汽车模具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #F0F7FF;
+            --primary: #7CB9F5;
+            --secondary: #A8D4FF;
+            --accent: #22C58D;
+            --danger: #ef4444;
+            --text: #1D2B5A;
+            --text-soft: #5B72A9;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, #B8D9FF 0%, #D9ECFF 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* 动态背景 */
+        .bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            animation: float 8s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.05); }
+        }
+
+        /* 卡片 */
+        .result-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 40px;
+            padding: 36px 28px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            box-shadow:
+                0 25px 80px rgba(74, 144, 226, 0.12),
+                0 10px 30px rgba(74, 144, 226, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            transform: scale(0.9);
+            opacity: 0;
+            animation: cardIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes cardIn {
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .result-card {
+                max-width: 480px;
+                padding: 56px 44px;
+            }
+            .score-value {
+                font-size: 72px;
+            }
+            .score-container {
+                width: 220px;
+                height: 220px;
+            }
+            .stat-card {
+                padding: 24px 16px;
+            }
+            .stat-value {
+                font-size: 32px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .result-card {
+                max-width: 520px;
+            }
+        }
+
+        /* 状态徽章 */
+        .status-badge {
+            display: inline-block;
+            padding: 12px 36px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+        .status-badge.pass {
+            background: linear-gradient(135deg, var(--accent), #34d399);
+            color: white;
+        }
+        .status-badge.fail {
+            background: linear-gradient(135deg, var(--danger), #f87171);
+            color: white;
+        }
+
+        /* 分数圆环 */
+        .score-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+        }
+        .score-ring {
+            transform: rotate(-90deg);
+        }
+        .score-ring circle {
+            fill: none;
+            stroke-width: 14;
+            stroke-linecap: round;
+        }
+        .score-bg {
+            stroke: rgba(74, 144, 226, 0.15);
+        }
+        .score-progress {
+            stroke: url(#mainGradient);
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .score-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(74, 144, 226, 0.08) 0%, transparent 70%);
+        }
+        .score-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .score-value {
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(135deg, #4A90E2, #65B3FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .score-unit {
+            font-size: 16px;
+            color: var(--text-soft);
+            margin-top: 4px;
+        }
+
+        .exam-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-soft);
+            margin-bottom: 16px;
+        }
+
+        /* 统计卡片 */
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            flex: 1;
+            padding: 20px 12px;
+            background: linear-gradient(135deg, #ffffff, #f8fcff);
+            border-radius: 20px;
+            transition: transform 0.3s;
+            border: 1px solid rgba(74, 144, 226, 0.08);
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1;
+        }
+        .stat-card:nth-child(2) .stat-value {
+            color: var(--primary);
+        }
+        .stat-card:nth-child(3) .stat-value {
+            color: var(--accent);
+        }
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-soft);
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        /* 重新考试按钮 */
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #5A9FE8, #78BFFF);
+            color: white;
+            border-radius: 20px;
+            font-size: 17px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(74, 144, 226, 0.3);
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+        .btn:active {
+            transform: scale(0.96);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.2);
+        }
+        .btn-detail {
+            background: linear-gradient(135deg, #6b7280, #9ca3af);
+            margin-bottom: 12px;
+        }
+        .btn-retake {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.3);
+        }
+        .btn-retake:active {
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+        }
+        .btn-list {
+            background: linear-gradient(135deg, #9ca3af, #d1d5db);
+        }
+        .btn-list:active {
+            box-shadow: 0 4px 15px rgba(156, 163, 175, 0.2);
+        }
+
+        /* 彩带效果 */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            z-index: 2;
+            animation: fall linear forwards;
+        }
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .loading {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-layer">
+        <div class="bg-orb" style="width:400px;height:400px;top:-150px;right:-150px;animation-delay:0s;"></div>
+        <div class="bg-orb" style="width:250px;height:250px;bottom:-100px;left:-100px;animation-delay:-3s;"></div>
+        <div class="bg-orb" style="width:180px;height:180px;top:40%;right:-80px;animation-delay:-6s;"></div>
+    </div>
+
+    <svg width="0" height="0">
+        <defs>
+            <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4A90E2"/>
+                <stop offset="100%" style="stop-color:#65B3FF"/>
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div id="loading" class="loading">加载中...</div>
+
+    <div id="resultContent" class="result-card" style="display: none;">
+        <div id="examTitle" class="exam-title">培训考核</div>
+
+        <div class="score-container">
+            <svg class="score-ring" width="200" height="200">
+                <circle class="score-bg" cx="100" cy="100" r="86"/>
+                <circle id="progressCircle" class="score-progress" cx="100" cy="100" r="86"
+                    stroke-dasharray="540" stroke-dashoffset="540"/>
+            </svg>
+            <div class="score-glow"></div>
+            <div class="score-inner">
+                <div id="scoreValue" class="score-value">0</div>
+                <div class="score-unit">分</div>
+            </div>
+        </div>
+
+        <div id="statusBadge" class="status-badge pass">考试通过</div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div id="correctCount" class="stat-value">0</div>
+                <div class="stat-label">正确题数</div>
+            </div>
+            <div class="stat-card">
+                <div id="totalQuestions" class="stat-value">0</div>
+                <div class="stat-label">总题数</div>
+            </div>
+            <div class="stat-card">
+                <div id="passScore" class="stat-value">60</div>
+                <div class="stat-label">及格分数</div>
+            </div>
+        </div>
+
+        <button class="btn btn-detail" id="detailBtn" onclick="viewDetail()">查看答题详情</button>
+        <div style="display:flex;gap:12px;">
+            <button class="btn btn-list" id="listBtn" onclick="goToList()" style="flex:1;">返回培训列表</button>
+            <button class="btn btn-retake" id="retryBtn" onclick="retryExam()" style="flex:1;">前往补考</button>
+        </div>
+    </div>
+
+    <script src="/js/auth-guard.js"></script>
+    <script>
+        const API = window.location.origin + '/api';
+        let token = localStorage.getItem('employee_token');
+        let examId = null;
+        let readonly = false;
+        let currentRecordId = null;
+
+        function getExamId() {
+            return new URLSearchParams(window.location.search).get('examId');
+        }
+
+        function getAnswerId() {
+            return new URLSearchParams(window.location.search).get('answerId');
+        }
+
+        function isReadonly() {
+            return new URLSearchParams(window.location.search).get('readonly') === '1';
+        }
+
+        function createConfetti() {
+            const colors = ['#4A90E2', '#65B3FF', '#22C58D', '#f59e0b', '#ef4444', '#764ba2'];
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                    confetti.style.width = (Math.random() * 8 + 6) + 'px';
+                    confetti.style.height = confetti.style.width;
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 50);
+            }
+        }
+
+        async function loadResult() {
+            examId = getExamId();
+            readonly = isReadonly();
+
+            if (!examId) {
+                window.location.href = 'mobile-training-list.html';
+                return;
+            }
+
+            try {
+                const examRes = await fetch(API + '/exam/' + examId, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const examData = await examRes.json();
+
+                const recordsRes = await fetch(API + '/exam/my-records', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const recordsData = await recordsRes.json();
+
+                if (examData.code !== 0) {
+                    document.getElementById('loading').textContent = examData.msg || '加载失败';
+                    return;
+                }
+                if (recordsData.code !== 0) {
+                    document.getElementById('loading').textContent = recordsData.msg || '加载失败';
+                    return;
+                }
+
+                document.getElementById('loading').style.display = 'none';
+
+                let myRecord = null;
+                const answerId = getAnswerId();
+
+                if (answerId) {
+                    myRecord = recordsData.data.find(r => r.id == answerId);
+                }
+                if (!myRecord) {
+                    const examRecords = recordsData.data.filter(r => r.exam_id == examId);
+                    if (examRecords.length > 0) {
+                        const wantRetake = new URLSearchParams(window.location.search).get('retake') === '1';
+                        if (wantRetake) {
+                            myRecord = examRecords.find(r => r.is_retake === 1) || examRecords[examRecords.length - 1];
+                        } else {
+                            myRecord = examRecords.find(r => r.is_retake === 0) || examRecords[examRecords.length - 1];
+                        }
+                    }
+                }
+
+                if (myRecord) {
+                    currentRecordId = myRecord.id;
+                    renderResult(examData.data, myRecord);
+                } else {
+                    window.location.href = 'mobile-training-list.html';
+                }
+            } catch (err) {
+                document.getElementById('loading').textContent = '加载失败';
+            }
+        }
+
+        function renderResult(examData, recordData) {
+            document.getElementById('resultContent').style.display = '';
+
+            document.getElementById('examTitle').textContent = examData.exam.title;
+            document.getElementById('scoreValue').textContent = recordData.total_score || 0;
+            document.getElementById('correctCount').textContent = recordData.correctCount || 0;
+            document.getElementById('totalQuestions').textContent = examData.questions.length;
+            document.getElementById('passScore').textContent = examData.exam.pass_score;
+
+            const isPassed = recordData.is_passed;
+            const isRetake = recordData.is_retake === 1;
+            const statusBadge = document.getElementById('statusBadge');
+            const progressCircle = document.getElementById('progressCircle');
+            const scoreValue = document.getElementById('scoreValue');
+
+            if (isPassed) {
+                statusBadge.className = 'status-badge pass';
+                statusBadge.textContent = isRetake ? '补考通过' : '考试通过';
+                scoreValue.style.background = 'linear-gradient(135deg, #22C58D, #34d399)';
+                scoreValue.style.webkitBackgroundClip = 'text';
+                progressCircle.style.stroke = 'url(#mainGradient)';
+                if (!isRetake) createConfetti(); // 正式考试通过才显示彩带
+            } else {
+                statusBadge.className = 'status-badge fail';
+                statusBadge.textContent = isRetake ? '补考未通过' : '未通过';
+                scoreValue.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+                scoreValue.style.webkitBackgroundClip = 'text';
+                progressCircle.style.stroke = '#ef4444';
+            }
+
+            const totalScore = recordData.total_score || 0;
+            const maxScore = examData.exam.total_score || 100;
+            const percent = Math.min(totalScore / maxScore, 1);
+            const circumference = 540;
+            const offset = circumference * (1 - percent);
+
+            setTimeout(() => {
+                progressCircle.style.strokeDashoffset = offset;
+            }, 300);
+
+            // 补考通过或补考结果页不显示重新考试按钮，正式考试未通过显示按钮
+            document.getElementById('retryBtn').style.display = (isPassed || isRetake) ? 'none' : 'block';
+        }
+
+        function viewDetail() {
+            window.location.href = 'mobile-exam-detail.html?examId=' + examId + '&recordId=' + currentRecordId;
+        }
+
+        function retryExam() {
+            window.location.href = 'mobile-exam-doing.html?id=' + examId + '&retake=1';
+        }
+
+        function goToList() {
+            window.location.href = 'mobile-training-list.html';
+        }
+
+        loadResult();
+    </script>
+</body>
+</html>

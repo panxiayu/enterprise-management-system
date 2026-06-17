@@ -1,0 +1,504 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+.wrapper { padding: 1rem 0; font-family: var(--font-sans); }
+
+.toolbar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: .9rem;
+}
+.toolbar-note { font-size: 12px; color: var(--color-text-secondary); }
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 13px; font-size: 12px; cursor: pointer;
+  border: 0.5px solid var(--color-border-secondary);
+  border-radius: var(--border-radius-md);
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+  transition: background .15s;
+}
+.btn:hover { background: var(--color-background-secondary); }
+
+.a3 {
+  width: 100%;
+  aspect-ratio: 420 / 297;
+  background: #f7f5f0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 0.5px solid #ccc;
+  border-radius: 3px;
+  overflow: hidden;
+  font-family: 'Noto Serif SC', 'SimSun', 'STSong', serif;
+  color: #1a1a1a;
+}
+
+.page {
+  background: #fff;
+  padding: 3.2% 4%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px dashed #d0ccc4;
+}
+.page:last-child { border-right: none; }
+
+/* ── Left page header: centered title ── */
+.left-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 2%;
+  margin-bottom: 2%;
+  border-bottom: 1.5px solid #1a1a1a;
+  position: relative;
+}
+.exam-subject {
+  font-size: clamp(10px, 1.7vw, 17px);
+  font-weight: 700;
+  letter-spacing: .18em;
+  line-height: 1.2;
+  margin-bottom: .3em;
+}
+.exam-subtitle {
+  font-size: clamp(6px, .85vw, 9px);
+  color: #888;
+  letter-spacing: .08em;
+}
+/* score badge: absolute right */
+.score-badge {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-left: .5px solid #e0ddd7;
+  padding-left: 3%;
+  min-width: clamp(44px, 6vw, 60px);
+}
+.score-big {
+  font-size: clamp(16px, 2.8vw, 28px);
+  font-weight: 700;
+  line-height: 1;
+  color: #1a1a1a;
+}
+.score-total {
+  font-size: clamp(5.5px, .78vw, 8px);
+  color: #999;
+  margin-top: 1px;
+}
+
+/* right page header */
+.right-header {
+  padding-bottom: 2%;
+  margin-bottom: 2%;
+  border-bottom: 1.5px solid #1a1a1a;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+}
+.cont-label {
+  font-size: clamp(6px, .82vw, 8.5px);
+  color: #bbb;
+  font-style: italic;
+  letter-spacing: .04em;
+}
+
+.info-row {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.8%;
+  border-bottom: .5px solid #e8e5df;
+  padding-bottom: 1.4%;
+}
+.info-cell {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: clamp(5.5px, .82vw, 8.5px);
+  padding-right: 2%;
+}
+.info-cell:last-child { padding-right: 0; }
+.info-lbl { color: #aaa; white-space: nowrap; }
+.info-val {
+  font-weight: 600;
+  color: #1a1a1a;
+  border-bottom: .5px solid #ccc;
+  flex: 1;
+  padding-bottom: 1px;
+}
+
+.stats-strip {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2%;
+  background: #f7f5f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  padding: 1.5% 0;
+  font-size: clamp(5px, .72vw, 7.5px);
+  color: #999;
+  gap: 1px;
+  border-right: .5px solid #e8e5df;
+}
+.stat-item:last-child { border-right: none; }
+.stat-val {
+  font-size: clamp(9px, 1.4vw, 13px);
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1;
+}
+.stat-val.red { color: #c0392b; }
+
+.sec-head {
+  font-size: clamp(5.5px, .78vw, 8.5px);
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: #999;
+  margin: 1.6% 0 .8%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sec-head::after {
+  content: '';
+  flex: 1;
+  height: .5px;
+  background: #e8e5df;
+}
+
+.q-list { display: flex; flex-direction: column; }
+
+.q-row {
+  display: flex;
+  align-items: flex-start;
+  padding: .85% 0;
+  border-bottom: .5px solid #f2efe9;
+  gap: 5px;
+}
+.q-row:last-child { border-bottom: none; }
+
+.q-no {
+  font-size: clamp(5.5px, .78vw, 8px);
+  color: #ccc;
+  min-width: 2em;
+  text-align: right;
+  padding-top: 1px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+.q-content { flex: 1; min-width: 0; }
+.q-text {
+  font-size: clamp(6.5px, .9vw, 9.5px);
+  color: #444;
+  line-height: 1.45;
+  margin-bottom: 2px;
+}
+.q-ans-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ans-tag { font-size: clamp(5px, .72vw, 7px); color: #ccc; }
+.ans-text { font-size: clamp(6.5px, .9vw, 9.5px); font-weight: 600; color: #1a1a1a; }
+.wrong .ans-text { color: #c0392b; }
+
+.blank {
+  display: inline;
+  border-bottom: .8px solid #999;
+  padding: 0 2px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+.wrong .blank { color: #c0392b; border-color: #c0392b; }
+
+.x-mark {
+  flex-shrink: 0;
+  width: clamp(10px, 1.4vw, 13px);
+  height: clamp(10px, 1.4vw, 13px);
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+}
+.x-mark svg { width: 100%; height: 100%; }
+
+.essay-student {
+  margin-top: 2px;
+  margin-left: calc(2em + 5px);
+  padding: 1.5% 2%;
+  border: .5px solid #e8e5df;
+  border-radius: 3px;
+  background: #fafaf8;
+  font-size: clamp(5.5px, .78vw, 8.5px);
+  color: #444;
+  line-height: 1.6;
+}
+.wrong .essay-student { border-color: #f5c6c5; color: #c0392b; }
+.essay-score {
+  font-size: clamp(5px, .7vw, 7px);
+  color: #bbb;
+  margin-top: 1px;
+}
+.wrong .essay-score { color: #c0392b; }
+
+.page-foot {
+  margin-top: auto;
+  padding-top: 1.5%;
+  border-top: .5px solid #e8e5df;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: clamp(5px, .72vw, 7.5px);
+  color: #bbb;
+}
+.sign-underline { display: inline-block; width: clamp(36px, 5vw, 52px); border-bottom: .5px solid #ccc; margin-left: 4px; }
+
+@media print {
+  .wrapper { padding: 0; }
+  .toolbar { display: none !important; }
+  .a3 { width: 420mm; height: 297mm; aspect-ratio: unset; border: none; border-radius: 0; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+
+<div class="wrapper">
+  <div class="toolbar">
+    <span class="toolbar-note">A3 横向打印预览</span>
+    <button class="btn" onclick="window.print()">
+      <i class="ti ti-printer" aria-hidden="true"></i>打印 / 导出 PDF
+    </button>
+  </div>
+
+  <div class="a3">
+    <!-- ══ 左页 ══ -->
+    <div class="page">
+
+      <div class="left-header">
+        <div class="exam-subject">语文期中测验</div>
+        <div class="exam-subtitle">2024 学年 · 第一学期 · 三年级</div>
+        <div class="score-badge">
+          <div class="score-big">78</div>
+          <div class="score-total">/ 100 分</div>
+        </div>
+      </div>
+
+      <div class="info-row">
+        <div class="info-cell"><span class="info-lbl">姓名</span><span class="info-val">王小明</span></div>
+        <div class="info-cell"><span class="info-lbl">班级</span><span class="info-val">三年（2）班</span></div>
+        <div class="info-cell"><span class="info-lbl">学号</span><span class="info-val">20240312</span></div>
+        <div class="info-cell"><span class="info-lbl">日期</span><span class="info-val">2024.11.08</span></div>
+      </div>
+
+      <div class="stats-strip">
+        <div class="stat-item"><span class="stat-val">25</span><span>总题数</span></div>
+        <div class="stat-item"><span class="stat-val">19</span><span>答对</span></div>
+        <div class="stat-item"><span class="stat-val red">6</span><span>答错</span></div>
+        <div class="stat-item"><span class="stat-val">12/15</span><span>选择题</span></div>
+        <div class="stat-item"><span class="stat-val">4/5</span><span>填空题</span></div>
+        <div class="stat-item"><span class="stat-val">3/5</span><span>简答题</span></div>
+      </div>
+
+      <div class="sec-head">一、选择题（每题 3 分）</div>
+      <div class="q-list">
+        <div class="q-row">
+          <span class="q-no">1.</span>
+          <div class="q-content">
+            <div class="q-text">下列词语中，字形完全正确的是？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">A. 磅礴</span></div>
+          </div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">2.</span>
+          <div class="q-content">
+            <div class="q-text">下列句子中，标点符号使用正确的是？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">C. 第三项</span></div>
+          </div>
+        </div>
+        <div class="q-row wrong">
+          <span class="q-no">3.</span>
+          <div class="q-content">
+            <div class="q-text">"春蚕到死丝方尽"出自哪位诗人的作品？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">A. 杜甫</span></div>
+          </div>
+          <div class="x-mark"><svg viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="2" x2="2" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">4.</span>
+          <div class="q-content">
+            <div class="q-text">下列成语使用正确的一项是？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">B. 守株待兔</span></div>
+          </div>
+        </div>
+        <div class="q-row wrong">
+          <span class="q-no">5.</span>
+          <div class="q-content">
+            <div class="q-text">《西游记》的作者是？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">C. 罗贯中</span></div>
+          </div>
+          <div class="x-mark"><svg viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="2" x2="2" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">6.</span>
+          <div class="q-content">
+            <div class="q-text">下列哪项不属于议论文的三要素？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">D. 情节</span></div>
+          </div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">7.</span>
+          <div class="q-content">
+            <div class="q-text">"鸡声茅店月，人迹板桥霜"描写的是什么时段？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">A. 清晨</span></div>
+          </div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">8.</span>
+          <div class="q-content">
+            <div class="q-text">下列词语中，加点字读音正确的是？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">B. 第二项</span></div>
+          </div>
+        </div>
+        <div class="q-row wrong">
+          <span class="q-no">9.</span>
+          <div class="q-content">
+            <div class="q-text">"欲穷千里目，更上一层楼"的作者是谁？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">C. 李白</span></div>
+          </div>
+          <div class="x-mark"><svg viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="2" x2="2" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">10.</span>
+          <div class="q-content">
+            <div class="q-text">下列句子属于反问句的是？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">D. 第四项</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-foot">
+        <span>第 1 页 · 共 2 页</span>
+        <span>考试结果单</span>
+      </div>
+    </div>
+
+    <!-- ══ 右页 ══ -->
+    <div class="page">
+
+      <div class="right-header">
+        <span class="cont-label">续页 · 第 2 页</span>
+      </div>
+
+      <div class="sec-head">一、选择题（续）</div>
+      <div class="q-list">
+        <div class="q-row">
+          <span class="q-no">11.</span>
+          <div class="q-content">
+            <div class="q-text">下列说法中，正确的是？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">A. 第一项</span></div>
+          </div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">12.</span>
+          <div class="q-content">
+            <div class="q-text">"明月几时有"出自？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">B. 《水调歌头》</span></div>
+          </div>
+        </div>
+        <div class="q-row wrong">
+          <span class="q-no">13.</span>
+          <div class="q-content">
+            <div class="q-text">下列哪个字是形声字？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">A. 日</span></div>
+          </div>
+          <div class="x-mark"><svg viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="2" x2="2" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">14.</span>
+          <div class="q-content">
+            <div class="q-text">下列句子，修辞手法判断正确的是？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">C. 比喻</span></div>
+          </div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">15.</span>
+          <div class="q-content">
+            <div class="q-text">以下哪部作品属于唐代传奇？</div>
+            <div class="q-ans-line"><span class="ans-tag">答</span><span class="ans-text">D. 《莺莺传》</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-head">二、填空题（每题 4 分）</div>
+      <div class="q-list">
+        <div class="q-row">
+          <span class="q-no">16.</span>
+          <div class="q-content">
+            <div class="q-text">举头望明月，<span class="blank">低头思故乡</span>。（李白《静夜思》）</div>
+          </div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">17.</span>
+          <div class="q-content">
+            <div class="q-text">春风又绿江南岸，<span class="blank">明月何时照我还</span>。</div>
+          </div>
+        </div>
+        <div class="q-row wrong">
+          <span class="q-no">18.</span>
+          <div class="q-content">
+            <div class="q-text">《岳阳楼记》的作者是<span class="blank">范仲延</span>（北宋）。</div>
+          </div>
+          <div class="x-mark"><svg viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="2" x2="2" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">19.</span>
+          <div class="q-content">
+            <div class="q-text">学而时习之，<span class="blank">不亦说乎</span>。（《论语》）</div>
+          </div>
+        </div>
+        <div class="q-row">
+          <span class="q-no">20.</span>
+          <div class="q-content">
+            <div class="q-text">《红楼梦》中，通灵宝玉上刻有<span class="blank">莫失莫忘，仙寿恒昌</span>。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-head">三、简答题（每题 10 分）</div>
+      <div class="q-list">
+        <div class="q-row" style="flex-direction:column; align-items:stretch;">
+          <div style="display:flex; gap:5px; align-items:flex-start;">
+            <span class="q-no">21.</span>
+            <div class="q-content">
+              <div class="q-text">请简述《背影》中父亲形象的特点及其感人之处。</div>
+              <div class="essay-score">得分：9 / 10</div>
+            </div>
+          </div>
+          <div class="essay-student">父亲是一个朴实勤劳、深沉慈爱的人。文章通过买橘子时翻越月台的背影，展现父亲对儿子无言却深厚的爱。感人在于平凡动作中蕴含的真情，令读者感同身受。</div>
+        </div>
+        <div class="q-row wrong" style="flex-direction:column; align-items:stretch;">
+          <div style="display:flex; gap:5px; align-items:flex-start;">
+            <span class="q-no">22.</span>
+            <div class="q-content">
+              <div class="q-text">比较《春》和《济南的冬天》在写景手法上的异同。</div>
+              <div class="essay-score">得分：5 / 10</div>
+            </div>
+            <div class="x-mark" style="margin-top:2px;"><svg viewBox="0 0 14 14" fill="none"><line x1="2" y1="2" x2="12" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="2" x2="2" y2="12" stroke="#c0392b" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          </div>
+          <div class="essay-student">两篇文章都很美，都是写自然景色的。春天写了草、花、风、雨，冬天写了雪和山。都用了很多比喻。不同的是一个写春天一个写冬天，季节不一样。</div>
+        </div>
+      </div>
+
+      <div class="page-foot">
+        <span>第 2 页 · 共 2 页</span>
+        <div><span>教师签名</span><span class="sign-underline"></span></div>
+      </div>
+    </div>
+  </div>
+</div>

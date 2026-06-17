@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息中心 - 兴利汽车模具</title>
+    <style>
+        :root{--bg1:#d8f0fb;--bg2:#f8eaf2;--card:rgba(255,255,255,.54);--line:rgba(255,255,255,.82);--text:#24476e;--soft:#7a94ad;--blue:#2387da;--green:#39ad72;--orange:#dc9850;--red:#e26f76}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 14% 18%, rgba(205,242,255,.92), transparent 28%),radial-gradient(circle at 82% 22%, rgba(249,218,234,.68), transparent 24%),linear-gradient(135deg,var(--bg1),#eff9fd 42%,var(--bg2))}
+        .page{width:min(1200px,calc(100% - 36px));margin:20px auto;padding:18px;border:1px solid var(--line);border-radius:22px;background:rgba(243,250,255,.34);backdrop-filter:blur(22px) saturate(130%);box-shadow:0 18px 48px rgba(54,96,138,.15)}
+        .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.top h1{font-size:28px}.top p{margin-top:4px;color:var(--soft)}
+        .btn{display:inline-flex;align-items:center;justify-content:center;height:38px;padding:0 14px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.30);color:#587793;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer}
+        .btn.primary{border-color:#2f8dd9;background:#2f8dd9;color:#fff}
+        .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}.metric,.panel{border:1px solid rgba(255,255,255,.72);border-radius:18px;background:var(--card);backdrop-filter:blur(14px);box-shadow:0 6px 16px rgba(76,119,159,.08)}
+        .metric{padding:16px}.metric span{display:block;color:var(--soft);font-size:12px}.metric strong{display:block;margin-top:6px;font-size:30px}.metric.warn strong{color:var(--orange)}.metric.good strong{color:var(--green)}
+        .panel{padding:14px}
+        .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}.tab,.filter{padding:8px 11px;border:1px solid rgba(111,154,189,.18);border-radius:10px;background:rgba(255,255,255,.56);color:#50728f;font:inherit;font-size:12px}.tab{font-weight:700;cursor:pointer}.tab.active{border-color:#2f8dd9;background:#2f8dd9;color:#fff}
+        .list{display:grid;gap:8px}
+        .item{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid rgba(255,255,255,.72);border-radius:14px;background:rgba(255,255,255,.34);text-decoration:none;color:#6e8ba4}
+        .item.unread{background:rgba(255,255,255,.58)}.item:hover{background:rgba(255,255,255,.60)}
+        .dot{width:10px;height:10px;flex:0 0 auto;margin-top:6px;border-radius:50%;background:#3c97d8}.dot.warn{background:var(--orange)}.dot.success{background:var(--green)}
+        .copy{min-width:0;flex:1}.copy strong{display:block;color:#4f708b;font-size:14px}.copy small{display:block;margin-top:4px;color:#95aabd;font-size:11px;line-height:1.55}
+        .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.tag{padding:3px 7px;border-radius:999px;background:#edf7ff;color:#67869f;font-size:10px}
+        .empty{padding:38px 18px;border-radius:16px;background:rgba(255,255,255,.22);color:#96adbf;font-size:13px;line-height:1.7;text-align:center}
+        body.projector-mode .page{width:min(100% - 18px,1080px);margin:10px auto;padding:12px;border-radius:18px}
+        body.projector-mode .top{align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+        body.projector-mode .top h1{font-size:22px}
+        body.projector-mode .top p{font-size:12px}
+        body.projector-mode .btn{height:34px;padding:0 12px;font-size:12px}
+        body.projector-mode .summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+        body.projector-mode .metric,body.projector-mode .panel{border-radius:14px}
+        body.projector-mode .metric{padding:12px}
+        body.projector-mode .metric span{font-size:11px}
+        body.projector-mode .metric strong{margin-top:4px;font-size:24px}
+        body.projector-mode .panel{padding:12px}
+        body.projector-mode .toolbar{gap:6px;margin-bottom:10px}
+        body.projector-mode .tab,body.projector-mode .filter{padding:7px 10px;font-size:12px}
+        body.projector-mode .item{padding:10px;border-radius:12px}
+        body.projector-mode .copy strong{font-size:13px}
+        body.projector-mode .copy small{font-size:10px}
+        body.projector-mode .tag{font-size:9px}
+        @media(max-width:760px){.page{width:min(100% - 18px,920px);margin:9px auto;padding:12px}.top{display:block}.top .actions{margin-top:10px}.summary{grid-template-columns:repeat(2,1fr)}}
+    </style>
+</head>
+<body>
+<main class="page">
+    <div class="top">
+        <div>
+            <h1>消息中心</h1>
+            <p>集中查看任务提醒和系统动态，未读消息优先呈现，点开后可直接跳转处理。</p>
+        </div>
+        <div class="actions" style="display:flex;gap:8px;">
+            <a class="btn" href="dashboard.html">返回仪表盘</a>
+            <a class="btn" href="personal-todo.html">个人待办</a>
+            <button class="btn primary" type="button" onclick="readAll()">全部已读</button>
+        </div>
+    </div>
+    <section class="summary">
+        <article class="metric"><span>未读消息</span><strong id="unreadCount">0</strong></article>
+        <article class="metric warn"><span>待办消息</span><strong id="taskCount">0</strong></article>
+        <article class="metric good"><span>全部消息</span><strong id="totalCount">0</strong></article>
+        <article class="metric"><span>已逾期</span><strong id="overdueCount">0</strong></article>
+    </section>
+    <section class="panel">
+        <div class="toolbar">
+            <button class="tab active" data-module="" onclick="switchModule('')">全部消息</button>
+            <button class="tab" data-module="task" onclick="switchModule('task')">个人待办</button>
+            <button class="tab" data-module="6s" onclick="switchModule('6s')">6S</button>
+            <select class="filter" id="readFilter" onchange="loadNotifications()">
+                <option value="">全部状态</option>
+                <option value="unread">仅看未读</option>
+                <option value="read">仅看已读</option>
+            </select>
+            <select class="filter" id="taskScopeFilter" onchange="loadNotifications()">
+                <option value="">全部任务动态</option>
+                <option value="today">今日到期</option>
+                <option value="overdue">已逾期</option>
+                <option value="high">高优先级</option>
+            </select>
+        </div>
+        <div class="list" id="noticeList"><div class="empty">正在加载消息...</div></div>
+    </section>
+</main>
+<script src="/js/admin-session.js"></script>
+<script>
+const API=window.location.origin+'/api';
+const token=window.AdminSession&&window.AdminSession.getToken
+    ? window.AdminSession.getToken()
+    : (localStorage.getItem('token')||localStorage.getItem('adminToken')||'');
+let currentModule='';
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function api(path,options={}){const r=await fetch(API+path,{...options,headers:{Authorization:'Bearer '+token,...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}});const d=await r.json();if(!r.ok||d.code!==0)throw new Error(d.msg||'操作失败');return d.data}
+function syncTabs(){document.querySelectorAll('[data-module]').forEach(btn=>btn.classList.toggle('active',btn.dataset.module===currentModule))}
+async function loadSummary(){const d=await api('/notifications/summary');const total=Number(d.total||0);const unread=Number(d.unread||0);unreadCount.textContent=unread;taskCount.textContent=d.task_unread||0;totalCount.textContent=total;overdueCount.textContent=d.task_overdue||0}
+async function markRead(id,e){if(e)e.stopPropagation();try{await api('/notifications/'+id+'/read',{method:'POST'});await Promise.all([loadSummary(),loadNotifications()])}catch{}}
+function formatTime(value){return value?String(value).replace('T',' ').slice(0,16):''}
+function buildNoticeHint(n){const parts=[];if(n.content)parts.push(esc(n.content));if(n.module==='task'&&n.task_due_at)parts.push('截止 '+esc(formatTime(n.task_due_at)));if(n.created_at)parts.push('接收 '+esc(formatTime(n.created_at)));return parts.join(' · ')}
+async function loadNotifications(){try{const params=new URLSearchParams();if(currentModule)params.set('module',currentModule);if(readFilter.value)params.set('read',readFilter.value);if(taskScopeFilter.value)params.set('task_scope',taskScopeFilter.value);const rows=await api('/notifications?'+params.toString());if(!rows.length){noticeList.innerHTML='<div class="empty">当前筛选条件下暂无消息</div>';return}noticeList.innerHTML=rows.map(n=>`<a class="item ${Number(n.is_read)===0?'unread':''}" href="${esc(n.link||'dashboard.html')}" onclick="markRead(${Number(n.id)},event)"><i class="dot ${n.level==='warning'?'warn':n.level==='success'?'success':''}"></i><span class="copy"><strong>${esc(n.title)}</strong><small>${buildNoticeHint(n)}</small><span class="meta"><i class="tag">${esc(n.module==='task'?'个人待办':n.module==='6s'?'6S':'系统')}</i><i class="tag">${Number(n.is_read)===0?'未读':'已读'}</i></span></span></a>`).join('')}catch(e){noticeList.innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+async function readAll(){try{await api('/notifications/read-all',{method:'POST'});await Promise.all([loadSummary(),loadNotifications()])}catch(e){alert(e.message)}}
+function switchModule(module){currentModule=module;syncTabs();loadNotifications()}
+if(!token){
+    if(window.AdminSession&&window.AdminSession.redirectToLogin){
+        window.AdminSession.redirectToLogin();
+    }else{
+        location.href='/admin/login.html';
+    }
+}else{syncTabs();Promise.all([loadSummary(),loadNotifications()])}
+</script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

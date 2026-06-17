@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>6S运行情况汇报 - 兴利汽车模具</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;color:#10204f;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;background:
+      linear-gradient(120deg,rgba(74,144,226,.16),transparent 34%),
+      radial-gradient(circle at 82% 4%,rgba(34,197,94,.18),transparent 24%),
+      linear-gradient(180deg,#f4f9ff 0%,#eef7ff 100%)}
+    .page{max-width:1680px;margin:0 auto;padding:26px}
+    .hero{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:18px;padding:26px;border:1px solid rgba(214,233,255,.9);border-radius:28px;background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(255,255,255,.66));box-shadow:0 24px 60px rgba(74,144,226,.14);overflow:hidden;position:relative}
+    .hero::after{content:"";position:absolute;right:-80px;top:-120px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(74,144,226,.18),transparent 70%)}
+    .eyebrow{font-size:12px;font-weight:850;color:#4a90e2;letter-spacing:.16em}
+    h1{font-size:34px;line-height:1.15;margin-top:8px;color:#10204f}
+    .sub{margin-top:8px;color:#5b72a9;font-size:14px}
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:relative;z-index:1}
+    .seg{display:inline-flex;align-items:center;background:rgba(255,255,255,.92);border:1px solid rgba(214,233,255,.95);border-radius:18px;padding:3px;box-shadow:0 8px 20px rgba(74,144,226,.08);overflow:hidden}
+    .seg button{appearance:none;-webkit-appearance:none;border:0;background:transparent;border-radius:14px;min-height:38px;padding:0 16px;font-weight:850;color:#5b72a9;cursor:pointer;line-height:1;white-space:nowrap;transition:background-color .2s,box-shadow .2s,transform .15s;position:relative}
+    .seg button:not(:last-child)::after{content:"";position:absolute;right:0;top:25%;height:50%;width:1px;background:rgba(214,233,255,.8)}
+    .seg button:hover{background:rgba(74,144,226,.1);color:#4a90e2}
+    .seg button:active{background:rgba(74,144,226,.18);transform:scale(.96)}
+    .seg button:focus-visible{outline:none;box-shadow:inset 0 0 0 2px rgba(74,144,226,.25)}
+    .seg button.active{background:linear-gradient(135deg,#4a90e2,#65b3ff) !important;color:#fff !important;box-shadow:0 4px 12px rgba(74,144,226,.3)}
+    .seg button.active::after{display:none}
+    .btn{border:0;border-radius:14px;padding:11px 16px;font-size:13px;font-weight:850;cursor:pointer;color:#10204f;background:#fff;border:1px solid rgba(214,233,255,.95);box-shadow:0 10px 26px rgba(74,144,226,.12)}
+    .btn.primary{background:linear-gradient(135deg,#4a90e2,#65b3ff);color:#fff;border-color:transparent}
+    .date-field{position:relative}
+    .date-trigger{position:relative;height:40px;border:1px solid var(--border);border-radius:14px;padding:0 34px 0 12px;color:#10204f;background:#fff;cursor:pointer;min-width:132px;text-align:left}
+    .date-trigger::after{content:"";position:absolute;right:12px;top:50%;width:14px;height:14px;transform:translateY(-50%);border:1.8px solid #5b72a9;border-radius:3px;box-sizing:border-box}
+    .date-trigger::before{content:"";position:absolute;right:15px;top:calc(50% - 4px);width:8px;height:2px;background:#5b72a9;box-shadow:0 4px 0 #5b72a9}
+    .date-trigger.placeholder{color:#94a3b8}
+    .calendar-pop{position:fixed;z-index:1200;width:280px;background:#fff;border:1px solid rgba(214,233,255,.95);border-radius:18px;box-shadow:0 20px 50px rgba(29,43,90,.18);padding:12px;display:none}
+    .calendar-pop.show{display:block}
+    .calendar-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .calendar-title{font-size:14px;font-weight:900;color:#14245a}
+    .calendar-nav{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid rgba(214,233,255,.95);background:#f7fbff;border-radius:10px;color:#4a90e2;cursor:pointer;line-height:1;padding:0}
+    .calendar-nav .chev{display:block;width:8px;height:8px;border-top:2px solid currentColor;border-right:2px solid currentColor}
+    .calendar-nav.prev .chev{transform:translateX(1px) rotate(-135deg)}
+    .calendar-nav.next .chev{transform:translateX(-1px) rotate(45deg)}
+    .calendar-week,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .calendar-week{margin-bottom:6px}
+    .calendar-week span{font-size:11px;color:var(--text-soft);text-align:center;padding:4px 0}
+    .calendar-day{position:relative;height:34px;border:0;background:transparent;border-radius:10px;color:#14245a;font-size:12px;font-weight:700;cursor:pointer}
+    .calendar-day:hover{background:#eef6ff}
+    .calendar-day.muted{color:#b3c0da}
+    .calendar-day.selected{background:linear-gradient(135deg,#4a90e2,#65b3ff);color:#fff}
+    .calendar-day.has-record::after{content:"";position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;background:#16a765}
+    .calendar-day.selected.has-record::after{background:#fff}
+    .calendar-footer{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-top:10px}
+    .calendar-today{border:0;background:transparent;color:#4a90e2;font-size:12px;font-weight:800;cursor:pointer}
+    .calendar-clear{justify-self:end;border:0;background:transparent;color:#5b72a9;font-size:12px;font-weight:800;cursor:pointer}
+    .summary{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;margin-bottom:16px}
+    .metric{background:rgba(255,255,255,.88);border:1px solid rgba(214,233,255,.95);border-radius:20px;padding:16px;box-shadow:0 16px 36px rgba(74,144,226,.11)}
+    .label{font-size:12px;font-weight:850;color:#5b72a9}
+    .value{font-size:30px;font-weight:900;margin-top:7px;color:#10204f}
+    .metric.green .value{color:#16a765}.metric.red .value{color:#d92d20}.metric.orange .value{color:#b77900}.metric.blue .value{color:#4a90e2}
+    .grid{display:grid;grid-template-columns:1.35fr .9fr;gap:16px;margin-bottom:16px}
+    .card{background:rgba(255,255,255,.88);border:1px solid rgba(214,233,255,.95);border-radius:24px;padding:18px;box-shadow:0 18px 44px rgba(74,144,226,.12)}
+    .card-title{font-size:16px;font-weight:900;color:#10204f;margin-bottom:14px;display:flex;justify-content:space-between;gap:12px}
+    .chart{height:260px;display:flex;align-items:flex-end;gap:12px;padding:12px 4px 0;border-bottom:1px solid rgba(214,233,255,.9)}
+    .bar-col{flex:1;min-width:32px;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+    .bar-stack{width:100%;max-width:46px;height:190px;display:flex;align-items:flex-end;gap:3px;justify-content:center}
+    .bar{width:12px;border-radius:999px 999px 0 0;min-height:3px}
+    .bar.total{background:linear-gradient(180deg,#4a90e2,#9bc8ff)}.bar.approved{background:linear-gradient(180deg,#22c58d,#91e7c5)}.bar.rejected{background:linear-gradient(180deg,#ff3b30,#ff9a92)}
+    .bar-label{font-size:11px;color:#5b72a9;white-space:nowrap}.bar-value{font-size:11px;font-weight:850;color:#10204f}
+    .dist{display:flex;flex-direction:column;gap:10px}
+    .dist-row{display:grid;grid-template-columns:78px 1fr 48px;gap:10px;align-items:center}
+    .track{height:10px;background:#edf6ff;border-radius:999px;overflow:hidden}.fill{height:100%;border-radius:999px;background:#4a90e2}.fill.green{background:#22c58d}.fill.orange{background:#ff9500}.fill.red{background:#ff3b30}
+    .rank-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+    .rank-list{display:flex;flex-direction:column;gap:9px}
+    .rank-row{display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:9px 10px;border:1px solid rgba(214,233,255,.72);border-radius:14px;background:#f8fbff}
+    .idx{width:24px;height:24px;border-radius:8px;background:#e6f2ff;color:#4a90e2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+    .rank-name{font-size:13px;font-weight:850;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rank-num{font-size:13px;font-weight:900;color:#10204f}
+    .tables{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse}th{height:34px;text-align:left;color:#5b72a9;font-size:11px;border-bottom:1px solid var(--border)}td{padding:10px 0;border-bottom:1px solid rgba(214,233,255,.64);font-size:12px;vertical-align:top}
+    .case-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .case{border:1px solid rgba(214,233,255,.9);border-radius:18px;padding:12px;background:#fff}
+    .case-head{font-size:13px;font-weight:900;color:#10204f}
+    .case-desc{font-size:15px;font-weight:600;color:#3a5080;margin-bottom:10px;margin-top:3px;line-height:1.6}
+    
+    .photos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .photo{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 12px 28px rgba(29,43,90,.12)}
+    .photo img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:pointer}
+    .photo span{position:absolute;left:0;right:0;bottom:0;padding:18px 8px 7px;text-align:center;color:#fff;font-size:11px;font-weight:850;background:linear-gradient(to top,rgba(15,23,42,.6),transparent)}
+    .photo-more{position:absolute;top:8px;right:8px;min-width:28px;height:22px;padding:0 7px;border-radius:999px;background:rgba(15,23,42,.68);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;backdrop-filter:blur(6px);box-shadow:0 6px 16px rgba(15,23,42,.18)}
+    .case-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(214,233,255,.75)}
+    .case-count{font-size:12px;font-weight:700;color:#5b72a9}
+    .case-more{border:0;border-radius:12px;padding:10px 15px;font-size:13px;font-weight:700;cursor:pointer;transition:.18s;background:#fff;color:var(--text);box-shadow:0 8px 20px rgba(74,144,226,.10);border:1px solid rgba(214,233,255,.95)}
+    .case-more:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(74,144,226,.16)}
+    .case-more:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:1000;align-items:center;justify-content:center}.viewer.show{display:flex}.viewer img{max-width:92vw;max-height:88vh}
+    .toast{position:fixed;left:50%;top:20px;z-index:3000;min-width:160px;max-width:min(420px,calc(100vw - 32px));padding:10px 16px;border-radius:16px;border:1px solid rgba(214,233,255,.95);background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(240,247,255,.98));color:#14245a;font-size:13px;font-weight:900;text-align:center;box-shadow:0 18px 40px rgba(52,96,160,.18);transform:translate(-50%,-140%);transition:transform .25s ease,opacity .25s ease;opacity:0}.toast.show{transform:translate(-50%,0);opacity:1}
+    .mode-pill{display:none;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.92);border:1px solid rgba(214,233,255,.95);color:#4a90e2;font-size:11px;font-weight:900;box-shadow:0 8px 20px rgba(74,144,226,.08)}
+    body.projector-mode .page{max-width:1360px;padding:14px}
+    body.projector-mode .mode-pill{display:none}
+    body.projector-mode .hero{gap:12px;margin-bottom:12px;padding:18px;border-radius:20px}
+    body.projector-mode .hero::after{width:220px;height:220px;right:-70px;top:-90px}
+    body.projector-mode .eyebrow{font-size:10px}
+    body.projector-mode h1{font-size:26px}
+    body.projector-mode .sub{margin-top:6px;font-size:12px}
+    body.projector-mode .toolbar{gap:8px}
+    body.projector-mode .seg{border-radius:14px}
+    body.projector-mode .seg button{min-height:34px;padding:0 12px;font-size:12px}
+    body.projector-mode .btn{padding:9px 12px;font-size:12px;border-radius:12px}
+    body.projector-mode .date-trigger{height:36px;min-width:120px;padding:0 30px 0 10px;font-size:12px;border-radius:12px}
+    body.projector-mode .date-trigger::after{right:10px;width:12px;height:12px}
+    body.projector-mode .date-trigger::before{right:13px}
+    body.projector-mode .summary{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+    body.projector-mode .metric{padding:12px;border-radius:16px}
+    body.projector-mode .label{font-size:11px}
+    body.projector-mode .value{font-size:24px;margin-top:5px}
+    body.projector-mode .card{padding:14px;border-radius:18px}
+    body.projector-mode .card-title{font-size:14px;margin-bottom:10px}
+    body.projector-mode .case-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    body.projector-mode .case{padding:10px;border-radius:14px}
+    body.projector-mode .case-head{font-size:12px}
+    body.projector-mode .case-desc{font-size:13px;line-height:1.5;margin-top:2px;margin-bottom:8px}
+    body.projector-mode .photos{gap:6px}
+    body.projector-mode .photo{border-radius:12px}
+    body.projector-mode .photo span{padding:14px 6px 6px;font-size:10px}
+    body.projector-mode .photo-more{top:6px;right:6px;min-width:24px;height:20px;font-size:10px}
+    body.projector-mode .case-footer{margin-top:10px;padding-top:10px}
+    body.projector-mode .case-count{font-size:11px}
+    body.projector-mode .case-more{padding:8px 12px;font-size:12px;border-radius:10px}
+    body.projector-mode .rank-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    body.projector-mode .rank-list{gap:7px}
+    body.projector-mode .rank-row{padding:8px;border-radius:12px}
+    body.projector-mode .idx{width:22px;height:22px;font-size:11px}
+    body.projector-mode .rank-name,body.projector-mode .rank-num{font-size:12px}
+    body.projector-mode .tables{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+    body.projector-mode .tables .card:last-child{grid-column:1/-1}
+    body.projector-mode th{height:30px;font-size:10px}
+    body.projector-mode td{padding:8px 0;font-size:11px}
+    body.projector-mode .grid{grid-template-columns:1fr;gap:12px;margin-bottom:12px}
+    body.projector-mode .chart{height:220px;gap:8px;padding-top:8px}
+    body.projector-mode .bar-stack{max-width:38px;height:154px}
+    body.projector-mode .bar{width:10px}
+    body.projector-mode .bar-label,body.projector-mode .bar-value{font-size:10px}
+    body.projector-mode .dist{gap:8px}
+    body.projector-mode .dist-row{grid-template-columns:68px 1fr 40px;gap:8px}
+    @media(max-width:1280px){.summary{grid-template-columns:repeat(4,1fr)}.rank-grid,.tables{grid-template-columns:repeat(2,1fr)}.case-grid{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.page{padding:14px}.hero{flex-direction:column}.summary,.rank-grid,.tables,.case-grid{grid-template-columns:1fr}h1{font-size:26px}}
+    @media print{body{background:#fff}.btn,.seg,.date-trigger,.calendar-pop,.toolbar .btn{display:none}.page{max-width:none;padding:0}.card,.metric,.hero{box-shadow:none;break-inside:avoid}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">XINGLI 6S REPORT</div>
+        <h1>6S管理运行情况</h1>
+        <div class="sub" id="rangeText">本月汇报 · 数据加载中</div>
+      </div>
+      <div class="toolbar">
+        <span class="mode-pill">低分辨率模式</span>
+        <div class="seg"><button type="button" class="active" data-period="week">上周</button><button type="button" data-period="month">本月</button><button type="button" data-period="year">本年</button></div>
+        <input class="date-trigger placeholder" type="text" id="fromDate" placeholder="年 / 月 / 日" readonly onclick="openCalendar('fromDate')">
+        <input class="date-trigger placeholder" type="text" id="toDate" placeholder="年 / 月 / 日" readonly onclick="openCalendar('toDate')">
+        <button class="btn" onclick="location.href='dashboard.html'">返回</button>
+        <button class="btn" onclick="exportCsv()">导出明细</button>
+        <button class="btn" onclick="location.href='6s-list.html'">管理后台</button>
+      </div>
+    </section>
+
+    <section class="summary">
+      <div class="metric blue"><div class="label">曝光总数</div><div class="value" id="sTotal">0</div></div>
+      <div class="metric orange"><div class="label">待整改</div><div class="value" id="sPending">0</div></div>
+      <div class="metric blue"><div class="label">待审核</div><div class="value" id="sSubmitted">0</div></div>
+      <div class="metric green"><div class="label">已达标</div><div class="value" id="sApproved">0</div></div>
+      <div class="metric green"><div class="label">闭环率</div><div class="value" id="sRate">0%</div></div>
+      <div class="metric blue"><div class="label">平均整改耗时</div><div class="value" id="sAvg">0h</div></div>
+      <div class="metric red"><div class="label">未达标次数</div><div class="value" id="sReject">0</div></div>
+      <div class="metric red"><div class="label">逾期未整改</div><div class="value" id="sOverdue">0</div></div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">曝光台</div>
+      <div class="case-grid" id="caseGrid"></div>
+      <div class="case-footer">
+        <div class="case-count" id="caseCountText">暂无典型案例</div>
+        <button class="case-more" type="button" id="caseMoreBtn">显示更多</button>
+      </div>
+    </section>
+
+    <section class="rank-grid">
+      <div class="card"><div class="card-title">区域曝光排名</div><div class="rank-list" id="areaRank"></div></div>
+      <div class="card"><div class="card-title">区域未达标排名</div><div class="rank-list" id="areaRejectRank"></div></div>
+      <div class="card"><div class="card-title">责任人待整改排名</div><div class="rank-list" id="personRank"></div></div>
+      <div class="card"><div class="card-title">逾期责任人排名</div><div class="rank-list" id="overdueRank"></div></div>
+    </section>
+
+    <section class="tables">
+      <div class="card"><div class="card-title">重点问题 Top 10</div><table><tbody id="issueRows"></tbody></table></div>
+      <div class="card"><div class="card-title">逾期未整改</div><table><tbody id="overdueRows"></tbody></table></div>
+      <div class="card"><div class="card-title">多次未达标</div><table><tbody id="repeatRows"></tbody></table></div>
+    </section>
+
+    <section class="grid">
+      <div class="card"><div class="card-title">趋势分析 <span class="label">曝光 / 已达标 / 未达标</span></div><div class="chart" id="trendChart"></div></div>
+      <div class="card"><div class="card-title">状态分布</div><div class="dist" id="statusDist"></div></div>
+    </section>
+
+  </div>
+  <div class="viewer" id="viewer" onclick="this.classList.remove('show')"><img id="viewerImg"></div>
+  <div class="toast" id="toast"></div>
+  <div class="calendar-pop" id="calendarPop">
+    <div class="calendar-head">
+      <button class="calendar-nav prev" type="button" id="calPrev"><span class="chev"></span></button>
+      <div class="calendar-title" id="calTitle"></div>
+      <button class="calendar-nav next" type="button" id="calNext"><span class="chev"></span></button>
+    </div>
+    <div class="calendar-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+    <div class="calendar-grid" id="calGrid"></div>
+    <div class="calendar-footer"><span></span><button class="calendar-today" type="button" id="calToday">今日</button><button class="calendar-clear" type="button" id="calClear">清空</button></div>
+  </div>
+
+<script>
+const API=window.location.origin+"/api";
+const token=localStorage.getItem("token")||localStorage.getItem("employee_token");
+let period="week",report=null,calendarField=null,calendarMonth=new Date().getMonth(),calendarYear=new Date().getFullYear(),recordDates=new Set(),caseVisibleCount=6;
+if(!token){location.href="admin/login.html"}
+document.querySelectorAll(".seg button").forEach(btn=>btn.onclick=()=>{document.querySelectorAll(".seg button").forEach(b=>b.classList.remove("active"));btn.classList.add("active");period=btn.dataset.period;loadReport()});
+document.addEventListener("DOMContentLoaded",loadReport);
+document.getElementById("calPrev").onclick=()=>moveCalendar(-1);
+document.getElementById("calNext").onclick=()=>moveCalendar(1);
+document.getElementById("calToday").onclick=()=>pickToday();
+document.getElementById("calClear").onclick=()=>clearCalendarValue();
+document.addEventListener("click",e=>{let pop=document.getElementById("calendarPop");if(pop.classList.contains("show")){let trigger=calendarField?document.getElementById(calendarField):null;if(!pop.contains(e.target)&&!(trigger&&trigger.contains(e.target)))closeCalendar()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCalendar()});
+function auth(){return {"Authorization":"Bearer "+token}}
+function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]))}
+function toast(msg){let t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
+function imgList(r,key){let field=key==="before"?"before_list":"after_list";if(Array.isArray(r[field]))return r[field];return []}
+function formatDateValue(year,month,day){return `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`}
+function parseDateValue(value){if(!value)return null;let date=new Date(value);return isNaN(date.getTime())?null:date}
+function closeCalendar(){document.getElementById("calendarPop").classList.remove("show");if(calendarField){let trigger=document.getElementById(calendarField);if(trigger&&!trigger.value)trigger.classList.add("placeholder");calendarField=null}}
+function openCalendar(id){calendarField=id;let field=document.getElementById(id),current=parseDateValue(field.value)||new Date();calendarYear=current.getFullYear();calendarMonth=current.getMonth();let rect=field.getBoundingClientRect(),pop=document.getElementById("calendarPop");pop.style.left=`${Math.min(rect.left,window.innerWidth-296)}px`;pop.style.top=`${rect.bottom+8}px`;pop.classList.add("show");renderCalendar();field.classList.remove("placeholder")}
+function moveCalendar(delta){calendarMonth+=delta;if(calendarMonth<0){calendarMonth=11;calendarYear-=1}else if(calendarMonth>11){calendarMonth=0;calendarYear+=1}renderCalendar()}
+function renderCalendar(){if(!calendarField)return;document.getElementById("calTitle").textContent=`${calendarYear}年 ${calendarMonth+1}月`;let firstDay=new Date(calendarYear,calendarMonth,1),startWeek=firstDay.getDay(),daysInMonth=new Date(calendarYear,calendarMonth+1,0).getDate(),selected=document.getElementById(calendarField).value;let cells=[];for(let i=0;i<42;i++){let dayNum=i-startWeek+1;if(dayNum<1||dayNum>daysInMonth){cells.push("<span></span>");continue}let value=formatDateValue(calendarYear,calendarMonth,dayNum),selectedCls=value===selected?" selected":"",dotCls=recordDates.has(value)?" has-record":"";cells.push(`<button type="button" class="calendar-day${selectedCls}${dotCls}" data-date="${value}" onclick="pickCalendarDate('${value}')">${dayNum}</button>`)}document.getElementById("calGrid").innerHTML=cells.join("")}
+function pickCalendarDate(value){if(!calendarField)return;let field=document.getElementById(calendarField);field.value=value;field.classList.remove("placeholder");closeCalendar();loadReport()}
+function clearCalendarValue(){if(!calendarField)return;let field=document.getElementById(calendarField);field.value="";field.classList.add("placeholder");closeCalendar();loadReport()}
+function pickToday(){let now=new Date();pickCalendarDate(formatDateValue(now.getFullYear(),now.getMonth(),now.getDate()))}
+document.getElementById("caseMoreBtn").onclick=loadMoreCases;
+async function loadReport(){let p=new URLSearchParams();if(period==="week"){let now=new Date(),day=now.getDay()||7;let end=new Date(now);end.setDate(now.getDate()-day);end.setHours(23,59,59,999);let start=new Date(end);start.setDate(end.getDate()-6);start.setHours(0,0,0,0);p.set("date_from",start.toISOString().slice(0,10));p.set("date_to",end.toISOString().slice(0,10))}else{p.set("period",period)}if(fromDate.value)p.set("date_from",fromDate.value);if(toDate.value)p.set("date_to",toDate.value);let res=await fetch(API+"/6s/report?"+p.toString(),{headers:auth()});let d=await res.json();if(d.code!==0){toast(d.msg||"加载失败");return}report=d.data;renderAll()}
+function renderAll(){recordDates=new Set(report.recordDates||[]);caseVisibleCount=6;caseMoreBtn.disabled=false;let s=report.summary||{};sTotal.textContent=s.total||0;sPending.textContent=s.pending||0;sSubmitted.textContent=s.submitted||0;sApproved.textContent=s.approved||0;sRate.textContent=(s.close_rate||0)+"%";sAvg.textContent=(s.avg_rectify_hours||0)+"h";sReject.textContent=s.reject_total||0;sOverdue.textContent=s.overdue||0;rangeText.textContent=`${labelPeriod()}汇报 · ${report.range.from||""} 至 ${report.range.to||""} · ${new Date().toLocaleString("zh-CN",{hour12:false})}`;renderCalendar();renderTrend();renderDist();rank(areaRank,report.areaRanking,"total");rank(areaRejectRank,report.areaRejectRanking,"rejected");rank(personRank,report.personRanking,"pending");rank(overdueRank,report.overdueRanking,"overdue");rows(issueRows,report.importantIssues);rows(overdueRows,report.overdueRecords);rows(repeatRows,report.repeatedRejects,true);renderCases()}
+function labelPeriod(){return period==="week"?"上周":period==="year"?"本年":"本月"}
+function renderTrend(){let list=report.trend||[],max=Math.max(1,...list.map(x=>Math.max(x.total,x.approved,x.rejected)));trendChart.innerHTML=list.map(x=>`<div class="bar-col"><div class="bar-value">${x.total}</div><div class="bar-stack"><div class="bar total" style="height:${Math.max(4,x.total/max*180)}px"></div><div class="bar approved" style="height:${Math.max(4,x.approved/max*180)}px"></div><div class="bar rejected" style="height:${Math.max(4,x.rejected/max*180)}px"></div></div><div class="bar-label">${esc(x.period)}</div></div>`).join("")||"<div class='label'>暂无数据</div>"}
+function renderDist(){let list=report.statusDistribution||[],max=Math.max(1,...list.map(x=>x.value));let colors=["orange","blue","green","red"];statusDist.innerHTML=list.map((x,i)=>`<div class="dist-row"><div class="label">${esc(x.name)}</div><div class="track"><div class="fill ${colors[i]}" style="width:${x.value/max*100}%"></div></div><strong>${x.value}</strong></div>`).join("")}
+function rank(el,list,key){el.innerHTML=(list||[]).slice(0,8).map((x,i)=>`<div class="rank-row"><div class="idx">${i+1}</div><div class="rank-name">${esc(x.name)}</div><div class="rank-num">${x[key]||0}</div></div>`).join("")||"<div class='label'>暂无数据</div>"}
+function rows(el,list,repeat){el.innerHTML=(list||[]).slice(0,10).map(r=>`<tr><td><strong>${esc(r.project_code||"-")}</strong><br><span class="label">${esc(r.area||"-")} · ${esc(r.person_charge||r.assigned_name||"-")}</span></td><td>${repeat?`未达标${r.reject_count||0}`:esc(r.deadline||r.check_date||"-")}</td></tr>`).join("")||"<tr><td class='label'>暂无数据</td></tr>"}
+function buildCaseViewerUrl(index){
+  let params=new URLSearchParams();
+  params.set("period",period);
+  const effectiveFrom=(report&&report.range&&report.range.from)||fromDate.value||"";
+  const effectiveTo=(report&&report.range&&report.range.to)||toDate.value||"";
+  if(effectiveFrom)params.set("date_from",effectiveFrom);
+  if(effectiveTo)params.set("date_to",effectiveTo);
+  params.set("case",index);
+  return `6s-case-viewer.html?${params.toString()}`
+}
+function openCaseViewer(index){location.href=buildCaseViewerUrl(index)}
+function renderCasePhoto(src,label,extraCount,index){return `<div class="photo" onclick="openCaseViewer(${index})"><img src="${esc(src)}"><span>${esc(label)}</span>${extraCount>0?`<div class="photo-more">+${extraCount}</div>`:""}</div>`}
+function renderCases(){let list=report.cases||[],visible=list.slice(0,caseVisibleCount);caseGrid.innerHTML=visible.map((r,index)=>{let before=imgList(r,"before"),after=imgList(r,"after"),responsible=r.person_charge||r.assigned_name||"-";return `<div class="case"><div class="case-head">${esc(r.project_code||"-")} · ${esc(r.area||"-")} · ${esc(responsible)}</div><div class="case-desc">${esc(r.description||"")}</div><div class="photos">${renderCasePhoto(before[0]||"","整改前",Math.max(0,before.length-1),index)}${renderCasePhoto(after[0]||"","整改后",Math.max(0,after.length-1),index)}</div></div>`}).join("")||"<div class='label'>暂无典型案例</div>";caseCountText.textContent=list.length?`已显示 ${Math.min(caseVisibleCount,list.length)} / ${list.length} 组`:"暂无典型案例";caseMoreBtn.textContent=caseVisibleCount>=list.length?"没有更多":"显示更多";caseMoreBtn.disabled=!list.length}
+function loadMoreCases(){let list=report&&report.cases||[];if(caseVisibleCount>=list.length){toast("没有更多了");return}caseVisibleCount+=6;renderCases()}
+function view(src){viewerImg.src=src;viewer.classList.add("show")}
+function exportCsv(){let rows=[["类型","项目编号","区域","责任人","状态/日期"],...(report.importantIssues||[]).map(r=>["重点问题",r.project_code,r.area,r.person_charge||r.assigned_name,r.deadline||r.check_date]),...(report.overdueRecords||[]).map(r=>["逾期",r.project_code,r.area,r.person_charge||r.assigned_name,r.deadline]),...(report.repeatedRejects||[]).map(r=>["多次未达标",r.project_code,r.area,r.person_charge||r.assigned_name,"未达标"+(r.reject_count||0)])];let csv=rows.map(row=>row.map(v=>`"${String(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="6S汇报_"+labelPeriod()+"_"+new Date().toISOString().slice(0,10)+".csv";a.click()}
+</script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>UI 预览 v2 - 我的反馈</title>
+<style>
+:root {
+  --bg: #EDEDED;
+  --bg-noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.025 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  --primary: #07C160;
+  --bubble-self: #95EC69;
+  --bubble-other: #FFFFFF;
+  --text: #111111;
+  --text-soft: #7A7A7A;
+  --text-mute: #ADADAD;
+  --gray-line: #E5E5E5;
+  --gray-input: #F7F7F7;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  background-image: var(--bg-noise);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+}
+
+/* 顶栏(新) */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  background: rgba(237,237,237,0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 0.5px solid rgba(0,0,0,0.08);
+  font-size: 17px;
+  font-weight: 600;
+  color: #111;
+  position: relative;
+  flex-shrink: 0;
+}
+.topbar .back {
+  position: absolute;
+  left: 12px;
+  font-size: 24px;
+  color: #111;
+  font-weight: 300;
+  line-height: 1;
+}
+.topbar .more {
+  position: absolute;
+  right: 14px;
+  font-size: 22px;
+  color: #111;
+  letter-spacing: 1px;
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--bg);
+  background-image: var(--bg-noise);
+}
+
+.chat-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0 16px;
+  -webkit-overflow-scrolling: touch;
+}
+.chat-wrap::-webkit-scrollbar { width: 0; }
+
+.time-divider {
+  text-align: center;
+  margin: 16px 0 12px;
+  color: var(--text-mute);
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+
+/* ===== 消息行 ===== */
+.msg {
+  display: flex;
+  align-items: flex-start;
+  padding: 0 12px;
+  animation: msgIn 0.32s cubic-bezier(.2,.9,.3,1.15);
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.msg.user  { justify-content: flex-end; }
+.msg.admin { justify-content: flex-start; }
+.msg + .msg { margin-top: 2px; }
+.msg + .msg.diff-side { margin-top: 18px; }
+.msg + .msg.same-side .avatar { visibility: hidden; }
+
+/* ===== 头像 ===== */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
+  color: white;
+  letter-spacing: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+.msg.user  .avatar {
+  margin-left: 8px;
+  order: 2;
+  background: linear-gradient(135deg, #5B9EF4 0%, #4F8AF7 100%);
+}
+.msg.admin .avatar {
+  margin-right: 8px;
+  order: 1;
+  background: linear-gradient(135deg, #3A3A3A 0%, #1F1F1F 100%);
+}
+
+/* ===== 气泡容器 ===== */
+.bubble-wrap {
+  position: relative;
+  max-width: 70%;
+  display: flex;
+  flex-direction: column;
+}
+.msg.user  .bubble-wrap { align-items: flex-end; order: 1; }
+.msg.admin .bubble-wrap { align-items: flex-start; order: 2; }
+
+/* ===== 气泡本体 ===== */
+.bubble {
+  position: relative;
+  padding: 10px 13px;
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+  word-break: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+.msg.user  .bubble { background: var(--bubble-self); color: #111; }
+.msg.admin .bubble { background: var(--bubble-other); color: #111; }
+
+/* ===== 尖角(更自然) ===== */
+.bubble::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 4px 5px 4px 0;
+  border-color: transparent;
+}
+.msg.user .bubble::before {
+  right: -5px;
+  border-left-color: var(--bubble-self);
+}
+.msg.admin .bubble::before {
+  left: -5px;
+  border-right-color: var(--bubble-other);
+  border-width: 4px 0 4px 5px;
+}
+
+/* ===== 嵌入气泡内的状态标签(像微信的"已读") ===== */
+.bubble .status {
+  display: block;
+  margin-top: 6px;
+  padding-bottom: 2px;
+  font-size: 11px;
+  color: rgba(0,0,0,0.38);
+  text-align: right;
+  letter-spacing: 0.3px;
+  font-weight: 400;
+}
+.bubble.admin .status { text-align: left; }
+.bubble .status .tag {
+  display: inline-block;
+  padding: 0;
+  font-size: 11px;
+  background: transparent;
+  color: inherit;
+  font-weight: 400;
+}
+.bubble.user .status .tag { color: rgba(0,80,30,0.55); font-weight: 500; }
+.bubble.admin .status .tag { color: rgba(0,0,0,0.42); font-weight: 500; }
+.bubble .status .tag::before {
+  content: "·";
+  margin: 0 5px;
+  opacity: 0.4;
+}
+.bubble .status .tag:first-child::before { content: ""; margin: 0; }
+
+/* ===== 用户消息的外置状态(待处理/处理中/已驳回/已解决) ===== */
+.msg-status {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  display: flex;
+}
+.msg.user  .msg-status { justify-content: flex-end; }
+.msg.admin .msg-status { justify-content: flex-start; }
+.msg-status .tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+.tag-pending    { background: #FA5151; }
+.tag-processing { background: #FA9D3B; }
+.tag-resolved   { background: #07C160; }
+.tag-rejected   { background: #B2B2B2; }
+
+/* ===== 底部输入区(重做) ===== */
+.input-area {
+  background: rgba(247,247,247,0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 0.5px solid rgba(0,0,0,0.08);
+  padding: 6px 10px calc(6px + env(safe-area-inset-bottom, 0px));
+  position: relative;
+  flex-shrink: 0;
+}
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.icon-btn:active { background: rgba(0,0,0,0.06); }
+
+.input-row input {
+  flex: 1; min-width: 0;
+  height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  background: #FFFFFF;
+  color: #111;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.06);
+  transition: box-shadow 0.15s;
+}
+.input-row input::placeholder { color: #B5B5B5; }
+.input-row input:focus { box-shadow: 0 0 0 0.5px var(--primary); }
+
+.send-btn {
+  height: 36px;
+  padding: 0 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+  letter-spacing: 0.5px;
+}
+.send-btn:active { transform: scale(0.96); background: #06AE56; }
+
+/* "+" 弹层(分类菜单) */
+.plus-panel {
+  position: absolute;
+  left: 0; right: 0; bottom: 100%;
+  background: rgba(247,247,247,0.98);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 0.5px solid rgba(0,0,0,0.08);
+  padding: 14px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+  display: none;
+  animation: panelIn 0.22s ease;
+}
+.plus-panel.open { display: block; }
+@keyframes panelIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px 8px;
+}
+.cat-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  font-size: 11px; color: #555;
+  background: transparent; border: none; cursor: pointer; padding: 6px 0;
+}
+.cat-cell .ic {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.cat-cell.active .ic { background: rgba(7,193,96,0.12); color: var(--primary); }
+.cat-cell.active { color: var(--primary); font-weight: 500; }
+
+/* 图片气泡(预览) */
+.bubble.image-bubble { padding: 4px; overflow: hidden; }
+.bubble.image-bubble.has-text { padding-bottom: 8px; }
+.bubble.image-bubble.has-text .text { display: block; padding: 8px 13px 4px; }
+.bubble.image-bubble .img-grid { display: grid; gap: 3px; border-radius: 6px; overflow: hidden; margin: 0 4px 4px; }
+.bubble.image-bubble .img-grid.cols-1 { grid-template-columns: 1fr; }
+.bubble.image-bubble .img-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.bubble.image-bubble .img-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.bubble.image-bubble .img-grid img {
+  display: block; width: 100%; max-width: 220px; max-height: 240px;
+  object-fit: cover; border-radius: 4px;
+}
+.bubble.image-bubble .img-grid.cols-1 img { max-width: 220px; max-height: 320px; }
+.bubble.image-bubble .img-grid.cols-2 img,
+.bubble.image-bubble .img-grid.cols-3 img { max-width: 110px; max-height: 110px; }
+</style>
+</head>
+<body>
+
+<div class="page-container">
+
+  <div class="topbar">
+    <span class="back">‹</span>
+    <span>问题反馈</span>
+    <span class="more">···</span>
+  </div>
+
+  <div id="chat" class="chat-wrap">
+
+    <div class="time-divider">昨天 18:32</div>
+
+    <div class="msg user diff-side">
+      <div class="bubble-wrap">
+        <div class="bubble">报餐页面加载很慢,有时候要等 5 秒以上才出来,能优化一下吗?</div>
+        <div class="msg-status"><span class="tag tag-resolved">已解决</span></div>
+      </div>
+      <div class="avatar user">我</div>
+    </div>
+
+    <div class="msg admin diff-side">
+      <div class="avatar admin">官</div>
+      <div class="bubble-wrap">
+        <div class="bubble admin">您好,已收到反馈,正在排查接口响应慢的问题,预计本周内修复。
+<span class="status"><span class="tag">已回复</span></span></div>
+      </div>
+    </div>
+
+    <div class="msg admin same-side">
+      <div class="avatar admin">官</div>
+      <div class="bubble-wrap">
+        <div class="bubble admin">已优化,缓存命中后 0.5s 内返回,请再试试。
+<span class="status"><span class="tag">已回复</span></span></div>
+      </div>
+    </div>
+
+    <div class="msg user diff-side">
+      <div class="bubble-wrap">
+        <div class="bubble">好的,快多了,谢谢!</div>
+        <div class="msg-status"><span class="tag tag-resolved">已解决</span></div>
+      </div>
+      <div class="avatar user">我</div>
+    </div>
+
+    <div class="time-divider">今天 09:15</div>
+
+    <div class="msg user diff-side">
+      <div class="bubble-wrap">
+        <div class="bubble">培训考试的"已通过"标签看不清,颜色和未通过的太像了</div>
+        <div class="msg-status"><span class="tag tag-processing">处理中</span></div>
+      </div>
+      <div class="avatar user">我</div>
+    </div>
+
+    <div class="msg user same-side">
+      <div class="bubble-wrap">
+        <div class="bubble">建议已通过用绿色、未通过用红色,中间状态用橙色,会清楚很多</div>
+        <div class="msg-status"><span class="tag tag-processing">处理中</span></div>
+      </div>
+      <div class="avatar user">我</div>
+    </div>
+
+    <div class="msg user diff-side">
+      <div class="bubble-wrap">
+        <div class="bubble image-bubble">
+          <div class="img-grid cols-3">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzVCOUVGNCIvPjx0ZXh0IHg9IjYwIiB5PSI2OCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5JTUcgMTwvdGV4dD48L3N2Zz4=" alt="">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzA3QzE2MCIvPjx0ZXh0IHg9IjYwIiB5PSI2OCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5JTUcgMjwvdGV4dD48L3N2Zz4=" alt="">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIj48cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iI0ZBOUQzQiIvPjx0ZXh0IHg9IjYwIiB5PSI2OCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj5JTUcgMzwvdGV4dD48L3N2Zz4=" alt="">
+          </div>
+        </div>
+        <div class="msg-status"><span class="tag tag-pending">待处理</span></div>
+      </div>
+      <div class="avatar user">我</div>
+    </div>
+
+    <div class="msg user same-side">
+      <div class="bubble-wrap">
+        <div class="bubble image-bubble has-text">
+          <span class="text">这个按钮点了没反应,看截图:</span>
+          <div class="img-grid cols-1">
+            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMjAiIGhlaWdodD0iMzIwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM1QjlFRjQiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwN0MxNjAiLz48L2RlZnM+PHJlY3Qgd2lkdGg9IjIyMCIgaGVpZ2h0PSIzMjAiIGZpbGw9InVybCgjZykiLz48dGV4dCB4PSIxMTAiIHk9IjE1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMjIiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIj7miqXplJnmiKrlm748L3RleHQ+PHRleHQgeD0iMTEwIiB5PSIxODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LXNpemU9IjEyIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI+MjIwIHggMzIwPC90ZXh0Pjwvc3ZnPg==" alt="">
+          </div>
+        </div>
+        <div class="msg-status"><span class="tag tag-pending">待处理</span></div>
+      </div>
+      <div class="avatar user">我</div>
+    </div>
+
+    <div class="msg admin diff-side">
+      <div class="avatar admin">官</div>
+      <div class="bubble-wrap">
+        <div class="bubble admin">建议已收到,我们会尽快调整颜色方案,感谢反馈!
+<span class="status"><span class="tag">已回复</span></span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="input-area">
+    <div class="input-row">
+      <button class="icon-btn" id="plusBtn" onclick="togglePlus()">+</button>
+      <input type="text" id="descInput" placeholder="输入问题或建议...">
+      <button class="send-btn" onclick="alert('发送预览')">发送</button>
+    </div>
+
+    <div class="plus-panel" id="plusPanel">
+      <div class="cat-grid">
+        <button class="cat-cell" onclick="toggleCat(this)">
+          <span class="ic">⚙️</span>
+          <span>功能异常</span>
+        </button>
+        <button class="cat-cell active" onclick="toggleCat(this)">
+          <span class="ic">💡</span>
+          <span>功能建议</span>
+        </button>
+        <button class="cat-cell" onclick="toggleCat(this)">
+          <span class="ic">🎨</span>
+          <span>界面问题</span>
+        </button>
+        <button class="cat-cell" onclick="toggleCat(this)">
+          <span class="ic">⚡</span>
+          <span>性能问题</span>
+        </button>
+        <button class="cat-cell" onclick="alert('拍照(预览)')">
+          <span class="ic">📷</span>
+          <span>拍照</span>
+        </button>
+        <button class="cat-cell" onclick="alert('相册(预览)')">
+          <span class="ic">🖼️</span>
+          <span>相册</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePlus() {
+  document.getElementById('plusPanel').classList.toggle('open');
+}
+function toggleCat(btn) {
+  btn.classList.toggle('active');
+}
+</script>
+</body>
+</html>

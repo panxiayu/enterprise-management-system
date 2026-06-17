@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aurora Ops UI Preview</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #627386;
+      --line: #dce6ef;
+      --paper: #fbfcf7;
+      --surface: #ffffff;
+      --sea: #0f8b8d;
+      --sea-dark: #096264;
+      --coral: #ff6b5f;
+      --sun: #f7c948;
+      --mint: #78c6a3;
+      --shadow: 0 20px 55px rgba(20, 40, 60, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 15%, rgba(120, 198, 163, 0.34), transparent 32%),
+        radial-gradient(circle at 84% 12%, rgba(255, 107, 95, 0.22), transparent 28%),
+        linear-gradient(135deg, #f7f4e9 0%, #eaf6f2 52%, #f9fbff 100%);
+      overflow-x: hidden;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 252px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      padding: 28px 22px;
+      border-right: 1px solid rgba(23, 32, 42, 0.08);
+      background: rgba(255, 255, 255, 0.62);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 34px;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: conic-gradient(from 210deg, var(--sea), var(--mint), var(--sun), var(--coral), var(--sea));
+      box-shadow: 0 12px 28px rgba(15, 139, 141, 0.24);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .brand span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 44px;
+      padding: 0 12px;
+      color: #405263;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 650;
+      border-radius: 8px;
+    }
+
+    .nav a.active {
+      color: #fff;
+      background: var(--sea);
+      box-shadow: 0 14px 28px rgba(15, 139, 141, 0.24);
+    }
+
+    .nav i {
+      width: 20px;
+      height: 20px;
+      border: 2px solid currentColor;
+      border-radius: 6px;
+      opacity: 0.75;
+    }
+
+    .side-card {
+      margin-top: 34px;
+      padding: 18px;
+      border: 1px solid rgba(15, 139, 141, 0.18);
+      border-radius: 8px;
+      background: #fffaf0;
+      box-shadow: 0 14px 28px rgba(122, 95, 38, 0.08);
+    }
+
+    .side-card p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 9px 0 16px;
+    }
+
+    .side-card button,
+    .primary-btn {
+      height: 40px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--ink);
+      font-weight: 750;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(23, 32, 42, 0.18);
+    }
+
+    main {
+      padding: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 26px;
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      max-width: 520px;
+      height: 48px;
+      padding: 0 16px;
+      border: 1px solid rgba(23, 32, 42, 0.1);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 10px 26px rgba(20, 40, 60, 0.06);
+    }
+
+    .search span {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .search input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    .avatar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 48px;
+      padding: 0 14px 0 8px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid rgba(23, 32, 42, 0.08);
+      box-shadow: 0 10px 26px rgba(20, 40, 60, 0.06);
+    }
+
+    .avatar b {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      border-radius: 8px;
+      background: var(--coral);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) 0.95fr;
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .panel {
+      border: 1px solid rgba(23, 32, 42, 0.08);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.84);
+      box-shadow: var(--shadow);
+    }
+
+    .headline {
+      min-height: 356px;
+      padding: 34px;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(130deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='420' viewBox='0 0 720 420'%3E%3Cpath d='M0 300 C115 210 175 350 286 250 S470 120 720 210 L720 420 L0 420Z' fill='%230f8b8d' fill-opacity='.16'/%3E%3Cpath d='M0 336 C150 270 205 385 345 295 S515 172 720 250 L720 420 L0 420Z' fill='%23ff6b5f' fill-opacity='.13'/%3E%3Cpath d='M0 374 C180 322 270 405 410 330 S588 250 720 302 L720 420 L0 420Z' fill='%23f7c948' fill-opacity='.22'/%3E%3C/svg%3E");
+      background-size: cover;
+      background-position: center bottom;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 30px;
+      padding: 0 11px;
+      color: var(--sea-dark);
+      background: #dff3ed;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      max-width: 640px;
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 0.98;
+      letter-spacing: 0;
+      margin-bottom: 20px;
+    }
+
+    .headline p {
+      max-width: 540px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .ghost-btn {
+      height: 40px;
+      padding: 0 16px;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .insight {
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+      background: #15313a;
+      color: #fff;
+    }
+
+    .insight header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .metric {
+      display: grid;
+      gap: 6px;
+      padding: 18px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .metric strong {
+      font-size: 38px;
+      letter-spacing: 0;
+    }
+
+    .metric span {
+      color: rgba(255,255,255,0.68);
+      font-size: 13px;
+    }
+
+    .bars {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar {
+      display: grid;
+      grid-template-columns: 80px 1fr 42px;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.78);
+    }
+
+    .track {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.12);
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--mint), var(--sun), var(--coral));
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      padding: 18px;
+    }
+
+    .stat small {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 30px;
+      margin: 10px 0 8px;
+    }
+
+    .delta {
+      color: var(--sea-dark);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 22px;
+    }
+
+    .table-panel,
+    .timeline-panel {
+      padding: 22px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .section-title h2 {
+      font-size: 18px;
+    }
+
+    .section-title a {
+      color: var(--sea-dark);
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    td {
+      padding: 15px 10px;
+      border-bottom: 1px solid #edf2f6;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: #eef7f4;
+      color: var(--sea-dark);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .dot {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #fdf2d1;
+      border: 1px solid rgba(247, 201, 72, 0.48);
+    }
+
+    .event strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .event span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        border-right: 0;
+        border-bottom: 1px solid rgba(23, 32, 42, 0.08);
+      }
+
+      .nav {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .side-card {
+        display: none;
+      }
+
+      .hero,
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      main {
+        padding: 18px;
+      }
+
+      .topbar,
+      .actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .avatar,
+      .search {
+        max-width: none;
+        width: 100%;
+      }
+
+      .nav {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .headline {
+        min-height: auto;
+        padding: 24px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        min-width: 560px;
+      }
+
+      .table-scroll {
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark"></div>
+        <div>
+          <strong>Aurora Ops</strong>
+          <span>运营控制台</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a class="active" href="#"><i></i>总览</a>
+        <a href="#"><i></i>任务</a>
+        <a href="#"><i></i>人员</a>
+        <a href="#"><i></i>排程</a>
+        <a href="#"><i></i>报表</a>
+        <a href="#"><i></i>设置</a>
+      </nav>
+
+      <div class="side-card">
+        <strong>本周焦点</strong>
+        <p>把异常、效率和人员负载放在同一个视图里，快速判断下一步动作。</p>
+        <button>查看建议</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <label class="search">
+          <span>⌕</span>
+          <input type="text" placeholder="搜索项目、人员或指标">
+        </label>
+        <div class="avatar">
+          <b>L</b>
+          <span>林主管</span>
+        </div>
+      </div>
+
+      <section class="hero">
+        <div class="panel headline">
+          <div class="eyebrow">LIVE DASHBOARD</div>
+          <h1>把现场节奏装进漂亮工作台。</h1>
+          <p>干净、轻盈、有管理感的仪表盘 UI。适合做后台首页、数据总览、任务中心或移动端 H5 的视觉方向。</p>
+          <div class="actions">
+            <button class="primary-btn">创建任务</button>
+            <button class="ghost-btn">导出日报</button>
+          </div>
+        </div>
+
+        <div class="panel insight">
+          <header>
+            <strong>今日效率</strong>
+            <span class="pill">更新于 09:42</span>
+          </header>
+          <div class="metric">
+            <strong>92.8%</strong>
+            <span>关键流程准时完成率</span>
+          </div>
+          <div class="bars">
+            <div class="bar"><span>生产</span><div class="track"><div class="fill" style="width: 88%"></div></div><b>88</b></div>
+            <div class="bar"><span>质检</span><div class="track"><div class="fill" style="width: 76%"></div></div><b>76</b></div>
+            <div class="bar"><span>培训</span><div class="track"><div class="fill" style="width: 64%"></div></div><b>64</b></div>
+            <div class="bar"><span>反馈</span><div class="track"><div class="fill" style="width: 91%"></div></div><b>91</b></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="panel stat"><small>待处理</small><strong>24</strong><span class="delta">+8 今日新增</span></div>
+        <div class="panel stat"><small>完成率</small><strong>87%</strong><span class="delta">+12% 环比</span></div>
+        <div class="panel stat"><small>风险项</small><strong>6</strong><span class="delta">2 项已升级</span></div>
+        <div class="panel stat"><small>在线人员</small><strong>138</strong><span class="delta">覆盖 9 个班组</span></div>
+      </section>
+
+      <section class="content">
+        <div class="panel table-panel">
+          <div class="section-title">
+            <h2>重点任务</h2>
+            <a href="#">全部查看</a>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>任务</th>
+                  <th>负责人</th>
+                  <th>状态</th>
+                  <th>截止</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>晨会异常复盘</td>
+                  <td>周敏</td>
+                  <td><span class="tag">进行中</span></td>
+                  <td>10:30</td>
+                </tr>
+                <tr>
+                  <td>新员工考试统计</td>
+                  <td>陈杰</td>
+                  <td><span class="tag">待确认</span></td>
+                  <td>14:00</td>
+                </tr>
+                <tr>
+                  <td>食堂满意度汇总</td>
+                  <td>王倩</td>
+                  <td><span class="tag">已同步</span></td>
+                  <td>16:20</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel timeline-panel">
+          <div class="section-title">
+            <h2>动态</h2>
+            <a href="#">刷新</a>
+          </div>
+          <div class="timeline">
+            <div class="event"><div class="dot"></div><div><strong>完成一次权限调整</strong><span>行政组新增 4 名可见成员。</span></div></div>
+            <div class="event"><div class="dot"></div><div><strong>收到 12 条员工反馈</strong><span>其中 3 条已进入跟进流程。</span></div></div>
+            <div class="event"><div class="dot"></div><div><strong>培训材料已发布</strong><span>移动端列表同步完成。</span></div></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

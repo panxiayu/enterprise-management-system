@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投票系统 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="css/glass-workbench-theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body.theme-glass-workbench { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: var(--gw-text); min-height: 100vh; padding: 26px; overflow: hidden; position: relative; }
+        .fullpage-frost { position: fixed; inset: 0; z-index: 1; pointer-events: none; background: rgba(245, 251, 255, 0.24); backdrop-filter: blur(22px) saturate(132%); }
+        .voting-shell { width: min(1920px, calc(100% - 32px)); height: calc(100vh - 32px); margin: 0 auto; padding: 24px; position: relative; z-index: 2; }
+        .voting-shell .container { width: 100% !important; height: 100%; display: flex; flex-direction: column; max-width: none !important; margin: 0 auto; padding: 0 !important; box-sizing: border-box; background: transparent !important; border: 0 !important; box-shadow: none !important; }
+        .voting-shell .toolbar,
+        .voting-shell #loading,
+        .voting-shell .empty-state,
+        .voting-shell #votingGrid,
+        .voting-shell .modal-box {
+            border: 1px solid rgba(255, 255, 255, 0.56);
+            border-radius: var(--gw-radius-md);
+            background: var(--gw-glass-panel);
+            backdrop-filter: blur(16px) saturate(125%);
+            box-shadow: 0 8px 22px rgba(90, 129, 164, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
+        .voting-shell .toolbar { padding: 18px 20px; }
+        .voting-shell #loading,
+        .voting-shell .empty-state,
+        .voting-shell #votingGrid { padding: 16px; }
+        .voting-shell #votingGrid { flex: 1; min-height: 0; overflow: auto; }
+        .voting-shell .modal { background: rgba(120, 156, 192, 0.22); backdrop-filter: blur(8px); }
+
+        .empty-state { text-align: center; padding: 120px 20px; color: var(--text-muted); font-size: 15px; }
+        .loading { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 15px; }
+        .voting-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+        .option-remove-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: #ef4444;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .option-remove-btn:hover {
+            background: #dc2626;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            appearance: none;
+            background: #d1d5db;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle-switch:checked {
+            background: var(--success, #22c55e);
+        }
+        .toggle-switch:checked::before {
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+<body class="theme-glass-workbench">
+    <div class="gw-ambient" aria-hidden="true">
+        <div class="gw-curve gw-curve-blue"></div>
+        <div class="gw-curve gw-curve-warm"></div>
+        <div class="gw-curve gw-curve-violet"></div>
+    </div>
+    <div class="fullpage-frost" aria-hidden="true"></div>
+    <div class="glass-workbench voting-shell">
+    <div class="container">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <span class="page-title">投票系统</span>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-secondary btn-sm" onclick="location.href='dashboard.html'">返回</button>
+                <button class="btn btn-primary btn-sm" onclick="goToCreate()">+ 创建投票</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteSelectedVotings()" id="deleteSelectedBtn">删除选中</button>
+            </div>
+        </div>
+        <div id="loading" class="loading">加载中...</div>
+        <div id="votingGrid" class="voting-grid"></div>
+    </div>
+    </div>
+
+    <!-- 创建投票弹窗 -->
+    <div class="modal" id="createModal">
+        <div class="modal-box">
+            <div class="modal-title">创建投票</div>
+            <form onsubmit="handleCreate(event)" style="display:flex;flex-direction:column;gap:12px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;">投票标题 *</label>
+                    <input type="text" id="votingTitle" class="form-control" required placeholder="请输入投票标题">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;">投票描述</label>
+                    <input type="text" id="votingDesc" class="form-control" placeholder="请输入投票描述（可选）">
+                </div>
+                <div style="display:flex;gap:16px;align-items:flex-end;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-weight:600;margin-bottom:6px;display:block;">投票时长</label>
+                        <select id="votingDuration" class="form-control" onchange="updateVotingTimes()" style="width:182px;padding-right:30px;">
+                            <option value="">请选择</option>
+                            <option value="1">1小时</option>
+                            <option value="2">2小时</option>
+                            <option value="8">8小时</option>
+                            <option value="24">24小时</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-weight:600;margin-bottom:6px;display:block;">投票次数</label>
+                        <select id="votingLimit" class="form-control" style="width:182px;padding-right:30px;">
+                            <option value="once">仅限一次</option>
+                            <option value="daily">每天一次</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex;gap:16px;align-items:flex-end;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-weight:600;margin-bottom:6px;display:block;">开始时间</label>
+                        <input type="datetime-local" id="votingStartDate" class="form-control" onchange="onStartDateChange()" style="width:182px;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-weight:600;margin-bottom:6px;display:block;">结束时间</label>
+                        <input type="datetime-local" id="votingEndDate" class="form-control" style="width:182px;">
+                    </div>
+                </div>
+                <div style="display:flex;gap:20px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;width:182px;">
+                        <span>匿名投票</span>
+                        <input type="checkbox" id="votingAnonymous" class="toggle-switch" onchange="toggleStaffSelection()">
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;width:182px;">
+                        <span>允许多选</span>
+                        <input type="checkbox" id="votingMultiple" class="toggle-switch">
+                    </label>
+                </div>
+                <div id="staffSelectionSection" style="display:none;margin-top:8px;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-weight:600;margin-bottom:6px;display:block;">投票人员 <span style="font-weight:400;color:#999;font-size:12px;">（不选择则全员可投票）</span></label>
+                        <div style="display:flex;gap:8px;margin-bottom:8px;">
+                            <input type="text" id="staffSearchInput" class="form-control" placeholder="搜索工号/姓名" style="flex:1;" oninput="searchStaff()">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="clearStaffSelection()" style="white-space:nowrap;">清空</button>
+                        </div>
+                        <div id="staffListContainer" style="max-height:150px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+                        <div id="selectedStaffList" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+                    </div>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;">选项详情</label>
+                    <div id="votingOptionsContainer" style="display:flex;flex-direction:column;gap:8px;">
+                        <div class="option-input-row" style="display:flex;align-items:center;gap:8px;">
+                            <button type="button" class="option-remove-btn" onclick="removeOption(this)">−</button>
+                            <input type="text" class="form-control" placeholder="请输入选项内容">
+                        </div>
+                        <div class="option-input-row" style="display:flex;align-items:center;gap:8px;">
+                            <button type="button" class="option-remove-btn" onclick="removeOption(this)">−</button>
+                            <input type="text" class="form-control" placeholder="请输入选项内容">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addOption()" style="margin-top:10px;width:120px;">+ 增加选项</button>
+                </div>
+                <div class="modal-actions" style="margin-top:8px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="createSubmitBtn">创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 匿名链接弹窗 -->
+    <div class="modal" id="anonymousModal">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-title">匿名投票链接</div>
+            <div style="margin-top: 16px;">
+                <p style="color: var(--text-secondary); margin-bottom: 12px;">复制下方链接发送给员工，无需登录即可投票：</p>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="anonymousUrlInput" class="form-control" readonly style="flex: 1; background: var(--bg-surface);">
+                    <button class="btn btn-primary btn-sm" onclick="copyAnonymousUrl()">复制</button>
+                </div>
+                <p id="copySuccessTip" style="color: var(--success); font-size: 12px; margin-top: 8px; display: none;">复制成功！</p>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeAnonymousModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑投票弹窗 -->
+    <div class="modal" id="editModal">
+        <div class="modal-box">
+            <div class="modal-title">编辑投票</div>
+            <form onsubmit="handleEdit(event)" style="display:flex;flex-direction:column;gap:12px;">
+                <input type="hidden" id="editVotingId">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;">投票标题 *</label>
+                    <input type="text" id="editVotingTitle" class="form-control" required placeholder="请输入投票标题">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;">投票描述</label>
+                    <input type="text" id="editVotingDesc" class="form-control" placeholder="请输入投票描述（可选）">
+                </div>
+                <div style="display:flex;gap:16px;align-items:flex-end;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-weight:600;margin-bottom:6px;display:block;">开始时间</label>
+                        <input type="datetime-local" id="editVotingStartDate" class="form-control" style="width:182px;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-weight:600;margin-bottom:6px;display:block;">结束时间</label>
+                        <input type="datetime-local" id="editVotingEndDate" class="form-control" style="width:182px;">
+                    </div>
+                </div>
+                <div style="display:flex;gap:20px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;width:182px;">
+                        <span>匿名投票</span>
+                        <input type="checkbox" id="editVotingAnonymous" class="toggle-switch">
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;width:182px;">
+                        <span>允许多选</span>
+                        <input type="checkbox" id="editVotingMultiple" class="toggle-switch">
+                    </label>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;">投票次数</label>
+                    <select id="editVotingLimit" class="form-control" style="width:182px;padding-right:30px;">
+                        <option value="once">仅限一次</option>
+                        <option value="daily">每天一次</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-weight:600;margin-bottom:6px;display:block;">选项详情</label>
+                    <div id="editVotingOptionsContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addEditOption()" style="margin-top:10px;width:120px;">+ 增加选项</button>
+                </div>
+                <div class="modal-actions" style="margin-top:8px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="editSubmitBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 投票详情弹窗 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-box" style="max-width: 500px; max-height: 85vh; overflow-y: auto; position: relative;">
+            <span onclick="closeDetailModal()" style="position: absolute; top: 12px; right: 16px; cursor: pointer; font-size: 24px; color: var(--text-muted); line-height: 1;">×</span>
+            <div class="modal-title" id="detailModalTitle" style="text-align: center;">投票详情</div>
+            <div style="margin-top: 16px;">
+                <div id="detailLoading" style="text-align: center; padding: 40px 0; color: var(--text-muted);">加载中...</div>
+                <div id="detailContent" style="display: none;">
+                    <div id="detailInfo">
+                        <p class="card-desc" id="detailDesc" style="margin-bottom: 8px;"></p>
+                        <p class="meta" id="detailDeadline"></p>
+                        <div id="detailAnonymousTip" style="display: none; background: rgba(255,193,7,0.15); border: 1px solid var(--warning); border-radius: 8px; padding: 10px; margin-top: 10px; font-size: 13px; color: var(--warning);">
+                            🔒 匿名投票
+                        </div>
+                    </div>
+                    <div id="detailSummary" style="margin-top: 16px; padding: 20px; background: var(--bg-surface); border-radius: var(--radius); text-align: center;">
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">已投票人数</div>
+                        <div id="detailTotalVotes" style="font-size: 48px; font-weight: 700; color: var(--accent);">0</div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">数据每3秒自动刷新</div>
+                    </div>
+                    <div id="detailResults" style="display: none; margin-top: 16px;">
+                        <div class="card-title" style="margin-bottom: 12px;">投票结果</div>
+                        <div id="detailResultsList"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeDetailModal()">关闭</button>
+                <button class="btn btn-primary" id="detailResultsBtn" onclick="toggleDetailResults()">投票结果</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/voting-list.js"></script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

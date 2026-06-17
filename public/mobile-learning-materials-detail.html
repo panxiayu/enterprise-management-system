@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>学习资料详情 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/mobile-theme.css">
+    <style>
+        :root {
+            --bg: #F0F7FF;
+            --card: #ffffff;
+            --border: #D6E9FF;
+            --primary: #4A90E2;
+            --secondary: #65B3FF;
+            --accent: #22C58D;
+            --text: #1D2B5A;
+            --text-soft: #5B72A9;
+            --radius: 22px;
+            --transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            --shadow: 0 8px 24px rgba(74, 144, 226, 0.12);
+            --shadow-hover: 0 16px 40px rgba(74, 144, 226, 0.18);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding-bottom: 100px;
+            padding-top: 20px;
+        }
+
+        /* 序列入场动画 */
+        .fade-item {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: var(--transition);
+        }
+        .fade-in {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 680px;
+                padding: 0 24px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-soft);
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--secondary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .time-warning {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            margin-bottom: 12px;
+            text-align: center;
+            color: #ef4444;
+            font-size: 14px;
+        }
+
+        .video-container {
+            background: #000;
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+        }
+
+        .video-wrapper video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        .video-play-btn {
+            width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        .video-play-btn:active { transform: scale(0.95); }
+        .video-play-btn.hidden { display: none; }
+
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 20px 16px 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .video-progress {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .video-progress-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.1s linear;
+            display: none;
+        }
+
+        .video-time {
+            color: white;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .no-video-placeholder {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 40px 20px;
+            margin-bottom: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .no-video-icon { font-size: 48px; margin-bottom: 12px; }
+        .no-video-text { color: var(--text-soft); font-size: 14px; }
+
+        .ios-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .material-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .material-desc {
+            font-size: 14px;
+            color: var(--text-soft);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .material-time {
+            font-size: 13px;
+            color: var(--text-soft);
+            margin-bottom: 12px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .status-not-started { background: rgba(91,114,169,0.1); color: var(--text-soft); }
+        .status-in-progress { background: rgba(255,149,0,0.1); color: #ff9500; }
+        .status-completed { background: rgba(34,197,141,0.1); color: var(--accent); }
+
+        .progress-section {
+            margin-top: 8px;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(74,144,226,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 6px;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            font-size: 13px;
+            color: var(--text-soft);
+            text-align: center;
+            display: none;
+        }
+
+        .exam-section {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .exam-info { flex: 1; }
+
+        .exam-info-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .exam-info-desc {
+            font-size: 12px;
+            color: var(--text-soft);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn.disabled { background: var(--text-soft); cursor: not-allowed; }
+
+        .toast {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: var(--accent);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10000;
+            pointer-events: none;
+            text-align: center;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .exam-ask-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+        .exam-ask-modal.show { display: flex; }
+
+        .exam-ask-box {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            max-width: 300px;
+            width: 100%;
+            text-align: center;
+            box-shadow: var(--shadow-hover);
+        }
+
+        .exam-ask-icon { font-size: 48px; margin-bottom: 16px; }
+
+        .exam-ask-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .exam-ask-sub {
+            font-size: 14px;
+            color: var(--text-soft);
+            margin-bottom: 24px;
+        }
+
+        .exam-ask-btns {
+            display: flex;
+            gap: 12px;
+        }
+
+        .exam-ask-btns button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .exam-ask-btns .btn-confirm { background: linear-gradient(135deg, var(--accent), #34d399); color: white; }
+        .exam-ask-btns .btn-cancel { background: var(--bg); color: var(--text-soft); border: 1px solid var(--border); }
+
+        .exam-fixed-btn {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 16px 20px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .exam-fixed-btn .btn {
+            display: block;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: var(--radius);
+            transition: var(--transition);
+        }
+
+        .exam-fixed-btn .btn.disabled {
+            background: #d1d5db;
+            color: #9ca3af;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .exam-fixed-btn .btn:not(.disabled) {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.3);
+            cursor: pointer;
+        }
+
+        .exam-fixed-btn .btn:not(.disabled):active {
+            transform: scale(0.98);
+        }
+
+        .exam-fixed-btn .btn.btn-retake:not(.disabled) {
+            background: linear-gradient(135deg, #ff9500, #ff7a00);
+            box-shadow: 0 4px 16px rgba(255, 149, 0, 0.3);
+        }
+
+        .exam-fixed-btn .btn.btn-retake:not(.disabled):active {
+            transform: scale(0.98);
+        }
+
+        /* 横屏模式：视频最大化（仅移动设备，PC不适用） */
+        /* 横屏时隐藏主要内容，只显示横屏提示 */
+        @media (orientation: landscape) and (pointer: coarse) {
+            html, body {
+                overflow: hidden;
+            }
+        }
+
+        /* 横屏提示 */
+        .landscape-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        @media (orientation: landscape) and (pointer: coarse) {
+            .landscape-warning {
+                display: flex !important;
+            }
+        }
+        .landscape-warning-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: rotate 2s infinite linear;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(90deg); }
+        }
+        .landscape-warning-text {
+            font-size: 18px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="landscape-warning" id="landscapeWarning">
+        <div class="landscape-warning-icon">📱</div>
+        <div class="landscape-warning-text">请竖屏观看视频</div>
+    </div>
+    <div class="container">
+        <div id="loading" class="loading fade-item" style="display: none;">加载中...</div>
+
+        <div id="content" style="display: none;">
+            <div id="timeWarning" class="time-warning fade-item" style="display: none;">
+                当前不在学习时间范围内，无法学习
+            </div>
+
+            <div id="videoSection" class="video-container fade-item" style="display: none;">
+                <div class="video-wrapper">
+                    <video id="videoPlayer" playsinline disablePictureInPicture webkit-playsinline preload="auto"></video>
+                    <div id="videoOverlay" class="video-overlay">
+                        <button id="playBtn" class="video-play-btn">▶</button>
+                    </div>
+                    <div id="replayOverlay" class="video-overlay" style="display: none;">
+                        <button id="replayBtn" class="video-play-btn">↺</button>
+                    </div>
+                </div>
+                <div class="video-controls" style="display: none;" id="videoControls">
+                    <span id="currentTime" class="video-time">0:00</span>
+                    <div class="video-progress">
+                        <div id="progressBar" class="video-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <span id="durationTime" class="video-time">0:00</span>
+                </div>
+            </div>
+
+            <div id="noVideoPlaceholder" class="no-video-placeholder fade-item" style="display: none;">
+                <div class="no-video-icon">📄</div>
+                <div class="no-video-text">暂无视频内容</div>
+            </div>
+
+            <div class="ios-card fade-item" style="display: none;">
+                <div class="progress-section" id="progressSection">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div id="progressText" class="progress-text"></div>
+                </div>
+            </div>
+
+            <div id="examSection" class="exam-section fade-item" style="display: none;">
+                <!-- 考试入口已改为弹窗提示，此卡片暂时隐藏 -->
+            </div>
+        </div>
+    </div>
+
+    <div id="examBtn" class="exam-fixed-btn" style="display: none;">
+        <button id="startExamBtn" class="btn disabled" onclick="startExam()" disabled>开始考试</button>
+    </div>
+
+    <div id="completeToast" class="toast">🎉 学习资料已完成！</div>
+
+    <div id="examAskModal" class="exam-ask-modal">
+        <div class="exam-ask-box">
+            <div class="exam-ask-icon">🎉</div>
+            <div class="exam-ask-title">学习资料已完成！</div>
+            <div class="exam-ask-sub">是否立即参加关联考试？</div>
+            <div class="exam-ask-btns">
+                <button class="btn-cancel" onclick="closeExamAskModal()">稍后再说</button>
+                <button class="btn-confirm" onclick="goToExam()">参加考试</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/auth-guard.js"></script>
+    <script>
+        const API = window.location.origin + '/api';
+        const FILE_SERVER = window.location.origin;
+        let token = localStorage.getItem('employee_token');
+        let materialId = null;
+        let trainingId = null;
+        let materialData = null;
+        let video = null;
+        window.maxWatched = 0;  // 暴露为全局变量，供离开时保存进度
+        let heartbeatInterval = null;  // 心跳间隔
+        let linkedExam = null;
+        let hasShownExamModal = false;
+        let isVideoCompleted = false;
+        let isReplaying = false;
+        let examModalKey = null;
+        let isRetake = false;  // 是否为补考模式
+
+        if (!token) {
+            window.location.href = 'index.html';
+        }
+
+        // 横屏检测 - 全屏模式（仅移动设备）
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        // 横屏检测（仅移动端）
+        function checkLandscape() {
+            const warning = document.getElementById('landscapeWarning');
+            if (!warning) return;
+
+            if (window.innerHeight < window.innerWidth && isTouchDevice) {
+                warning.style.display = 'flex';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+        window.addEventListener('resize', checkLandscape);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(checkLandscape, 100);
+        });
+        checkLandscape();
+
+        function getMaterialId() {
+            return new URLSearchParams(window.location.search).get('id');
+        }
+
+        function getTrainingId() {
+            return new URLSearchParams(window.location.search).get('trainingId');
+        }
+
+        function getRetake() {
+            return new URLSearchParams(window.location.search).get('retake') === '1';
+        }
+
+        function goBack() {
+            // 离开前保存进度
+            if (window.maxWatched > 0) {
+                window.sendBeaconProgressBeforeLeave();
+            }
+            window.location.href = 'mobile-training-list.html';
+        }
+
+        // 微信浏览器返回按钮处理
+        (function initWeChatBackHandler() {
+            const TARGET_URL = 'mobile-training-list.html';
+
+            // 使用 history API 检测返回
+            if (history.pushState) {
+                history.pushState({ page: 'learning-material' }, '', location.href);
+
+                window.addEventListener('popstate', function(e) {
+                    // 用户按返回键，保存进度并跳转
+                    if (window.maxWatched > 0) {
+                        window.sendBeaconProgressBeforeLeave();
+                    }
+                    history.pushState({ page: 'learning-material' }, '', location.href);
+                    location.href = TARGET_URL;
+                });
+            }
+
+            // Android/WeChat visibilitychange 检测
+            let hiddenTime = 0;
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    hiddenTime = Date.now();
+                } else if (document.visibilityState === 'visible' && hiddenTime > 0) {
+                    if (Date.now() - hiddenTime > 3000) {
+                        // 离开超过3秒，刷新页面重新加载进度
+                        window.location.reload();
+                    }
+                }
+            });
+
+            // iOS Safari pageshow
+            window.addEventListener('pageshow', function(e) {
+                if (e.persisted) {
+                    // 页面从 bfcache 恢复，刷新以重新加载数据
+                    window.location.reload();
+                }
+            });
+        })();
+
+        async function loadMaterial() {
+            materialId = getMaterialId();
+            trainingId = getTrainingId();
+            isRetake = getRetake();
+
+            if (!materialId) { goBack(); return; }
+
+            if (trainingId) {
+                localStorage.setItem('currentTrainingId', trainingId);
+            } else {
+                trainingId = localStorage.getItem('currentTrainingId');
+            }
+
+            document.getElementById('loading').style.display = '';
+
+            try {
+                let apiUrl = API + '/learning-materials/' + materialId;
+                if (trainingId) {
+                    apiUrl += '?trainingId=' + trainingId;
+                }
+                const res = await fetch(apiUrl, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (data.code === 0 && data.data) {
+                    materialData = data.data;
+                    renderMaterial(materialData);
+
+                    // 序列入场动画
+                    const items = document.querySelectorAll('.fade-item');
+                    items.forEach((el, i) => {
+                        setTimeout(() => el.classList.add('fade-in'), 150 * i);
+                    });
+                } else {
+                    alert(data.msg || '加载失败');
+                    goBack();
+                }
+            } catch (err) {
+                document.getElementById('loading').textContent = '加载失败';
+                console.error('加载学习资料失败:', err);
+            }
+        }
+
+        function renderMaterial(material) {
+            const now = new Date();
+            const startTime = material.start_time ? new Date(material.start_time) : null;
+            const endTime = material.end_time ? new Date(material.end_time) : null;
+            const inTimeRange = (!startTime || startTime <= now) && (!endTime || endTime >= now);
+
+            if (!inTimeRange) {
+                document.getElementById('timeWarning').style.display = '';
+            }
+
+            const progressPercent = material.progress ? (material.progress.progress_percent || 0) : 0;
+
+            document.getElementById('progressFill').style.width = progressPercent + '%';
+            document.getElementById('progressText').textContent = '学习进度: ' + progressPercent + '%';
+
+            if (material.exam) {
+                linkedExam = material.exam;
+                if (!trainingId) trainingId = linkedExam.id;
+                document.getElementById('examBtn').style.display = '';
+                updateExamBtnState(progressPercent);
+            }
+
+            if (material.file_url) {
+                document.getElementById('videoSection').style.display = '';
+                initVideo(material.file_url, progressPercent, material.progress);
+            } else {
+                document.getElementById('noVideoPlaceholder').style.display = '';
+            }
+
+            document.getElementById('content').style.display = '';
+        }
+
+        function initVideo(videoUrl, progressPercent, progress) {
+            video = document.getElementById('videoPlayer');
+            const playBtn = document.getElementById('playBtn');
+            const videoOverlay = document.getElementById('videoOverlay');
+            const replayOverlay = document.getElementById('replayOverlay');
+            const replayBtn = document.getElementById('replayBtn');
+            const videoControls = document.getElementById('videoControls');
+
+            let src = videoUrl;
+            if (src.startsWith('/')) {
+                src = FILE_SERVER + src;
+            }
+            video.src = src;
+
+            // 预加载视频：页面加载后就开始缓冲
+            video.load();
+
+            // 检查是否已完成
+            const isAlreadyCompleted = progress && progress.status === 'completed';
+
+            if (isAlreadyCompleted) {
+                // 已完成：显示重播按钮
+                // 注意：video.duration 此时可能为0，稍后在 onVideoLoaded 中修正
+                maxWatched = video.duration || progress.progress_percent / 100 * video.duration || 0;
+                isVideoCompleted = true;
+                videoOverlay.style.display = 'none';
+                replayOverlay.style.display = 'flex';
+                videoControls.style.display = 'none';
+            } else if (progress && progress.last_position) {
+                // 未完成但有进度：从上次位置继续
+                maxWatched = progress.last_position;
+                video.currentTime = progress.last_position;
+            }
+
+            videoOverlay.addEventListener('click', togglePlay);
+            playBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                togglePlay();
+            });
+
+            replayBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                replayVideo();
+            });
+
+            video.addEventListener('play', () => {
+                playBtn.textContent = '❚❚';
+                playBtn.classList.add('hidden');
+                videoOverlay.classList.add('hidden');
+                replayOverlay.style.display = 'none';
+                videoControls.style.display = '';
+                if (!isVideoCompleted && !isReplaying) {
+                    saveProgress();
+                }
+                // 开始心跳
+                startHeartbeat();
+            });
+
+            video.addEventListener('pause', () => {
+                if (!isVideoCompleted) {
+                    playBtn.textContent = '▶';
+                    playBtn.classList.remove('hidden');
+                    videoOverlay.classList.remove('hidden');
+                    saveProgress();
+                }
+                // 停止心跳
+                stopHeartbeat();
+            });
+
+            video.addEventListener('ended', () => {
+                stopHeartbeat();
+                onVideoEnded();
+            });
+
+            // 心跳：每3秒保存一次进度
+            function startHeartbeat() {
+                if (heartbeatInterval) return;
+                heartbeatInterval = setInterval(function() {
+                    if (maxWatched > 0) {
+                        sendBeaconProgress();
+                    }
+                }, 3000);
+            }
+
+            function stopHeartbeat() {
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
+                }
+            }
+
+            // 页面离开时保存进度
+            window.addEventListener('pagehide', function() {
+                stopHeartbeat();
+                if (maxWatched > 0) {
+                    sendBeaconProgress();
+                }
+            });
+
+            window.addEventListener('beforeunload', function() {
+                stopHeartbeat();
+                if (maxWatched > 0) {
+                    sendBeaconProgress();
+                }
+            });
+
+            video.addEventListener('timeupdate', onTimeUpdate);
+            video.addEventListener('loadedmetadata', onVideoLoaded);
+
+            video.addEventListener('seeking', onSeeking);
+
+            video.disablePictureInPicture = true;
+        }
+
+        function replayVideo() {
+            if (!video) return;
+            maxWatched = 0;
+            isVideoCompleted = false;
+            isReplaying = true;
+            video.currentTime = 0;
+            video.play().catch(err => {
+                if (err.name === 'NotSupportedError') {
+                    alert('视频无法播放，请联系管理员');
+                }
+            });
+        }
+
+        function togglePlay() {
+            if (!video) return;
+            if (video.paused) {
+                video.play().catch(err => {
+                    if (err.name === 'NotSupportedError' || err.name === 'AbortError') {
+                        alert('视频无法播放，请检查网络或联系管理员');
+                    }
+                });
+            } else {
+                video.pause();
+            }
+        }
+
+        function onVideoLoaded() {
+            const duration = video.duration;
+            document.getElementById('durationTime').textContent = formatTime(duration);
+
+            // 如果是重播模式，不跳到结尾
+            if (isReplaying) return;
+
+            if (materialData.progress && materialData.progress.status === 'completed') {
+                video.currentTime = video.duration;
+                maxWatched = video.duration;
+                isVideoCompleted = true;
+                document.getElementById('progressFill').style.width = '100%';
+                document.getElementById('progressText').textContent = '学习进度: 100%';
+                document.getElementById('videoOverlay').style.display = 'none';
+                document.getElementById('replayOverlay').style.display = 'flex';
+                document.getElementById('videoControls').style.display = 'none';
+                updateExamBtnState(100);
+                checkAndShowExamPrompt(100);
+            }
+        }
+
+        function onTimeUpdate() {
+            if (!video) return;
+
+            const currentTime = video.currentTime;
+            const duration = video.duration;
+
+            // 重播时，一旦开始正常播放，就重置 isReplaying
+            if (isReplaying && currentTime > 1) {
+                isReplaying = false;
+            }
+
+            document.getElementById('currentTime').textContent = formatTime(currentTime);
+
+            if (duration > 0) {
+                const progressPercent = Math.floor((currentTime / duration) * 100);
+                document.getElementById('progressBar').style.width = progressPercent + '%';
+            }
+
+            if (currentTime > maxWatched) {
+                maxWatched = currentTime;
+            }
+        }
+
+        function onSeeking() {
+            if (!video) return;
+            // 重播模式下允许跳到开头
+            if (isReplaying && video.currentTime <= 1) return;
+            // 禁止快进：只能后退到已看位置
+            if (video.currentTime > maxWatched + 0.5) {
+                video.currentTime = maxWatched;
+                if (!isReplaying) {
+                    showToast('请按顺序观看，禁止快进', true);
+                }
+            }
+        }
+
+        function onVideoEnded() {
+            maxWatched = video.duration;
+            if (!isVideoCompleted) {
+                isVideoCompleted = true;
+                saveProgress(true);
+            }
+            // 重播结束后重新显示重播按钮
+            document.getElementById('replayOverlay').style.display = 'flex';
+            document.getElementById('videoControls').style.display = 'none';
+            video.pause();
+        }
+
+        function sendBeaconProgress() {
+            if (!materialId || maxWatched <= 0) return;
+
+            const duration = video ? (video.duration || 0) : 0;
+            // 只有当视频时长有效且 maxWatched 确实 >= duration 时才标记为完成
+            const progressPercent = (duration > 0) ? Math.min(Math.floor((maxWatched / duration) * 100), 100) : 0;
+            // 只有当视频确实播放完（maxWatched >= duration > 0）时才发 completed 状态
+            const status = (duration > 0 && maxWatched >= duration) ? 'completed' : 'in_progress';
+
+            const payload = JSON.stringify({
+                status: status,
+                progress_percent: progressPercent,
+                last_position: maxWatched,
+                training_id: trainingId || null
+            });
+
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(
+                    API + '/learning-materials/' + materialId + '/progress?token=' + encodeURIComponent(token),
+                    new Blob([payload], { type: 'application/json' })
+                );
+            }
+        }
+
+        // 全局版本，供页面离开时调用
+        window.sendBeaconProgressBeforeLeave = function() {
+            if (!materialId || !window.maxWatched || window.maxWatched <= 0) return;
+
+            const duration = video ? (video.duration || 0) : 0;
+            // 只有当视频时长有效且 maxWatched 确实 >= duration 时才标记为完成
+            const progressPercent = (duration > 0) ? Math.min(Math.floor((window.maxWatched / duration) * 100), 100) : 0;
+            // 只有当视频确实播放完（maxWatched >= duration > 0）时才发 completed 状态
+            const status = (duration > 0 && window.maxWatched >= duration) ? 'completed' : 'in_progress';
+
+            const payload = JSON.stringify({
+                status: status,
+                progress_percent: progressPercent,
+                last_position: window.maxWatched,
+                training_id: trainingId || null
+            });
+
+            // 使用同步 XHR 确保离开前发送完成
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', API + '/learning-materials/' + materialId + '/progress', false);
+            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(payload);
+        };
+
+        async function saveProgress(completed = false) {
+            if (!materialId || !video) return;
+            // 如果已完成且不是要标记为完成，不再刷新进度
+            if (isVideoCompleted && !completed) return;
+
+            try {
+                const duration = video.duration || 0;
+                const progressPercent = (duration > 0) ? Math.min(Math.floor((maxWatched / duration) * 100), 100) : 0;
+                const status = (completed || (duration > 0 && maxWatched >= duration)) ? 'completed' : 'in_progress';
+
+                const res = await fetch(API + '/learning-materials/' + materialId + '/progress', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        status: status,
+                        progress_percent: progressPercent,
+                        last_position: maxWatched,
+                        training_id: trainingId || null
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.code === 0) {
+                    document.getElementById('progressFill').style.width = progressPercent + '%';
+                    document.getElementById('progressText').textContent = '学习进度: ' + progressPercent + '%';
+
+                    if (data.data && data.data.last_position > maxWatched) {
+                        maxWatched = data.data.last_position;
+                    }
+
+                    updateExamBtnState(progressPercent);
+                    checkAndShowExamPrompt(progressPercent);
+
+                    if (status === 'completed' || (data.data && data.data.status === 'completed')) {
+                        document.getElementById('progressText').textContent = '学习进度: 100%';
+                        isVideoCompleted = true;
+                        document.getElementById('videoOverlay').style.display = 'none';
+                        document.getElementById('replayOverlay').style.display = 'flex';
+                        document.getElementById('videoControls').style.display = 'none';
+                        if (video) video.pause();
+                    }
+                }
+            } catch (err) {
+                console.error('保存进度失败:', err);
+            }
+        }
+
+        function checkAndShowExamPrompt(progressPercent) {
+            if (progressPercent < 99) return;
+            if (!linkedExam || !linkedExam.is_active) return;
+
+            examModalKey = 'examPromptShown_' + materialId + '_' + trainingId;
+
+            if (!localStorage.getItem(examModalKey)) {
+                localStorage.setItem(examModalKey, 'true');
+                showExamAskModal();
+            }
+        }
+
+        function showExamAskModal() {
+            const modal = document.getElementById('examAskModal');
+            const title = modal.querySelector('.exam-ask-title');
+            const sub = modal.querySelector('.exam-ask-sub');
+            const confirmBtn = modal.querySelector('.btn-confirm');
+
+            if (isRetake) {
+                title.textContent = '学习资料已完成！';
+                sub.textContent = '是否立即参加补考？';
+                confirmBtn.textContent = '参加补考';
+            } else {
+                title.textContent = '学习资料已完成！';
+                sub.textContent = '是否立即参加关联考试？';
+                confirmBtn.textContent = '参加考试';
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeExamAskModal() {
+            document.getElementById('examAskModal').classList.remove('show');
+        }
+
+        function goToExam() {
+            closeExamAskModal();
+            const baseId = trainingId || (linkedExam ? linkedExam.id : '');
+            const url = 'mobile-exam-doing.html?id=' + baseId;
+            window.location.href = isRetake ? url + '&retake=1' : url;
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('completeToast');
+            toast.textContent = message;
+            toast.style.background = isError ? '#ef4444' : 'var(--accent)';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function updateExamBtnState(progressPercent) {
+            const btn = document.getElementById('startExamBtn');
+            if (progressPercent >= 99) {
+                btn.classList.remove('disabled');
+                btn.disabled = false;
+                // 根据是否补考模式显示不同文案和颜色
+                btn.textContent = isRetake ? '开始补考' : '开始考试';
+                if (isRetake) {
+                    btn.classList.add('btn-retake');
+                } else {
+                    btn.classList.remove('btn-retake');
+                }
+            } else {
+                btn.classList.add('disabled');
+                btn.disabled = true;
+                btn.textContent = isRetake ? '开始补考' : '开始考试';
+                btn.classList.remove('btn-retake');
+            }
+        }
+
+        function startExam() {
+            if (!linkedExam) return;
+            const url = 'mobile-exam-doing.html?id=' + (trainingId || linkedExam.id);
+            const retakeUrl = isRetake ? url + '&retake=1' : url;
+            window.location.href = retakeUrl;
+        }
+
+        function formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatDateTime(date) {
+            const d = new Date(date);
+            const month = d.getMonth() + 1;
+            const day = d.getDate();
+            const hour = d.getHours().toString().padStart(2, '0');
+            const minute = d.getMinutes().toString().padStart(2, '0');
+            return `${month}月${day}日 ${hour}:${minute}`;
+        }
+
+        loadMaterial();
+    </script>
+</body>
+</html>

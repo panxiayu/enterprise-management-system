@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面逻辑关系图 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: linear-gradient(135deg, var(--bg) 0%, var(--bg) 50%, var(--bg) 100%); color: var(--text); padding: 30px 20px; min-height: 100vh; }
+        h1 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+        .subtitle { font-size: 12px; color: var(--text-secondary); margin-bottom: 30px; }
+        .module-block { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px; }
+        .module-title { font-size: 14px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
+        .page-item { background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 10px; transition: all 0.15s; }
+        .page-item:hover { border-color: var(--border-strong); }
+        .page-name-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .page-name { font-weight: 600; font-size: 14px; color: var(--text); }
+        .page-link { font-size: 11px; color: var(--accent); font-family: monospace; padding: 2px 6px; background: rgba(94,106,210,0.1); border-radius: 4px; text-decoration: none; }
+        .page-link:hover { text-decoration: underline; }
+        .page-path { font-size: 11px; color: var(--text-tertiary); font-family: monospace; margin-bottom: 6px; }
+        .page-apis { font-size: 11px; color: var(--text-secondary); }
+        .page-apis strong { color: var(--success); }
+        .page-rel { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-right: 4px; }
+        .tag-login { background: rgba(38,166,65,0.15); color: var(--success); }
+        .tag-main { background: rgba(94,106,210,0.15); color: var(--accent); }
+        .tag-module { background: rgba(255,255,255,0.07); color: var(--text-secondary); }
+        .summary { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        .summary-item { text-align: center; }
+        .summary-num { font-size: 28px; font-weight: 700; color: var(--accent); }
+        .summary-label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+        .divider { border-bottom: 1px solid var(--border); margin: 20px 0; }
+        .route-tag { font-size: 10px; padding: 1px 5px; background: rgba(94,106,210,0.15); color: var(--accent); border-radius: 3px; margin-right: 4px; }
+    </style>
+</head>
+<body>
+<div style="max-width: 1200px; margin: 0 auto;">
+    <h1>📐 页面逻辑关系图</h1>
+    <div class="subtitle">兴利汽车模具 · 人力资源管理系统 &nbsp;|&nbsp; 最后更新：2026-03-30 v0.0.4</div>
+
+    <div class="summary">
+        <div class="summary-item"><div class="summary-num">18</div><div class="summary-label">总页面数</div></div>
+        <div class="summary-item"><div class="summary-num">5</div><div class="summary-label">路由文件</div></div>
+        <div class="summary-item"><div class="summary-num">3</div><div class="summary-label">登录入口</div></div>
+        <div class="summary-item"><div class="summary-num">6</div><div class="summary-label">业务模块</div></div>
+    </div>
+
+    <!-- ==================== 认证入口 ==================== -->
+    <div class="module-block">
+        <div class="module-title">🚪 认证入口</div>
+
+        <div class="page-item">
+            <div class="page-name-wrap">
+                <span class="page-name">员工登录</span>
+                <a href="/" target="_blank" class="page-link">/</a>
+                <span class="tag tag-login">登录</span>
+            </div>
+            <div class="page-path">public/index.html</div>
+            <div class="page-apis">API: <strong>POST /api/auth/employee-login</strong> (工号+姓名验证)</div>
+            <div class="page-rel">→ 成功 → <a href="/employee.html" class="page-link">employee.html</a> 员工工作台</div>
+        </div>
+
+        <div class="page-item">
+            <div class="page-name-wrap">
+                <span class="page-name">管理员登录</span>
+                <a href="/admin/login.html" target="_blank" class="page-link">/admin/login.html</a>
+                <span class="tag tag-login">登录</span>
+            </div>
+            <div class="page-path">public/admin/login.html</div>
+            <div class="page-apis">API: <strong>POST /api/auth/login</strong> (用户名+密码)</div>
+            <div class="page-rel">→ 成功 → <a href="/dashboard.html" class="page-link">dashboard.html</a> 仪表板</div>
+        </div>
+    </div>
+
+    <!-- ==================== 主导航 ==================== -->
+    <div class="module-block">
+        <div class="module-title">🏠 主导航</div>
+
+        <div class="page-item">
+            <div class="page-name-wrap">
+                <span class="page-name">员工工作台</span>
+                <a href="/employee.html" target="_blank" class="page-link">/employee.html</a>
+                <span class="tag tag-main">主页</span>
+            </div>
+            <div class="page-path">public/employee.html</div>
+            <div class="page-apis">权限检查: <strong>GET /api/learning-tasks?staff_id=X</strong></div>
+            <div class="page-rel">员工首页，根据 exam_permission / meal_permission 显示模块入口</div>
+        </div>
+
+        <div class="page-item">
+            <div class="page-name-wrap">
+                <span class="page-name">仪表板</span>
+                <a href="/dashboard.html" target="_blank" class="page-link">/dashboard.html</a>
+                <span class="tag tag-main">主页</span>
+            </div>
+            <div class="page-path">public/dashboard.html</div>
+            <div class="page-apis">无直接API调用（仅模块入口链接）</div>
+            <div class="page-rel">管理员首页，6个模块卡片入口</div>
+        </div>
+
+        <div class="page-item">
+            <div class="page-name-wrap">
+                <span class="page-name">管理面板</span>
+                <a href="/admin/panel.html" target="_blank" class="page-link">/admin/panel.html</a>
+                <span class="tag tag-main">主页</span>
+            </div>
+            <div class="page-path">public/admin/panel.html</div>
+            <div class="page-apis">无直接API调用（侧边栏导航）</div>
+            <div class="page-rel">管理员侧边栏面板，跳转各模块</div>
+        </div>
+
+        <div class="page-item">
+            <div class="page-name-wrap">
+                <span class="page-name">权限管理</span>
+                <a href="/permission-list.html" target="_blank" class="page-link">/permission-list.html</a>
+                <span class="tag tag-main">主页</span>
+            </div>
+            <div class="page-path">public/permission-list.html</div>
+            <div class="page-apis">/api/admin/list, /api/permissions/*</div>
+            <div class="page-rel">管理员CRUD、权限配置</div>
+        </div>
+    </div>
+
+    <!-- ==================== 业务模块 ==================== -->
+    <div class="grid">
+
+        <!-- 员工管理 -->
+        <div class="module-block">
+            <div class="module-title">👥 员工管理</div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">员工列表</span>
+                    <a href="/staff-list.html" target="_blank" class="page-link">/staff-list.html</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/staff-list.html &nbsp;|&nbsp; 路由: src/routes/staff.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/staff &nbsp;
+                    <span class="route-tag">POST</span> /api/staff &nbsp;
+                    <span class="route-tag">DELETE</span> /api/staff/:id &nbsp;
+                    <span class="route-tag">POST</span> /api/staff/bulk-import &nbsp;
+                    <span class="route-tag">POST</span> /api/staff/sync-from-smb
+                </div>
+                <div class="page-rel">
+                    列表字段：勾选、工号（可点击）、姓名（可点击）、电话、部门、班组、入职日期<br>
+                    支持批量删除（错误处理反馈）、批量导入（Excel）、SMB同步
+                </div>
+            </div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">员工详情</span>
+                    <a href="/staff-detail.html" target="_blank" class="page-link">/staff-detail.html?id={ID}</a>
+                    <span class="tag tag-module">模块</span>
+                    <span class="tag" style="background:rgba(38,166,65,0.15);color:var(--success);">新增编辑功能</span>
+                </div>
+                <div class="page-path">public/staff-detail.html &nbsp;|&nbsp; 路由: src/routes/staff.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/staff/:id &nbsp;
+                    <span class="route-tag">PUT</span> /api/staff/:id
+                </div>
+                <div class="page-rel">
+                    显示：工号、姓名、电话、部门、班组、入职日期、状态、考试/报餐权限<br>
+                    支持查看考试成绩、报餐记录，点击编辑可修改员工信息
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习任务 -->
+        <div class="module-block">
+            <div class="module-title">📚 学习任务</div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">学习任务列表</span>
+                    <a href="/learning-task-list.html" target="_blank" class="page-link">/learning-task-list.html</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/learning-task-list.html &nbsp;|&nbsp; 路由: src/routes/learning-task.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/learning-tasks &nbsp;
+                    <span class="route-tag">POST</span> /api/learning-tasks/batch-delete &nbsp;
+                    <span class="route-tag">POST</span> /api/import/upload
+                </div>
+                <div class="page-rel">↓ 列表 → 详情: <a href="/learning-task-detail.html" class="page-link">learning-task-detail.html?id={ID}</a></div>
+            </div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">学习任务详情</span>
+                    <a href="/learning-task-detail.html" target="_blank" class="page-link">/learning-task-detail.html?id={ID}</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/learning-task-detail.html &nbsp;|&nbsp; 路由: src/routes/learning-task.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/learning-tasks/:id &nbsp;
+                    <span class="route-tag">GET</span> /api/learning-tasks/:id/progress &nbsp;
+                    <span class="route-tag">POST</span> /api/learning-tasks/:id/progress
+                </div>
+            </div>
+        </div>
+
+        <!-- 考试系统 -->
+        <div class="module-block">
+            <div class="module-title">📝 考试管理 <span style="font-weight:400;font-size:11px;color:var(--text-secondary)">(Tab整合)</span></div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">考试管理（整合）</span>
+                    <a href="/exam.html" target="_blank" class="page-link">/exam.html</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/exam.html &nbsp;|&nbsp; 路由: src/routes/exam-admin.js &nbsp;|&nbsp; src/routes/exam.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/exam-admin/papers &nbsp;
+                    <span class="route-tag">POST</span> /api/exam-admin/papers &nbsp;
+                    <span class="route-tag">PUT</span> /api/exam-admin/papers/:id &nbsp;
+                    <span class="route-tag">GET</span> /api/exam-admin/questions &nbsp;
+                    <span class="route-tag">POST</span> /api/exam-admin/questions &nbsp;
+                    <span class="route-tag">DELETE</span> /api/exam-admin/questions/:id &nbsp;
+                    <span class="route-tag">GET</span> /api/exam-admin/records &nbsp;
+                    <span class="route-tag">GET</span> /api/exam-admin/stats &nbsp;
+                    <span class="route-tag">GET</span> /api/exam-admin/record/:id &nbsp;
+                    <span class="route-tag">DELETE</span> /api/exam-admin/record/:id
+                </div>
+                <div class="page-rel">↓ 选择试卷 → 考试: <a href="/exam-doing.html" class="page-link">exam-doing.html?id={ID}</a></div>
+            </div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">答题界面</span>
+                    <a href="/exam-doing.html" target="_blank" class="page-link">/exam-doing.html?id={ID}</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/exam-doing.html &nbsp;|&nbsp; 路由: src/routes/exam.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">POST</span> /api/exam/start &nbsp;
+                    <span class="route-tag">POST</span> /api/exam/submit &nbsp;
+                    <span class="route-tag">GET</span> /api/exam/:id &nbsp;
+                    <span class="route-tag">GET</span> /api/exam/list
+                </div>
+            </div>
+        </div>
+
+        <!-- 报餐系统 -->
+        <div class="module-block">
+            <div class="module-title">🍱 报餐系统</div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">报餐列表</span>
+                    <a href="/meal-list.html" target="_blank" class="page-link">/meal-list.html</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/meal-list.html &nbsp;|&nbsp; 路由: src/routes/meal.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/meal/list &nbsp;
+                    <span class="route-tag">GET</span> /api/meal/:id
+                </div>
+                <div class="page-rel">↓ 列表 → 详情: <a href="/meal-detail.html" class="page-link">meal-detail.html?id={ID}</a> &nbsp;|&nbsp; 新建: <a href="/meal-create.html" class="page-link">meal-create.html</a></div>
+            </div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">报餐详情</span>
+                    <a href="/meal-detail.html" target="_blank" class="page-link">/meal-detail.html?id={ID}</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/meal-detail.html &nbsp;|&nbsp; 路由: src/routes/meal.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/meal/:id &nbsp;
+                    <span class="route-tag">GET</span> /api/meal/:id/statistics &nbsp;
+                    <span class="route-tag">POST</span> /api/meal/:id/order
+                </div>
+            </div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">创建报餐</span>
+                    <a href="/meal-create.html" target="_blank" class="page-link">/meal-create.html</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/meal-create.html &nbsp;|&nbsp; 路由: src/routes/meal.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">POST</span> /api/meal/create
+                </div>
+            </div>
+        </div>
+
+        <!-- 投票系统 -->
+        <div class="module-block">
+            <div class="module-title">🗳️ 投票系统</div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">投票列表</span>
+                    <a href="/voting-list.html" target="_blank" class="page-link">/voting-list.html</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/voting-list.html &nbsp;|&nbsp; 路由: src/routes/voting.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/voting/list &nbsp;
+                    <span class="route-tag">POST</span> /api/voting/create
+                </div>
+                <div class="page-rel">↓ 列表 → 详情: <a href="/voting-detail.html" class="page-link">voting-detail.html?id={ID}</a></div>
+            </div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">投票详情</span>
+                    <a href="/voting-detail.html" target="_blank" class="page-link">/voting-detail.html?id={ID}</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/voting-detail.html &nbsp;|&nbsp; 路由: src/routes/voting.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/voting/:id &nbsp;
+                    <span class="route-tag">GET</span> /api/voting/:id/results &nbsp;
+                    <span class="route-tag">POST</span> /api/voting/:id/vote
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件 & 设置 -->
+        <div class="module-block">
+            <div class="module-title">⚙️ 文件 & 设置</div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">文件管理</span>
+                    <a href="/file-manager.html" target="_blank" class="page-link">/file-manager.html</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/file-manager.html &nbsp;|&nbsp; 路由: src/routes/file-manager.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/files/list &nbsp;
+                    <span class="route-tag">POST</span> /api/upload/upload &nbsp;
+                    <span class="route-tag">GET</span> /api/files/download/:filename &nbsp;
+                    <span class="route-tag">DELETE</span> /api/files/delete/:filename
+                </div>
+            </div>
+
+            <div class="page-item">
+                <div class="page-name-wrap">
+                    <span class="page-name">系统设置</span>
+                    <a href="/settings.html" target="_blank" class="page-link">/settings.html</a>
+                    <span class="tag tag-module">模块</span>
+                </div>
+                <div class="page-path">public/settings.html &nbsp;|&nbsp; 路由: src/routes/settings.js</div>
+                <div class="page-apis">
+                    <span class="route-tag">GET</span> /api/settings/exam &nbsp;
+                    <span class="route-tag">PUT</span> /api/settings/exam &nbsp;
+                    <span class="route-tag">GET</span> /api/settings/meal &nbsp;
+                    <span class="route-tag">PUT</span> /api/settings/meal
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ==================== 路由汇总表 ==================== -->
+    <div class="divider"></div>
+    <div class="module-block">
+        <div class="module-title">📡 路由文件汇总</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+            <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+                <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">src/routes/auth.js</div>
+                <div style="font-size:11px;color:var(--text-secondary);line-height:1.8;">
+                    POST /api/auth/login<br>
+                    POST /api/auth/logout<br>
+                    POST /api/auth/refresh<br>
+                    GET /api/auth/me<br>
+                    <strong>POST /api/auth/employee-login</strong><br>
+                    <strong>GET /api/auth/lookup</strong><br>
+                    POST /api/auth/permissions
+                </div>
+            </div>
+            <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+                <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">src/routes/staff.js</div>
+                <div style="font-size:11px;color:var(--text-secondary);line-height:1.8;">
+                    GET /api/staff<br>
+                    POST /api/staff<br>
+                    GET /api/staff/:id<br>
+                    PUT /api/staff/:id<br>
+                    DELETE /api/staff/:id<br>
+                    POST /api/staff/bulk-import<br>
+                    POST /api/staff/sync-from-smb
+                </div>
+            </div>
+            <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+                <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">src/routes/learning-task.js</div>
+                <div style="font-size:11px;color:var(--text-secondary);line-height:1.8;">
+                    GET /api/learning-tasks<br>
+                    POST /api/learning-tasks<br>
+                    GET /api/learning-tasks/:id<br>
+                    GET /api/learning-tasks/:id/progress<br>
+                    POST /api/learning-tasks/:id/progress<br>
+                    POST /api/learning-tasks/batch-delete<br>
+                    POST /api/import/upload
+                </div>
+            </div>
+            <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+                <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">src/routes/exam.js <span style="font-weight:400;color:var(--text-tertiary)">+ exam-admin.js</span></div>
+                <div style="font-size:11px;color:var(--text-secondary);line-height:1.8;">
+                    <strong>exam.js:</strong><br>
+                    GET/POST /api/exam/list,start,submit<br>
+                    GET /api/exam/:id,stats/user<br>
+                    GET /api/exam/my-records<br><br>
+                    <strong>exam-admin.js:</strong><br>
+                    CRUD /api/exam-admin/papers<br>
+                    CRUD /api/exam-admin/questions<br>
+                    GET /api/exam-admin/records,stats
+                </div>
+            </div>
+            <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+                <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">src/routes/meal.js</div>
+                <div style="font-size:11px;color:var(--text-secondary);line-height:1.8;">
+                    GET /api/meal/list<br>
+                    POST /api/meal/create<br>
+                    GET /api/meal/:id<br>
+                    GET /api/meal/:id/statistics<br>
+                    POST /api/meal/:id/order
+                </div>
+            </div>
+            <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;">
+                <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">src/routes/voting.js</div>
+                <div style="font-size:11px;color:var(--text-secondary);line-height:1.8;">
+                    GET /api/voting/list<br>
+                    POST /api/voting/create<br>
+                    GET /api/voting/:id<br>
+                    GET /api/voting/:id/results<br>
+                    POST /api/voting/:id/vote
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

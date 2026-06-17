@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glassmorphism UI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #e8e4f0;
+      --bg-blur: rgba(255, 255, 255, 0.7);
+      --bg-blur-dark: rgba(255, 255, 255, 0.4);
+      --glass-border: rgba(255, 255, 255, 0.5);
+      --glass-shadow: rgba(0, 0, 0, 0.1);
+      --text-primary: #1a1a2e;
+      --text-secondary: #4a4a6a;
+      --text-tertiary: #8a8aa8;
+      --accent-purple: #9b59b6;
+      --accent-blue: #3498db;
+      --accent-pink: #e91e63;
+      --accent-teal: #00bcd4;
+      --accent-orange: #ff9800;
+      --accent-green: #4caf50;
+      --accent-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Blurred Background Shapes */
+    .bg-shapes {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .bg-shape {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.8;
+    }
+
+    .bg-shape-1 {
+      width: 500px;
+      height: 500px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      top: -100px;
+      right: -100px;
+    }
+
+    .bg-shape-2 {
+      width: 400px;
+      height: 400px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      bottom: -100px;
+      left: -100px;
+    }
+
+    .bg-shape-3 {
+      width: 350px;
+      height: 350px;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .bg-shape-4 {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      top: 30%;
+      right: 10%;
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 40px);
+      max-width: 1200px;
+      padding: 16px 28px;
+      background: var(--bg-blur);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px var(--glass-shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav a {
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+
+    .nav a:hover {
+      background: rgba(255,255,255,0.5);
+      color: var(--text-primary);
+    }
+
+    .nav a.active {
+      background: var(--accent-gradient);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+
+    .btn-glass {
+      background: var(--bg-blur-dark);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+    }
+
+    .btn-glass:hover {
+      background: rgba(255,255,255,0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--glass-shadow);
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-icon {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--bg-blur-dark);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255,255,255,0.8);
+      transform: translateY(-2px);
+    }
+
+    .material-symbols-rounded { font-size: 22px; }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 120px 20px 60px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      background: var(--bg-blur);
+      backdrop-filter: blur(20px);
+      border-radius: 100px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .hero-badge .dot {
+      width: 8px;
+      height: 8px;
+      background: #4caf50;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: clamp(36px, 7vw, 64px);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.2;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+
+    .hero h1 span {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto 32px;
+      line-height: 1.7;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Glass Card */
+    .glass-card {
+      background: var(--bg-blur);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px var(--glass-shadow);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .glass-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 60px;
+    }
+
+    .stat-card {
+      padding: 28px;
+      text-align: center;
+    }
+
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    .stat-icon.purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .stat-icon.pink { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+    .stat-value {
+      font-family: 'Poppins', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 60px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .section-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .section-subtitle {
+      font-size: 15px;
+      color: var(--text-tertiary);
+      margin-top: 6px;
+    }
+
+    .section-link {
+      color: var(--accent-purple);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-link:hover { color: #764ba2; }
+
+    /* Feature Cards Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      padding: 28px;
+    }
+
+    .feature-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px var(--glass-shadow);
+    }
+
+    .feature-icon.purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .feature-icon.blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .feature-icon.pink { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .feature-icon.teal { background: linear-gradient(135deg, #00bcd4 0%, #26p6ff 100%); }
+    .feature-icon.orange { background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%); }
+    .feature-icon.green { background: linear-gradient(135deg, #4caf50 0%, #81c784 100%); }
+
+    .feature-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* Image Card */
+    .image-card {
+      padding: 24px;
+    }
+
+    .image-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+    }
+
+    .image-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .image-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    /* List Cards */
+    .list-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .list-card {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .list-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .list-avatar.v1 { background: var(--accent-gradient); }
+    .list-avatar.v2 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .list-avatar.v3 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .list-avatar.v4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+    .list-content { flex: 1; }
+
+    .list-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .list-subtitle {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    .list-action {
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .list-action:hover { color: var(--accent-purple); }
+
+    /* Pricing */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .pricing-card {
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pricing-card.featured {
+      background: var(--accent-gradient);
+      border-color: transparent;
+      transform: scale(1.05);
+    }
+
+    .pricing-card.featured:hover {
+      transform: scale(1.05) translateY(-6px);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: 20px;
+      right: -35px;
+      background: white;
+      color: var(--accent-purple);
+      padding: 6px 40px;
+      font-size: 12px;
+      font-weight: 600;
+      transform: rotate(45deg);
+    }
+
+    .pricing-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .pricing-card.featured .pricing-name { color: white; }
+
+    .pricing-desc {
+      font-size: 14px;
+      color: var(--text-tertiary);
+      margin-bottom: 20px;
+    }
+
+    .pricing-card.featured .pricing-desc { color: rgba(255,255,255,0.8); }
+
+    .pricing-price {
+      margin-bottom: 24px;
+    }
+
+    .pricing-amount {
+      font-family: 'Poppins', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .pricing-card.featured .pricing-amount { color: white; }
+
+    .pricing-period {
+      font-size: 14px;
+      color: var(--text-tertiary);
+    }
+
+    .pricing-card.featured .pricing-period { color: rgba(255,255,255,0.8); }
+
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .pricing-card.featured .pricing-features li { color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.2); }
+    .pricing-card.featured .pricing-features li:last-child { border-bottom: none; }
+
+    .pricing-features .material-symbols-rounded {
+      font-size: 18px;
+      color: var(--accent-green);
+    }
+
+    .pricing-card.featured .pricing-features .material-symbols-rounded { color: #a8e6cf; }
+
+    .pricing-card .btn { width: 100%; justify-content: center; }
+
+    .pricing-card.featured .btn {
+      background: white;
+      color: var(--accent-purple);
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-blur);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 12px 8px;
+      display: flex;
+      gap: 4px;
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px var(--glass-shadow);
+      z-index: 100;
+    }
+
+    .bottom-nav a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 28px;
+      border-radius: 16px;
+      text-decoration: none;
+      color: var(--text-tertiary);
+      transition: all 0.3s;
+    }
+
+    .bottom-nav a:hover {
+      background: rgba(255,255,255,0.5);
+      color: var(--text-primary);
+    }
+
+    .bottom-nav a.active {
+      background: var(--accent-gradient);
+      color: white;
+    }
+
+    .bottom-nav a span:first-child { font-size: 24px; margin-bottom: 2px; }
+    .bottom-nav a span:last-child { font-size: 11px; font-weight: 500; }
+
+    /* Footer */
+    .footer {
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .footer p {
+      color: var(--text-tertiary);
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-card.featured { transform: scale(1); }
+      .pricing-card.featured:hover { transform: translateY(-6px); }
+    }
+
+    @media (max-width: 768px) {
+      .header { flex-wrap: wrap; gap: 12px; justify-content: center; }
+      .nav { display: none; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+      .feature-grid,
+      .list-grid,
+      .pricing-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background -->
+  <div class="bg-shapes">
+    <div class="bg-shape bg-shape-1"></div>
+    <div class="bg-shape bg-shape-2"></div>
+    <div class="bg-shape bg-shape-3"></div>
+    <div class="bg-shape bg-shape-4"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">GlassUI</div>
+    <nav class="nav">
+      <a href="#" class="active">首页</a>
+      <a href="#">功能</a>
+      <a href="#">作品</a>
+      <a href="#">定价</a>
+      <a href="#">关于</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn btn-glass">登录</button>
+      <button class="btn btn-primary">
+        <span class="material-symbols-rounded">add</span>
+        开始使用
+      </button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        设计系统 2.0 正式发布
+      </div>
+      <h1>超越视觉的<br><span>玻璃拟态</span>设计</h1>
+      <p>采用先进的毛玻璃效果和微妙的光影变化，打造梦幻般的用户界面体验。</p>
+      <div class="hero-buttons">
+        <button class="btn btn-primary">
+          <span class="material-symbols-rounded">explore</span>
+          探索组件
+        </button>
+        <button class="btn btn-glass">
+          <span class="material-symbols-rounded">play_circle</span>
+          观看演示
+        </button>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="glass-card stat-card">
+        <div class="stat-icon purple">
+          <span class="material-symbols-rounded" style="color:white">group</span>
+        </div>
+        <div class="stat-value">50K+</div>
+        <div class="stat-label">活跃用户</div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-icon blue">
+          <span class="material-symbols-rounded" style="color:white">palette</span>
+        </div>
+        <div class="stat-value">200+</div>
+        <div class="stat-label">设计组件</div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-icon pink">
+          <span class="material-symbols-rounded" style="color:white">star</span>
+        </div>
+        <div class="stat-value">4.9</div>
+        <div class="stat-label">用户评分</div>
+      </div>
+      <div class="glass-card stat-card">
+        <div class="stat-icon green">
+          <span class="material-symbols-rounded" style="color:white">support_agent</span>
+        </div>
+        <div class="stat-value">24/7</div>
+        <div class="stat-label">客户支持</div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">核心特性</h2>
+          <p class="section-subtitle">专为现代应用打造的设计语言</p>
+        </div>
+        <a href="#" class="section-link">
+          查看全部
+          <span class="material-symbols-rounded">arrow_forward</span>
+        </a>
+      </div>
+      <div class="feature-grid">
+        <div class="glass-card feature-card">
+          <div class="feature-icon purple">
+            <span class="material-symbols-rounded" style="color:white">blur_on</span>
+          </div>
+          <h3 class="feature-title">毛玻璃效果</h3>
+          <p class="feature-desc"> backdrop-filter 模糊算法，呈现精致的磨砂玻璃质感。</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="feature-icon blue">
+            <span class="material-symbols-rounded" style="color:white">animation</span>
+          </div>
+          <h3 class="feature-title">流畅动效</h3>
+          <p class="feature-desc">基于物理引擎的过渡动画，提供自然流畅的交互体验。</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="feature-icon pink">
+            <span class="material-symbols-rounded" style="color:white">auto_fix_high</span>
+          </div>
+          <h3 class="feature-title">智能适配</h3>
+          <p class="feature-desc">自动识别系统主题，在亮色与暗色模式间无缝切换。</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="feature-icon teal">
+            <span class="material-symbols-rounded" style="color:white">devices</span>
+          </div>
+          <h3 class="feature-title">响应式布局</h3>
+          <p class="feature-desc">一套代码适配全尺寸设备，从手机到桌面端完美呈现。</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="feature-icon orange">
+            <span class="material-symbols-rounded" style="color:white">security</span>
+          </div>
+          <h3 class="feature-title">安全可靠</h3>
+          <p class="feature-desc">端到端加密传输，严格权限控制，保障数据安全。</p>
+        </div>
+        <div class="glass-card feature-card">
+          <div class="feature-icon green">
+            <span class="material-symbols-rounded" style="color:white">speed</span>
+          </div>
+          <h3 class="feature-title">极速加载</h3>
+          <p class="feature-desc">首屏加载低于 1 秒，流畅体验不等待。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- List Cards -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">团队成员</h2>
+          <p class="section-subtitle">与我们一起创造卓越</p>
+        </div>
+      </div>
+      <div class="list-grid">
+        <div class="glass-card list-card">
+          <div class="list-avatar v1">张</div>
+          <div class="list-content">
+            <div class="list-title">张明远</div>
+            <div class="list-subtitle">设计总监 · 杭州</div>
+          </div>
+          <span class="material-symbols-rounded list-action">chevron_right</span>
+        </div>
+        <div class="glass-card list-card">
+          <div class="list-avatar v2">李</div>
+          <div class="list-content">
+            <div class="list-title">李雨晴</div>
+            <div class="list-subtitle">前端工程师 · 上海</div>
+          </div>
+          <span class="material-symbols-rounded list-action">chevron_right</span>
+        </div>
+        <div class="glass-card list-card">
+          <div class="list-avatar v3">王</div>
+          <div class="list-content">
+            <div class="list-title">王思远</div>
+            <div class="list-subtitle">产品经理 · 北京</div>
+          </div>
+          <span class="material-symbols-rounded list-action">chevron_right</span>
+        </div>
+        <div class="glass-card list-card">
+          <div class="list-avatar v4">陈</div>
+          <div class="list-content">
+            <div class="list-title">陈晓雪</div>
+            <div class="list-subtitle">UI 设计师 · 深圳</div>
+          </div>
+          <span class="material-symbols-rounded list-action">chevron_right</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">价格方案</h2>
+          <p class="section-subtitle">选择适合您的方案</p>
+        </div>
+      </div>
+      <div class="pricing-grid">
+        <div class="glass-card pricing-card">
+          <h3 class="pricing-name">基础版</h3>
+          <p class="pricing-desc">适合个人开发者起步</p>
+          <div class="pricing-price">
+            <span class="pricing-amount">¥0</span>
+            <span class="pricing-period">/ 永久免费</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="material-symbols-rounded">check_circle</span> 个人项目使用</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 50+ 基础组件</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 社区支持</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 个人项目使用</li>
+          </ul>
+          <button class="btn btn-glass">免费开始</button>
+        </div>
+        <div class="glass-card pricing-card featured">
+          <span class="pricing-badge">推荐</span>
+          <h3 class="pricing-name">专业版</h3>
+          <p class="pricing-desc">适合团队和商业项目</p>
+          <div class="pricing-price">
+            <span class="pricing-amount">¥199</span>
+            <span class="pricing-period">/ 每月</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="material-symbols-rounded">check_circle</span> 无限项目数量</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 全部 200+ 组件</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 专业技术支持</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 优先响应</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 商业使用授权</li>
+          </ul>
+          <button class="btn btn-primary">立即开通</button>
+        </div>
+        <div class="glass-card pricing-card">
+          <h3 class="pricing-name">企业版</h3>
+          <p class="pricing-desc">适合大型组织</p>
+          <div class="pricing-price">
+            <span class="pricing-amount">¥599</span>
+            <span class="pricing-period">/ 每月</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="material-symbols-rounded">check_circle</span> 专业版全部功能</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 专属客户经理</li>
+            <li><span class="material-symbols-rounded">check_circle</span> SLA 服务保障</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 私有化部署</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 定制化开发</li>
+          </ul>
+          <button class="btn btn-glass">联系我们</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="#" class="active">
+      <span class="material-symbols-rounded">home</span>
+      <span>首页</span>
+    </a>
+    <a href="#">
+      <span class="material-symbols-rounded">explore</span>
+      <span>发现</span>
+    </a>
+    <a href="#">
+      <span class="material-symbols-rounded">add_circle</span>
+      <span>创建</span>
+    </a>
+    <a href="#">
+      <span class="material-symbols-rounded">notifications</span>
+      <span>消息</span>
+    </a>
+    <a href="#">
+      <span class="material-symbols-rounded">person</span>
+      <span>我的</span>
+    </a>
+  </nav>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2026 GlassUI. All rights reserved.</p>
+  </footer>
+</body>
+</html>

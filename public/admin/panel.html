@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>考试管理</title>
+  <link rel="stylesheet" href="css/linear.css">
+  <style>
+    .admin-panel { max-width: 1200px; margin: 20px auto 0; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .admin-header h1 { color: var(--text-primary); font-size: 24px; font-weight: 600; }
+    .logout-btn { background: var(--danger); color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-size: 14px; }
+    .section { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 25px; margin-bottom: 20px; }
+    .section-title { font-size: 20px; color: var(--text-primary); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); font-weight: 600; }
+    .paper-list { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+    .paper-tag { background: rgba(94,106,210,0.15); color: var(--accent); padding: 10px 20px; border-radius: 25px; cursor: pointer; transition: all 0.15s; border: 2px solid transparent; }
+    .paper-tag.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .paper-tag:hover { transform: translateY(-2px); }
+    .btn-small { padding: 8px 16px; font-size: 14px; border-radius: var(--radius-md); border: none; cursor: pointer; margin-right: 10px; }
+    .btn-import { background: var(--accent); color: white; }
+    .btn-export { background: var(--success); color: white; }
+    .btn-export:disabled { background: var(--text-tertiary); }
+    .exam-records { margin-top: 20px; }
+    .record-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border); }
+    .record-item:last-child { border-bottom: none; }
+    .record-info { flex: 1; }
+    .record-name { font-weight: 600; color: var(--text-primary); }
+    .record-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .record-score { font-weight: 600; color: var(--accent); margin-right: 15px; }
+    .select-all { margin-left: 15px; }
+    .selected-count { color: var(--text-secondary); font-size: 14px; }
+    .alert { padding: 12px; border-radius: var(--radius-md); margin-bottom: 15px; }
+    .alert-info { background: rgba(94,106,210,0.15); color: var(--accent); }
+    textarea.import-area { width: 100%; height: 200px; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px; font-size: 14px; resize: vertical; margin-bottom: 15px; background: var(--bg-primary); color: var(--text-primary); }
+    textarea.import-area:focus { outline: none; border-color: var(--accent); }
+    .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: var(--radius-md); z-index: 1000; font-size: 14px; }
+    .paper-card { background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 15px; transition: all 0.15s; }
+    .paper-card:hover { border-color: var(--border-strong); }
+    .paper-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .paper-card-header h3 { margin: 0; color: var(--text-primary); font-size: 18px; }
+    .paper-status { font-size: 12px; padding: 4px 12px; border-radius: var(--radius-sm); }
+    .paper-status.active { background: rgba(38,166,65,0.15); color: var(--success); }
+    .paper-status.inactive { background: rgba(235,87,87,0.15); color: var(--danger); }
+    .paper-card-body { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+    .paper-stat { display: flex; justify-content: space-between; padding: 8px 12px; background: var(--bg-elevated); border-radius: var(--radius-md); border: 1px solid var(--border); }
+    .stat-label { color: var(--text-secondary); font-size: 13px; }
+    .stat-value { font-weight: 600; color: var(--text-primary); }
+    .paper-card-actions { text-align: right; }
+    .records-detail-list { display: flex; flex-direction: column; gap: 20px; }
+    .record-detail-item { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 15px; background: var(--bg-elevated); }
+    .record-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .record-detail-name .name { font-weight: 600; font-size: 16px; color: var(--text-primary); }
+    .record-detail-name .openid { font-size: 12px; color: var(--text-tertiary); margin-left: 10px; }
+    .record-detail-score .score { font-size: 24px; font-weight: 600; margin-right: 10px; }
+    .record-detail-score .score.pass { color: var(--success); }
+    .record-detail-score .score.fail { color: var(--danger); }
+    .record-detail-score .status { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: var(--bg-hover); }
+    .record-detail-answers { display: flex; flex-direction: column; gap: 8px; }
+    .answer-item { padding: 10px; border-radius: var(--radius-md); font-size: 13px; }
+    .answer-item.correct { background: rgba(38,166,65,0.15); }
+    .answer-item.wrong { background: rgba(235,87,87,0.15); }
+    .question-preview { margin-bottom: 5px; color: var(--text-primary); }
+    .answer-detail { display: flex; gap: 15px; font-size: 12px; }
+    .answer-user { color: var(--warning); }
+    .answer-correct { color: var(--accent); }
+    .answer-score { font-weight: 600; }
+    .record-detail-time { margin-top: 10px; font-size: 12px; color: var(--text-tertiary); text-align: right; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-primary); }
+    .form-control { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 14px; background: var(--bg-primary); color: var(--text-primary); transition: border-color 0.15s; }
+    .form-control:focus { outline: none; border-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="container admin-panel">
+    <div class="admin-header">
+      <h1>📋 考试管理</h1>
+      <a href="/6s-list.html" class="logout-btn" style="background:#22c55e;margin-right:8px;">6S管理</a>
+      <a href="/" class="logout-btn">退出管理</a>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div id="mainContent" class="main-content" style="min-height: 400px;"></div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/admin-new.js"></script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

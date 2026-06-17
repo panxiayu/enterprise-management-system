@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flutter Style Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --md-primary: #6750A4;
+      --md-on-primary: #FFFFFF;
+      --md-primary-container: #EADDFF;
+      --md-on-primary-container: #21005D;
+      --md-secondary: #625B71;
+      --md-secondary-container: #E8DEF8;
+      --md-tertiary: #7D5260;
+      --md-tertiary-container: #FFD8E4;
+      --md-surface: #FFFBFE;
+      --md-surface-variant: #E7E0EC;
+      --md-outline: #79747E;
+      --md-shadow: rgba(0,0,0,0.15);
+      --md-radius: 28px;
+      --md-radius-sm: 16px;
+      --md-radius-xs: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(180deg, #F3EDF7 0%, #FFFBFE 100%);
+      min-height: 100vh;
+      color: #1C1B1F;
+    }
+
+    /* App Bar */
+    .app-bar {
+      background: var(--md-surface);
+      padding: 0 24px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px var(--md-shadow);
+    }
+
+    .app-bar-title {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--md-on-primary-container);
+    }
+
+    .app-bar-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--md-on-primary-container);
+      transition: background 0.2s;
+    }
+    .icon-btn:hover { background: var(--md-surface-variant); }
+
+    /* Navigation Bar */
+    .nav-bar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--md-surface);
+      border-radius: var(--md-radius);
+      padding: 12px 8px;
+      display: flex;
+      gap: 12px;
+      box-shadow: 0 4px 24px var(--md-shadow), 0 0 0 1px var(--md-outline);
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 24px;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+      color: var(--md-outline);
+      text-decoration: none;
+    }
+    .nav-item:hover { background: var(--md-surface-variant); }
+    .nav-item.active {
+      background: var(--md-secondary-container);
+      color: var(--md-primary);
+    }
+    .nav-item .material-icons { font-size: 24px; margin-bottom: 4px; }
+    .nav-item span { font-size: 12px; font-weight: 500; }
+
+    /* Main Content */
+    .main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 120px;
+    }
+
+    /* Section Title */
+    .section-title {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--md-on-primary-container);
+      margin-bottom: 24px;
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--md-surface);
+      border-radius: var(--md-radius);
+      padding: 24px;
+      box-shadow: 0 2px 12px var(--md-shadow);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px var(--md-shadow);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    .card-icon.purple { background: linear-gradient(135deg, #6750A4, #7C6AB8); }
+    .card-icon.blue { background: linear-gradient(135deg, #0061A4, #3A8ED4); }
+    .card-icon.green { background: linear-gradient(135deg, #006E1C, #3DB86A); }
+    .card-icon.orange { background: linear-gradient(135deg, #B3261E, #E86A5C); }
+    .card-icon .material-icons { font-size: 28px; }
+
+    .card-title {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .card-subtitle {
+      font-size: 14px;
+      color: var(--md-secondary);
+      margin-top: 4px;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--md-secondary);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 12px 24px;
+      border-radius: var(--md-radius-xs);
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-filled {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+    }
+    .btn-filled:hover { box-shadow: 0 4px 12px rgba(103, 80, 164, 0.4); }
+
+    .btn-outlined {
+      background: transparent;
+      border: 1px solid var(--md-outline);
+      color: var(--md-primary);
+    }
+    .btn-outlined:hover { background: var(--md-primary-container); }
+
+    .btn-text {
+      background: transparent;
+      color: var(--md-primary);
+    }
+    .btn-text:hover { background: var(--md-primary-container); }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(103, 80, 164, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+      z-index: 99;
+    }
+    .fab:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 24px rgba(103, 80, 164, 0.5);
+    }
+    .fab .material-icons { font-size: 24px; }
+
+    /* Chips */
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .chip {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: var(--md-surface-variant);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .chip:hover { background: var(--md-secondary-container); }
+    .chip.selected {
+      background: var(--md-primary-container);
+      color: var(--md-on-primary-container);
+    }
+
+    /* Chips Container */
+    .chip-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .filter-chip {
+      padding: 10px 20px;
+      border-radius: 22px;
+      border: 1px solid var(--md-outline);
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .filter-chip:hover { border-color: var(--md-primary); }
+    .filter-chip.active {
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      border-color: var(--md-primary);
+    }
+
+    /* List Item */
+    .list-item {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      background: var(--md-surface);
+      border-radius: var(--md-radius-sm);
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px var(--md-shadow);
+    }
+
+    .list-item-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6750A4, #9A82DB);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 500;
+      font-size: 18px;
+      margin-right: 16px;
+    }
+
+    .list-item-content { flex: 1; }
+    .list-item-title { font-weight: 500; margin-bottom: 4px; }
+    .list-item-subtitle { font-size: 13px; color: var(--md-secondary); }
+
+    .list-item-action {
+      color: var(--md-outline);
+      cursor: pointer;
+    }
+
+    /* Search Bar */
+    .search-bar {
+      background: var(--md-surface);
+      border-radius: 28px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 56px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px var(--md-shadow);
+    }
+
+    .search-bar input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      background: transparent;
+    }
+
+    .search-bar .material-icons { color: var(--md-outline); }
+
+    /* Banner Card */
+    .banner-card {
+      background: linear-gradient(135deg, #6750A4 0%, #9A82DB 100%);
+      border-radius: var(--md-radius);
+      padding: 32px;
+      color: white;
+      margin-bottom: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .banner-card::after {
+      content: '';
+      position: absolute;
+      right: -40px;
+      bottom: -40px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .banner-card h2 {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 28px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .banner-card p {
+      opacity: 0.9;
+      margin-bottom: 24px;
+      max-width: 500px;
+    }
+
+    .banner-card .btn {
+      background: white;
+      color: var(--md-primary);
+    }
+
+    /* Bottom Sheet Style */
+    .bottom-sheets {
+      margin-bottom: 48px;
+    }
+
+    .bottom-sheet {
+      background: var(--md-surface);
+      border-radius: var(--md-radius) var(--md-radius) 0 0;
+      padding: 28px;
+      box-shadow: 0 -4px 24px var(--md-shadow);
+    }
+
+    .bottom-sheet-handle {
+      width: 32px;
+      height: 4px;
+      background: var(--md-outline);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+
+    /* Slider */
+    .slider-container {
+      margin: 32px 0;
+    }
+
+    .slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--md-surface-variant);
+      outline: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--md-primary);
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(103, 80, 164, 0.4);
+    }
+
+    /* Toggle Switch */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--md-surface-variant);
+    }
+
+    .toggle {
+      width: 52px;
+      height: 32px;
+      border-radius: 16px;
+      background: var(--md-surface-variant);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: white;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s;
+      box-shadow: 0 1px 4px var(--md-shadow);
+    }
+
+    .toggle.active {
+      background: var(--md-primary);
+    }
+
+    .toggle.active::after {
+      transform: translateX(20px);
+    }
+
+    /* Progress Indicator */
+    .progress-ring {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 24px;
+      background: var(--md-surface);
+      border-radius: var(--md-radius-sm);
+      margin-bottom: 16px;
+    }
+
+    .progress-circle {
+      position: relative;
+      width: 64px;
+      height: 64px;
+    }
+
+    .progress-circle svg {
+      transform: rotate(-90deg);
+    }
+
+    .progress-circle circle {
+      fill: none;
+      stroke-width: 6;
+    }
+
+    .progress-circle .bg {
+      stroke: var(--md-surface-variant);
+    }
+
+    .progress-circle .fg {
+      stroke: var(--md-primary);
+      stroke-linecap: round;
+    }
+
+    .progress-circle .text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .progress-info h4 { margin-bottom: 4px; }
+    .progress-info p { font-size: 13px; color: var(--md-secondary); }
+
+    /* Dialog */
+    .dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .dialog-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .dialog {
+      background: var(--md-surface);
+      border-radius: var(--md-radius);
+      padding: 24px;
+      max-width: 400px;
+      width: calc(100% - 48px);
+      box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+      transform: scale(0.9);
+      transition: transform 0.3s;
+    }
+
+    .dialog-overlay.show .dialog {
+      transform: scale(1);
+    }
+
+    .dialog-title {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 24px;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .dialog-content {
+      color: var(--md-secondary);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* Snackbar */
+    .snackbar {
+      position: fixed;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #323232;
+      color: white;
+      padding: 14px 24px;
+      border-radius: var(--md-radius-xs);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 300;
+      transition: transform 0.3s;
+    }
+
+    .snackbar.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <!-- App Bar -->
+  <header class="app-bar">
+    <span class="app-bar-title">Flutter UI Demo</span>
+    <div class="app-bar-actions">
+      <button class="icon-btn"><span class="material-icons">search</span></button>
+      <button class="icon-btn"><span class="material-icons">more_vert</span></button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Search -->
+    <div class="search-bar">
+      <span class="material-icons">search</span>
+      <input type="text" placeholder="搜索...">
+    </div>
+
+    <!-- Banner -->
+    <div class="banner-card">
+      <h2>Material Design 3</h2>
+      <p>现代化设计语言，带来优雅一致的用户体验</p>
+      <button class="btn btn-filled">
+        <span class="material-icons">bolt</span>
+        开始探索
+      </button>
+    </div>
+
+    <!-- Filter Chips -->
+    <div class="chip-group">
+      <button class="filter-chip active">全部</button>
+      <button class="filter-chip">组件</button>
+      <button class="filter-chip">设计</button>
+      <button class="filter-chip">开发</button>
+    </div>
+
+    <!-- Cards Grid -->
+    <h3 class="section-title">卡片组件</h3>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon purple"><span class="material-icons">dashboard</span></div>
+          <div>
+            <div class="card-title">仪表盘</div>
+            <div class="card-subtitle">数据可视化中心</div>
+          </div>
+        </div>
+        <div class="card-desc">展示关键业务指标，帮助您快速了解整体运营状况。</div>
+        <div class="btn-group">
+          <button class="btn btn-filled">主要操作</button>
+          <button class="btn btn-outlined">次要操作</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon blue"><span class="material-icons">notifications</span></div>
+          <div>
+            <div class="card-title">通知中心</div>
+            <div class="card-subtitle">实时消息推送</div>
+          </div>
+        </div>
+        <div class="card-desc">接收并管理您的所有通知，不错过任何重要信息。</div>
+        <div class="btn-group">
+          <button class="btn btn-filled">查看详情</button>
+          <button class="btn btn-text">忽略</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon green"><span class="material-icons">security</span></div>
+          <div>
+            <div class="card-title">安全设置</div>
+            <div class="card-subtitle">账户保护</div>
+          </div>
+        </div>
+        <div class="card-desc">管理您的账户安全设置，保护个人信息安全。</div>
+        <div class="btn-group">
+          <button class="btn btn-filled">安全中心</button>
+          <button class="btn btn-outlined">隐私设置</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon orange"><span class="material-icons">analytics</span></div>
+          <div>
+            <div class="card-title">数据分析</div>
+            <div class="card-subtitle">深度洞察</div>
+          </div>
+        </div>
+        <div class="card-desc">强大的数据分析工具，帮助您发现数据中的价值。</div>
+        <div class="btn-group">
+          <button class="btn btn-filled">开始分析</button>
+          <button class="btn btn-outlined">导出报告</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- List Items -->
+    <h3 class="section-title">列表组件</h3>
+    <div class="list-item">
+      <div class="list-item-avatar">张</div>
+      <div class="list-item-content">
+        <div class="list-item-title">张伟</div>
+        <div class="list-item-subtitle">产品设计师 · 北京</div>
+      </div>
+      <span class="material-icons list-item-action">chevron_right</span>
+    </div>
+    <div class="list-item">
+      <div class="list-item-avatar" style="background: linear-gradient(135deg, #0061A4, #3A8ED4);">李</div>
+      <div class="list-item-content">
+        <div class="list-item-title">李娜</div>
+        <div class="list-item-subtitle">前端工程师 · 上海</div>
+      </div>
+      <span class="material-icons list-item-action">chevron_right</span>
+    </div>
+    <div class="list-item">
+      <div class="list-item-avatar" style="background: linear-gradient(135deg, #006E1C, #3DB86A);">王</div>
+      <div class="list-item-content">
+        <div class="list-item-title">王鹏</div>
+        <div class="list-item-subtitle">后端工程师 · 深圳</div>
+      </div>
+      <span class="material-icons list-item-action">chevron_right</span>
+    </div>
+
+    <!-- Toggle Switches -->
+    <h3 class="section-title" style="margin-top: 48px;">开关组件</h3>
+    <div class="card">
+      <div class="toggle-row">
+        <div>
+          <div class="list-item-title">深色模式</div>
+          <div class="list-item-subtitle">切换到深色主题</div>
+        </div>
+        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="list-item-title">消息通知</div>
+          <div class="list-item-subtitle">接收推送通知</div>
+        </div>
+        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="list-item-title">自动同步</div>
+          <div class="list-item-subtitle">自动同步数据到云端</div>
+        </div>
+        <div class="toggle" onclick="this.classList.toggle('active')"></div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <h3 class="section-title" style="margin-top: 48px;">进度指示</h3>
+    <div class="progress-ring">
+      <div class="progress-circle">
+        <svg width="64" height="64">
+          <circle class="bg" cx="32" cy="32" r="28"></circle>
+          <circle class="fg" cx="32" cy="32" r="28" stroke-dasharray="176" stroke-dashoffset="44"></circle>
+        </svg>
+        <span class="text">75%</span>
+      </div>
+      <div class="progress-info">
+        <h4>项目进度</h4>
+        <p>预计 3 天后完成</p>
+      </div>
+    </div>
+
+    <div class="progress-ring">
+      <div class="progress-circle">
+        <svg width="64" height="64">
+          <circle class="bg" cx="32" cy="32" r="28"></circle>
+          <circle class="fg" cx="32" cy="32" r="28" stroke-dasharray="176" stroke-dashoffset="88"></circle>
+        </svg>
+        <span class="text">50%</span>
+      </div>
+      <div class="progress-info">
+        <h4>学习进度</h4>
+        <p>已完成 12 / 24 章节</p>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet -->
+    <h3 class="section-title" style="margin-top: 48px;">底部面板</h3>
+    <div class="bottom-sheet">
+      <div class="bottom-sheet-handle"></div>
+      <div class="card-header">
+        <div class="card-icon purple"><span class="material-icons">share</span></div>
+        <div>
+          <div class="card-title">分享到</div>
+          <div class="card-subtitle">选择分享方式</div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 24px; justify-content: center; padding: 24px 0;">
+        <div style="text-align: center; cursor: pointer;">
+          <div style="width: 56px; height: 56px; border-radius: 50%; background: #07C160; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <span class="material-icons" style="color: white;">chat</span>
+          </div>
+          <span style="font-size: 12px;">微信</span>
+        </div>
+        <div style="text-align: center; cursor: pointer;">
+          <div style="width: 56px; height: 56px; border-radius: 50%; background: #FF3B30; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <span class="material-icons" style="color: white;">mail</span>
+          </div>
+          <span style="font-size: 12px;">邮件</span>
+        </div>
+        <div style="text-align: center; cursor: pointer;">
+          <div style="width: 56px; height: 56px; border-radius: 50%; background: #007AFF; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+            <span class="material-icons" style="color: white;">link</span>
+          </div>
+          <span style="font-size: 12px;">复制链接</span>
+        </div>
+      </div>
+      <button class="btn btn-outlined" style="width: 100%; justify-content: center;">
+        取消
+      </button>
+    </div>
+  </main>
+
+  <!-- FAB -->
+  <button class="fab" onclick="showSnackbar()">
+    <span class="material-icons">add</span>
+  </button>
+
+  <!-- Bottom Navigation -->
+  <nav class="nav-bar">
+    <a href="#" class="nav-item active">
+      <span class="material-icons">home</span>
+      <span>首页</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="material-icons">explore</span>
+      <span>发现</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="material-icons">favorite</span>
+      <span>收藏</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="material-icons">person</span>
+      <span>我的</span>
+    </a>
+  </nav>
+
+  <!-- Dialog -->
+  <div class="dialog-overlay" id="dialog">
+    <div class="dialog">
+      <div class="dialog-title">确认操作</div>
+      <div class="dialog-content">
+        确定要执行此操作吗？此操作无法撤销。
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-text" onclick="hideDialog()">取消</button>
+        <button class="btn btn-filled" onclick="hideDialog(); showSnackbar()">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snackbar -->
+  <div class="snackbar" id="snackbar">
+    操作成功完成
+  </div>
+
+  <script>
+    // Toggle chips
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', function() {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // Snackbar
+    function showSnackbar() {
+      const snackbar = document.getElementById('snackbar');
+      snackbar.classList.add('show');
+      setTimeout(() => snackbar.classList.remove('show'), 3000);
+    }
+
+    // Dialog
+    function hideDialog() {
+      document.getElementById('dialog').classList.remove('show');
+    }
+
+    // FAB click -> show dialog demo
+    setTimeout(() => {
+      document.getElementById('dialog').classList.add('show');
+    }, 1000);
+
+    // Close dialog on overlay click
+    document.getElementById('dialog').addEventListener('click', function(e) {
+      if (e.target === this) hideDialog();
+    });
+  </script>
+</body>
+</html>

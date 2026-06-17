@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>6S曝光台 - 兴利汽车模具</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0 }
+
+    body {
+      min-height: 100vh;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(74,144,226,.06), transparent 35%),
+        radial-gradient(circle at 85% 90%, rgba(34,197,94,.05), transparent 35%),
+        linear-gradient(180deg, #fafbfc 0%, #f5f7fa 50%, #f0f2f5 100%);
+      overflow: hidden;
+    }
+
+    /* ===== 布局系统 ===== */
+    .app {
+      display: flex;
+      height: 100vh;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ===== 左侧边栏 ===== */
+    .sidebar {
+      width: 260px;
+      background: #f5f5f5;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 10;
+    }
+
+    .sidebar.collapsed {
+      width: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 16px 12px 12px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      background: #e8e8e8;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sidebar-item {
+      background: #fff;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .sidebar-item:hover {
+      border-color: #c0d8f7;
+      background: #fafafa;
+    }
+
+    .sidebar-item.active {
+      border-color: #4a90e2;
+      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
+    }
+
+    .sidebar-thumb {
+      position: relative;
+      background: #f0f0f0;
+    }
+
+    .sidebar-thumb-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      padding: 2px;
+    }
+
+    .sidebar-thumb-item {
+      position: relative;
+    }
+
+    .sidebar-thumb-label {
+      position: absolute;
+      bottom: 2px;
+      left: 0;
+      right: 0;
+      font-size: 8px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.5);
+      text-align: center;
+      padding: 1px 0;
+    }
+
+    .sidebar-thumb img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+    }
+
+    .sidebar-page-badge {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      min-width: 20px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.5);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+
+    .sidebar-item.active .sidebar-page-badge {
+      background: #4a90e2;
+    }
+
+    .sidebar-caption {
+      padding: 4px 6px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #666;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: #fff;
+    }
+
+    .sidebar-item.active .sidebar-caption {
+      color: #4a90e2;
+      font-weight: 700;
+    }
+
+    .sidebar-status, .status-dot {
+      display: none;
+    }
+
+    /* ===== 主内容区 ===== */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      position: relative;
+    }
+
+    /* 顶部导航栏 */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(214, 233, 255, 0.6);
+      z-index: 5;
+      transition: all 0.3s ease;
+    }
+
+    .topbar.hidden {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #4a90e2, #22c58d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 8px 20px rgba(74, 144, 226, 0.25);
+    }
+
+    .title-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1e293b;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1e293b;
+      border: 1px solid rgba(214, 233, 255, 0.8);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: #fff;
+      box-shadow: 0 4px 16px rgba(74, 144, 226, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4a90e2, #22c58d);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 16px rgba(74, 144, 226, 0.25);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 8px 24px rgba(74, 144, 226, 0.35);
+    }
+
+    .btn-icon {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    /* 案例展示区 */
+    .viewer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .case-header {
+      text-align: center;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.4s ease;
+    }
+
+    .case-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .case-subtitle {
+      font-size: 14px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .case-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    /* 对比网格 */
+    .compare-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      min-height: 0;
+    }
+
+    .compare-card {
+      display: flex;
+      flex-direction: column;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(214, 233, 255, 0.6);
+      border-radius: 20px;
+      box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.04),
+        0 16px 48px rgba(74, 144, 226, 0.06);
+      overflow: hidden;
+      animation: fadeInUp 0.4s ease;
+    }
+
+    .compare-card:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .compare-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(214, 233, 255, 0.6);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 251, 255, 0.8));
+    }
+
+    .compare-card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .compare-card-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: #4a90e2;
+      background: rgba(74, 144, 226, 0.1);
+      padding: 3px 10px;
+      border-radius: 6px;
+    }
+
+    .compare-image-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: #f8fafc;
+      min-height: 0;
+      cursor: zoom-in;
+      position: relative;
+    }
+
+    .compare-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.4s ease;
+    }
+
+    .compare-image:hover {
+      transform: scale(1.02);
+      box-shadow:
+        0 16px 40px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    }
+
+    .compare-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .photo-badge {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      min-width: 36px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .compare-footer {
+      display: none;
+    }
+
+    /* 底部进度栏 */
+    .bottombar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(214, 233, 255, 0.6);
+      z-index: 5;
+    }
+
+    .progress-container {
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: #e2e8f0;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4a90e2, #22c58d);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 8px rgba(74, 144, 226, 0.3);
+    }
+
+    .page-indicator {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ===== 动画 ===== */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ===== 提示框 ===== */
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 20px;
+      z-index: 3000;
+      min-width: 160px;
+      max-width: min(420px, calc(100vw - 32px));
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(214, 233, 255, 0.8);
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+      transform: translate(-50%, -140%);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      opacity: 0;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    /* ===== 放大预览 ===== */
+    .viewer-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 4000;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .viewer-overlay.show {
+      display: flex;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .viewer-modal {
+      width: min(92vw, 1280px);
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .viewer-modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+    }
+
+    .viewer-modal-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .viewer-modal-sub {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 4px;
+    }
+
+    .viewer-modal img {
+      max-width: 100%;
+      max-height: 82vh;
+      object-fit: contain;
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+      cursor: zoom-out;
+      background: #111827;
+      transition: transform 0.2s ease;
+      transform-origin: center center;
+    }
+
+    .viewer-modal .btn {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .viewer-modal .btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* ===== 加载状态 ===== */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 1024px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 100;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+      }
+
+      .sidebar.collapsed {
+        transform: translateX(-100%);
+      }
+
+      .compare-grid {
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .topbar {
+        padding: 12px 16px;
+      }
+
+      .page-title {
+        font-size: 16px;
+      }
+
+      .viewer {
+        padding: 16px;
+      }
+
+      .case-title {
+        font-size: 18px;
+      }
+
+      .compare-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .compare-image-wrap {
+        min-height: 200px;
+      }
+
+      .bottombar {
+        padding: 12px 16px;
+      }
+    }
+
+    /* ===== 滚动条 ===== */
+    .sidebar-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-list::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 2px;
+    }
+
+    .sidebar-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 左侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">
+          案例列表
+          <span class="sidebar-count" id="caseCount">0</span>
+        </div>
+        <button class="btn btn-icon" onclick="toggleSidebar()" title="隐藏列表 (L)">◀</button>
+      </div>
+      <div class="sidebar-list" id="sidebarList">
+        <div class="loading">正在加载案例...</div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <!-- 顶部导航 -->
+      <header class="topbar" id="topbar">
+        <div class="title-wrap">
+          <div class="title-text">
+            <div class="page-title">6S曝光台</div>
+            <div class="page-subtitle" id="pageSubtitle">加载中...</div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="btn" onclick="toggleSidebar()" title="显示/隐藏列表 (L)">
+            <span id="sidebarToggleIcon">◀</span> 列表
+          </button>
+          <button class="btn btn-primary" onclick="toggleFullscreen()" title="全屏模式 (F)">
+            <span id="fullscreenIcon">⛶</span> 全屏
+          </button>
+          <button class="btn" onclick="history.back()">返回</button>
+        </div>
+      </header>
+
+      <!-- 案例展示区 -->
+      <section class="viewer" id="viewer">
+        <div class="case-header">
+          <div class="case-title" id="caseTitle">请选择案例</div>
+        </div>
+
+        <div class="compare-grid" id="compareGrid">
+          <!-- 整改前 -->
+          <div class="compare-card">
+            <div class="compare-card-head">
+              <div class="compare-card-title">整改前</div>
+              <div class="compare-card-count" id="beforeCount">0 张</div>
+            </div>
+            <div class="compare-image-wrap" onclick="openZoom('before')">
+              <img class="compare-image" id="beforeImage" alt="整改前">
+              <div class="photo-badge" id="beforeMore" style="display:none"></div>
+              <div class="compare-empty" id="beforeEmpty">暂无整改前图片</div>
+            </div>
+            <div class="compare-footer" id="beforeFooter">-</div>
+          </div>
+
+          <!-- 整改后 -->
+          <div class="compare-card">
+            <div class="compare-card-head">
+              <div class="compare-card-title">整改后</div>
+              <div class="compare-card-count" id="afterCount">0 张</div>
+            </div>
+            <div class="compare-image-wrap" onclick="openZoom('after')">
+              <img class="compare-image" id="afterImage" alt="整改后">
+              <div class="photo-badge" id="afterMore" style="display:none"></div>
+              <div class="compare-empty" id="afterEmpty">暂无整改后图片</div>
+            </div>
+            <div class="compare-footer" id="afterFooter">-</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 底部进度栏 -->
+      <footer class="bottombar">
+        <div class="nav-buttons">
+          <button class="btn" onclick="selectCase(selectedIndex - 1)">◀ 上一条</button>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="page-indicator" id="pageIndicator">0 / 0</div>
+        <div class="nav-buttons">
+          <button class="btn" onclick="selectCase(selectedIndex + 1)">下一条 ▶</button>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- 提示框 -->
+  <div class="toast" id="toast"></div>
+
+  <!-- 放大预览 -->
+  <div class="viewer-overlay" id="viewerOverlay" onclick="closeZoom(event)">
+    <div class="viewer-modal" onclick="event.stopPropagation()">
+      <div class="viewer-modal-head">
+        <div>
+          <div class="viewer-modal-title" id="zoomTitle">图片预览</div>
+          <div class="viewer-modal-sub" id="zoomSub">点击外部关闭</div>
+        </div>
+        <button class="btn" onclick="closeZoom(event)">关闭</button>
+      </div>
+      <img id="zoomImage" alt="放大预览">
+    </div>
+  </div>
+
+  <script>
+    // ===== 全局状态 =====
+    const API = window.location.origin + "/api";
+    const token = localStorage.getItem("token") || localStorage.getItem("employee_token");
+    const params = new URLSearchParams(location.search);
+    const period = params.get("period") || "week";
+    const dateFrom = params.get("date_from") || "";
+    const dateTo = params.get("date_to") || "";
+    const requestedCaseIndex = Number.parseInt(params.get("case") || "0", 10);
+    let selectedIndex = Number.isFinite(requestedCaseIndex) && requestedCaseIndex >= 0 ? requestedCaseIndex : 0;
+    let report = null;
+    let cases = [];
+    let sidebarVisible = true;
+    let isFullscreen = false;
+    let scrollTimeout = null;
+    let zoomScale = 1;
+    let isDragging = false;
+    let hasDragged = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let translateX = 0;
+    let translateY = 0;
+
+    // 认证检查
+    if (!token) location.href = "admin/login.html";
+
+    // ===== 工具函数 =====
+    function auth() { return { "Authorization": "Bearer " + token } }
+
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+      }[s]));
+    }
+
+    function toast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2200);
+    }
+
+    function imgList(r, key) {
+      const field = key === "before" ? "before_list" : "after_list";
+      return Array.isArray(r?.[field]) ? r[field] : [];
+    }
+
+    function labelPeriod() {
+      return period === "week" ? "上周" : period === "year" ? "本年" : "本月";
+    }
+
+    function buildReportQuery() {
+      const p = new URLSearchParams();
+      if (period) p.set("period", period);
+      if (dateFrom) p.set("date_from", dateFrom);
+      if (dateTo) p.set("date_to", dateTo);
+      return p.toString();
+    }
+
+    // ===== 侧边栏控制 =====
+    function toggleSidebar() {
+      sidebarVisible = !sidebarVisible;
+      const sidebar = document.getElementById("sidebar");
+      const icon = document.getElementById("sidebarToggleIcon");
+
+      if (sidebarVisible) {
+        sidebar.classList.remove("collapsed");
+        icon.textContent = "◀";
+      } else {
+        sidebar.classList.add("collapsed");
+        icon.textContent = "▶";
+      }
+    }
+
+    // ===== 全屏控制 =====
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          isFullscreen = true;
+          setFullscreenUI(true);
+        }).catch(err => {
+          toast("无法进入全屏模式");
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          isFullscreen = false;
+          setFullscreenUI(false);
+        });
+      }
+    }
+
+    function setFullscreenUI(fullscreen) {
+      const topbar = document.getElementById("topbar");
+      const bottombar = document.querySelector(".bottombar");
+      const sidebar = document.getElementById("sidebar");
+
+      if (fullscreen) {
+        topbar.style.display = "none";
+        bottombar.style.display = "none";
+        sidebar.style.display = "none";
+      } else {
+        topbar.style.display = "";
+        bottombar.style.display = "";
+        sidebar.style.display = "";
+      }
+    }
+
+    // 监听全屏变化
+    document.addEventListener("fullscreenchange", () => {
+      isFullscreen = !!document.fullscreenElement;
+      setFullscreenUI(isFullscreen);
+    });
+
+    // ===== 数据加载 =====
+    async function loadReport() {
+      const res = await fetch(API + "/6s/report?" + buildReportQuery(), { headers: auth() });
+      const data = await res.json();
+      if (data.code !== 0) {
+        toast(data.msg || "加载失败");
+        return;
+      }
+      report = data.data;
+      cases = report.cases || [];
+      if (cases.length) selectedIndex = Math.min(selectedIndex, cases.length - 1);
+      else selectedIndex = 0;
+      renderAll();
+    }
+
+    // ===== 渲染函数 =====
+    function renderAll() {
+      document.getElementById("pageSubtitle").textContent =
+        `${labelPeriod()} · ${dateFrom || report?.range?.from || ""} 至 ${dateTo || report?.range?.to || ""}`;
+      document.getElementById("caseCount").textContent = cases.length;
+      renderSidebar();
+      renderSelectedCase();
+      updateProgress();
+    }
+
+    function renderSidebar() {
+      const el = document.getElementById("sidebarList");
+      if (!cases.length) {
+        el.innerHTML = '<div class="loading">暂无案例</div>';
+        return;
+      }
+
+      el.innerHTML = cases.map((r, index) => {
+        const before = imgList(r, "before");
+        const after = imgList(r, "after");
+        const active = index === selectedIndex ? " active" : "";
+
+        return `
+          <div class="sidebar-item${active}" onclick="selectCase(${index})">
+            <div class="sidebar-thumb">
+              <div class="sidebar-thumb-grid">
+                <div class="sidebar-thumb-item">
+                  <img src="${esc(before[0] || after[0] || "")}" alt="整改前">
+                  <div class="sidebar-thumb-label">前</div>
+                </div>
+                <div class="sidebar-thumb-item">
+                  <img src="${esc(after[0] || before[0] || "")}" alt="整改后">
+                  <div class="sidebar-thumb-label">后</div>
+                </div>
+              </div>
+              <div class="sidebar-page-badge">${index + 1}</div>
+            </div>
+            <div class="sidebar-caption">${esc(r.project_code || "-")}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderSelectedCase() {
+      const current = cases[selectedIndex];
+      if (!current) {
+        document.getElementById("caseTitle").textContent = "暂无案例";
+        setCompareState("before", null);
+        setCompareState("after", null);
+        return;
+      }
+
+      const before = imgList(current, "before");
+      const after = imgList(current, "after");
+      const responsible = current.person_charge || current.assigned_name || "-";
+
+      document.getElementById("caseTitle").textContent =
+        `${current.project_code || "-"} · ${current.area || "-"} · ${responsible}`;
+
+      setCompareState("before", before);
+      setCompareState("after", after);
+    }
+
+    function setCompareState(kind, list) {
+      const imageEl = document.getElementById(kind + "Image");
+      const emptyEl = document.getElementById(kind + "Empty");
+      const countEl = document.getElementById(kind + "Count");
+      const moreEl = document.getElementById(kind + "More");
+      const footerEl = document.getElementById(kind + "Footer");
+      const first = list && list[0] ? list[0] : "";
+      const extra = Math.max(0, (list?.length || 0) - 1);
+
+      countEl.textContent = `${list?.length || 0} 张`;
+      footerEl.textContent = `共 ${list?.length || 0} 张照片`;
+
+      if (first) {
+        imageEl.src = first;
+        imageEl.style.display = "block";
+        emptyEl.style.display = "none";
+        moreEl.style.display = extra > 0 ? "flex" : "none";
+        moreEl.textContent = extra > 0 ? `+${extra}` : "";
+      } else {
+        imageEl.removeAttribute("src");
+        imageEl.style.display = "none";
+        emptyEl.style.display = "flex";
+        moreEl.style.display = "none";
+      }
+    }
+
+    function updateProgress() {
+      const total = cases.length;
+      const current = selectedIndex + 1;
+      const percent = total > 0 ? (current / total) * 100 : 0;
+
+      document.getElementById("progressFill").style.width = `${percent}%`;
+      document.getElementById("pageIndicator").textContent = `${current} / ${total}`;
+    }
+
+    // ===== 案例切换 =====
+    function selectCase(index) {
+      if (!cases.length) return;
+      const nextIndex = Math.max(0, Math.min(index, cases.length - 1));
+      if (nextIndex === selectedIndex) return;
+
+      selectedIndex = nextIndex;
+      renderSidebar();
+      renderSelectedCase();
+      updateProgress();
+
+      // 滚动侧边栏到可见位置
+      const activeItem = document.querySelector(".sidebar-item.active");
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+
+      // 添加切换动画
+      const viewer = document.getElementById("viewer");
+      viewer.style.animation = "none";
+      viewer.offsetHeight; // 触发重绘
+      viewer.style.animation = "fadeInUp 0.3s ease";
+    }
+
+    // ===== 放大预览 =====
+    function openZoom(kind) {
+      const current = cases[selectedIndex];
+      if (!current) return;
+
+      const list = imgList(current, kind);
+      const src = list[0];
+      if (!src) {
+        toast("暂无图片");
+        return;
+      }
+
+      zoomScale = 1;
+      translateX = 0;
+      translateY = 0;
+      const zoomImg = document.getElementById("zoomImage");
+      zoomImg.src = src;
+      zoomImg.style.transform = `translate(0px, 0px) scale(1)`;
+      document.getElementById("zoomTitle").textContent = `${kind === "before" ? "整改前" : "整改后"}预览`;
+      document.getElementById("zoomSub").textContent =
+        `${current.project_code || "-"} · ${current.area || "-"} · 滚轮缩放 · 拖拽移动 · 点击外部关闭`;
+      document.getElementById("viewerOverlay").classList.add("show");
+    }
+
+    function closeZoom(event) {
+      if (event) event.stopPropagation();
+      document.getElementById("viewerOverlay").classList.remove("show");
+      document.getElementById("zoomImage").removeAttribute("src");
+      zoomScale = 1;
+      translateX = 0;
+      translateY = 0;
+    }
+
+    // 预览图片滚轮缩放
+    document.getElementById("viewerOverlay").addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const zoomImg = document.getElementById("zoomImage");
+
+      if (e.deltaY < 0) {
+        zoomScale = Math.min(zoomScale + 0.15, 3);
+      } else {
+        zoomScale = Math.max(zoomScale - 0.15, 0.5);
+      }
+
+      zoomImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomScale})`;
+    }, { passive: false });
+
+    // 预览图片拖拽移动
+    const zoomImgEl = document.getElementById("zoomImage");
+    let initX = 0, initY = 0;
+
+    zoomImgEl.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      isDragging = true;
+      hasDragged = false;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      initX = translateX;
+      initY = translateY;
+      zoomImgEl.style.cursor = "grabbing";
+      zoomImgEl.style.transition = "none";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasDragged = true;
+      }
+      translateX = initX + dx;
+      translateY = initY + dy;
+      zoomImgEl.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomScale})`;
+      e.preventDefault();
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (isDragging) {
+        isDragging = false;
+        zoomImgEl.style.cursor = "zoom-out";
+        zoomImgEl.style.transition = "";
+      }
+    });
+
+    // 点击图片关闭 - 区分拖拽和点击
+    zoomImgEl.addEventListener("click", (e) => {
+      if (hasDragged) {
+        e.stopPropagation();
+        hasDragged = false;
+        return;
+      }
+      closeZoom(e);
+    });
+
+    // ===== 键盘快捷键 =====
+    document.addEventListener("keydown", (e) => {
+      // 忽略输入框内的按键
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+      switch (e.key) {
+        case "Escape":
+          if (isFullscreen) {
+            document.exitFullscreen();
+          } else {
+            closeZoom();
+          }
+          break;
+        case "F5":
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case "ArrowUp":
+        case "ArrowLeft":
+          e.preventDefault();
+          selectCase(selectedIndex - 1);
+          break;
+        case "ArrowDown":
+        case "ArrowRight":
+          e.preventDefault();
+          selectCase(selectedIndex + 1);
+          break;
+        case "f":
+        case "F":
+          toggleFullscreen();
+          break;
+        case "l":
+        case "L":
+          if (!isFullscreen) toggleSidebar();
+          break;
+      }
+    });
+
+    // ===== 鼠标滚轮切换 =====
+    document.getElementById("viewer").addEventListener("wheel", (e) => {
+      e.preventDefault();
+
+      if (scrollTimeout) return;
+
+      scrollTimeout = setTimeout(() => {
+        scrollTimeout = null;
+      }, 300);
+
+      if (e.deltaY > 0) {
+        selectCase(selectedIndex + 1);
+      } else if (e.deltaY < 0) {
+        selectCase(selectedIndex - 1);
+      }
+    }, { passive: false });
+
+    // ===== 初始化 =====
+    loadReport();
+  </script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>投票结果 - 兴利汽车模具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --ios-bg: #f2f2f7;
+            --ios-card: rgba(255,255,255,0.9);
+            --ios-blue: #007aff;
+            --ios-gray: #8e8e93;
+            --ios-radius: 16px;
+            --ios-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+            --transition: 0.3s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+            background: var(--ios-bg);
+            color: #1c1c1e;
+            padding-bottom: 80px;
+            padding-top: 20px;
+        }
+
+
+
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 680px;
+                padding: 0 24px;
+            }
+            .ios-card {
+                padding: 24px 28px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+
+        .ios-card {
+            background: var(--ios-card);
+            border-radius: var(--ios-radius);
+            padding: 20px 24px;
+            margin-bottom: 12px;
+            box-shadow: var(--ios-shadow);
+        }
+
+        .ios-card h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .total-votes {
+            text-align: center;
+            padding: 20px 0;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            margin-top: 16px;
+        }
+
+        .total-votes .number {
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--ios-blue);
+        }
+
+        .total-votes .label {
+            font-size: 13px;
+            color: var(--ios-gray);
+            margin-top: 4px;
+        }
+
+        .option-item {
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+
+        .option-item:last-child {
+            border-bottom: none;
+        }
+
+        .option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .option-text {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .option-votes {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ios-blue);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(0,122,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--ios-blue);
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+
+        .refresh-hint {
+            text-align: center;
+            font-size: 12px;
+            color: var(--ios-gray);
+            margin-top: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--ios-gray);
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--ios-blue);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--ios-gray);
+        }
+        .error-icon { font-size: 40px; margin-bottom: 12px; }
+
+        .toast {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: var(--ios-blue);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading" class="loading" style="display: none;">加载中...</div>
+        <div id="errorBox" class="error-state" style="display: none;">
+            <div class="error-icon">⚠️</div>
+            <div id="errorMessage">加载失败</div>
+        </div>
+
+        <div id="resultContent" style="display: none;">
+            <div class="ios-card">
+                <h3 id="votingTitle"></h3>
+                <div id="optionsList"></div>
+                <div class="total-votes">
+                    <div class="number" id="totalVotes">0</div>
+                    <div class="label">总投票人数</div>
+                </div>
+            </div>
+
+            <div class="refresh-hint">每3秒自动刷新</div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let token = new URLSearchParams(window.location.search).get('token');
+        let pollInterval = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token) {
+                showError('无效的投票链接');
+                return;
+            }
+            loadResults();
+            startPolling();
+        });
+
+        function startPolling() {
+            pollInterval = setInterval(loadResults, 3000);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        window.addEventListener('beforeunload', stopPolling);
+
+        function loadResults() {
+            fetch(`${API_URL}/voting/anonymous/${token}/results`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                if (data.code === 0) {
+                    renderResults(data.data);
+                } else {
+                    showError(data.msg || '加载失败');
+                }
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                showError('加载失败，请检查网络');
+            });
+        }
+
+        function renderResults(data) {
+            document.getElementById('resultContent').style.display = 'block';
+            document.getElementById('votingTitle').textContent = data.title;
+            document.getElementById('totalVotes').textContent = data.totalVotes;
+
+            const list = document.getElementById('optionsList');
+            list.innerHTML = (data.options || []).map(opt => `
+                <div class="option-item">
+                    <div class="option-header">
+                        <span class="option-text">${opt.text}</span>
+                        <span class="option-votes">${opt.votes} 票 (${opt.percentage}%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${opt.percentage}%;"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function goBack() {
+            stopPolling();
+            window.location.href = `mobile-voting.html?token=${token}`;
+        }
+
+        function showError(msg) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorMessage').textContent = msg;
+            document.getElementById('errorBox').style.display = 'block';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+    </script>
+</body>
+</html>

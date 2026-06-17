@@ -1,0 +1,2675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>6S曝光台 - 兴利汽车模具</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0 }
+
+    body {
+      min-height: 100vh;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(74,144,226,.06), transparent 35%),
+        radial-gradient(circle at 85% 90%, rgba(34,197,94,.05), transparent 35%),
+        linear-gradient(180deg, #fafbfc 0%, #f5f7fa 50%, #f0f2f5 100%);
+      overflow: hidden;
+    }
+
+    /* ===== 布局系统 ===== */
+    .app {
+      display: flex;
+      height: 100vh;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ===== 左侧边栏 ===== */
+    .sidebar {
+      width: 360px;
+      background: #f5f5f5;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 10;
+    }
+
+    .sidebar.collapsed {
+      width: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      height: 84px;
+      padding: 0 12px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-count {
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      background: #e8e8e8;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 10px 10px 34px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .sidebar-item {
+      height: auto;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: visible;
+    }
+
+    .sidebar-card {
+      height: auto;
+      aspect-ratio: 1200 / 620;
+      background: #fff;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .sidebar-item:hover .sidebar-card {
+      border-color: #c0d8f7;
+      background: #fafafa;
+    }
+
+    .sidebar-item.active .sidebar-card {
+      border-color: #4a90e2;
+      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
+    }
+
+    .case-render {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .case-render--mini {
+      position: relative;
+      overflow: hidden;
+      background: #eef3fb;
+    }
+
+    .case-render-stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1200px;
+      height: 620px;
+      transform: scale(0.24);
+      transform-origin: top left;
+      pointer-events: none;
+    }
+
+    .case-render-stage .slide-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .sidebar-thumb-label {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 2px 8px 2px 5px;
+      clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+      font-size: 7px;
+      font-weight: 700;
+      color: #fff;
+      background: #f06e00;
+    }
+
+    .sidebar-mini-card:nth-child(2) .sidebar-thumb-label {
+      background: #169d99;
+    }
+
+    .sidebar-thumb-empty {
+      display: flex;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      color: #9aa8b8;
+      font-size: 8px;
+    }
+
+    .sidebar-page-badge {
+      position: absolute;
+      top: 8px;
+      left: -22px;
+      min-width: 12px;
+      color: #c53b2f;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1;
+      font-family: "SimHei", "Microsoft YaHei", sans-serif;
+      z-index: 3;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .sidebar-item.active .sidebar-page-badge {
+      color: #a92a20;
+    }
+
+    .sidebar-caption { display: none; }
+
+    .sidebar-status, .status-dot {
+      display: none;
+    }
+
+    /* ===== 主内容区 ===== */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      position: relative;
+    }
+
+    /* 顶部导航栏 */
+    .topbar {
+      display: flex;
+      height: 84px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 255, 0.94));
+      border-bottom: 1px solid #d9e6fa;
+      z-index: 5;
+      transition: all 0.3s ease;
+    }
+
+    .topbar.hidden {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+
+    .topbar.fullscreen {
+      height: auto;
+      padding-top: 48px;
+      padding-bottom: 14px;
+      padding-left: 68px;
+    }
+
+    .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #4a90e2, #22c58d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      box-shadow: 0 8px 20px rgba(74, 144, 226, 0.25);
+    }
+
+    .title-text {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .page-title {
+      display: flex;
+      align-items: baseline;
+      color: #0f2f86;
+      line-height: 1;
+    }
+
+    .page-title-main {
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: -.03em;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: #4f6699;
+      font-weight: 600;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1e293b;
+      border: 1px solid rgba(214, 233, 255, 0.8);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: #fff;
+      box-shadow: 0 4px 16px rgba(74, 144, 226, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4a90e2, #22c58d);
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 16px rgba(74, 144, 226, 0.25);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 8px 24px rgba(74, 144, 226, 0.35);
+    }
+
+    .btn-icon {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    /* 案例展示区 */
+    .viewer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      overflow: hidden;
+      justify-content: center;
+    }
+
+    .viewer.fullscreen {
+      padding: 40px 60px;
+    }
+
+    .case-header {
+      text-align: center;
+      margin-bottom: 24px;
+      margin-top: 0;
+    }
+
+    .viewer.fullscreen .case-header {
+      margin-top: 80px;
+      margin-bottom: 80px;
+    }
+
+    .viewer.fullscreen .compare-grid {
+      margin-bottom: 60px;
+    }
+
+    .case-title {
+      font-size: 34px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .case-subtitle {
+      font-size: 14px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .case-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    /* 对比网格 */
+    .compare-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      min-height: 0;
+    }
+
+    .compare-card {
+      display: flex;
+      flex-direction: column;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(214, 233, 255, 0.6);
+      border-radius: 20px;
+      box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.04),
+        0 16px 48px rgba(74, 144, 226, 0.06);
+      overflow: hidden;
+    }
+
+    .compare-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(214, 233, 255, 0.6);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 251, 255, 0.8));
+    }
+
+    .compare-card-title {
+      font-size: 30px;
+      font-weight: 700;
+      color: #1e293b;
+      text-indent: 0.5em;
+    }
+
+
+
+    .compare-card-count {
+      display: none;
+      font-size: 24px;
+      font-weight: 600;
+      color: #4a90e2;
+      background: rgba(74, 144, 226, 0.1);
+      padding: 3px 10px;
+      border-radius: 6px;
+    }
+
+    .compare-image-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: #f8fafc;
+      min-height: 0;
+      cursor: zoom-in;
+      position: relative;
+    }
+
+    .compare-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.4s ease;
+    }
+
+    .compare-image:hover {
+      transform: scale(1.02);
+      box-shadow:
+        0 16px 40px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    }
+
+    .compare-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .photo-badge {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      min-width: 36px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .compare-footer {
+      display: none;
+    }
+
+    /* 底部进度栏 */
+    .bottombar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(214, 233, 255, 0.6);
+      z-index: 5;
+    }
+
+    .progress-container {
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: #e2e8f0;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4a90e2, #22c58d);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 8px rgba(74, 144, 226, 0.3);
+    }
+
+    .page-indicator {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ===== 动画 ===== */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ===== 提示框 ===== */
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 20px;
+      z-index: 3000;
+      min-width: 160px;
+      max-width: min(420px, calc(100vw - 32px));
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(214, 233, 255, 0.8);
+      color: #1e293b;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+      transform: translate(-50%, -140%);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      opacity: 0;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    /* ===== 放大预览 ===== */
+    .viewer-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 4000;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .viewer-overlay.show {
+      display: flex;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .viewer-modal {
+      position: relative;
+      width: min(94vw, 1480px);
+      height: 94vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .viewer-modal img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
+      cursor: grab;
+      background: #111827;
+      transform-origin: center center;
+    }
+
+    .viewer-nav {
+      position: absolute;
+      top: 50%;
+      z-index: 2;
+      width: 54px;
+      height: 54px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 50%;
+      color: #fff;
+      background: rgba(15, 23, 42, 0.62);
+      cursor: pointer;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1;
+      transform: translateY(-50%);
+    }
+
+    .viewer-nav:hover {
+      background: rgba(30, 64, 175, 0.82);
+    }
+
+    .viewer-nav.prev { left: 18px }
+    .viewer-nav.next { right: 18px }
+    .viewer-nav:disabled {
+      opacity: .28;
+      cursor: default;
+    }
+
+    .viewer-photo-status {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(15, 23, 42, 0.68);
+      font-size: 14px;
+      font-weight: 700;
+      transform: translateX(-50%);
+    }
+
+    .viewer-photo-last {
+      color: #facc15;
+    }
+
+    @media (max-width: 768px) {
+      .viewer-nav {
+        width: 44px;
+        height: 44px;
+        font-size: 24px;
+      }
+      .viewer-nav.prev { left: 8px }
+      .viewer-nav.next { right: 8px }
+    }
+
+    /* ===== 加载状态 ===== */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 1024px) {
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 100;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+      }
+
+      .sidebar.collapsed {
+        transform: translateX(-100%);
+      }
+
+      .compare-grid {
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .topbar {
+        padding: 12px 16px;
+      }
+
+      .page-title-main { font-size: 22px }
+
+      .viewer {
+        padding: 16px;
+      }
+
+      .case-title {
+        font-size: 18px;
+      }
+
+      .compare-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .compare-image-wrap {
+        min-height: 200px;
+      }
+
+      .bottombar {
+        padding: 12px 16px;
+      }
+    }
+
+    /* ===== 滚动条 ===== */
+    .sidebar-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-list::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 2px;
+    }
+
+    .sidebar-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+
+    /* ===== PPT 风格案例画布 ===== */
+    .viewer {
+      padding: 22px 28px;
+      background: #eaf0f6;
+    }
+
+    .slide-canvas {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+      padding: 24px 28px 16px;
+      border-top: 5px solid #397dbe;
+      background:
+        linear-gradient(135deg, transparent 0 82%, rgba(223, 233, 243, .7) 82% 100%),
+        #fbfcfd;
+      box-shadow: 0 14px 38px rgba(64, 88, 116, .15);
+    }
+
+    .slide-canvas::after {
+      position: absolute;
+      top: -92px;
+      right: -92px;
+      width: 210px;
+      height: 210px;
+      border: 1px solid rgba(57, 125, 190, .12);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .slide-eyebrow {
+      margin-bottom: 5px;
+      color: #397dbe;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .18em;
+    }
+
+    .slide-title {
+      color: #16385e;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: .05em;
+    }
+
+    .slide-brand {
+      padding-top: 5px;
+      color: #7790aa;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      white-space: nowrap;
+    }
+
+    .slide-canvas .case-header {
+      margin: 0 0 14px;
+      padding: 8px 12px;
+      border-left: 3px solid #69a8df;
+      background: #f0f6fb;
+      text-align: left;
+    }
+
+    .slide-canvas .case-title {
+      margin: 0;
+      color: #284d73;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .slide-canvas .case-subtitle {
+      justify-content: flex-start;
+      margin-top: 0 !important;
+    }
+
+    .slide-canvas .compare-grid { gap: 18px }
+
+    .slide-canvas .compare-card {
+      border: 1px solid #dce7f1;
+      border-radius: 4px;
+      background: #fff;
+      box-shadow: none;
+    }
+
+    .slide-canvas .compare-card-head {
+      min-height: 44px;
+      padding: 9px 12px;
+      border-bottom: 1px solid #e5edf4;
+      background: #fff;
+    }
+
+    .slide-canvas .compare-card-title {
+      display: flex;
+      align-items: baseline;
+      color: #284d73;
+      font-size: 17px;
+      font-weight: 800;
+      text-indent: 0;
+    }
+
+    .slide-canvas .compare-card-title::before {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: #e59a55;
+      content: "";
+    }
+
+    .slide-canvas .compare-item:nth-child(2) .compare-card-title::before {
+      background: #27ad8a;
+    }
+
+    .slide-canvas .compare-card-title span {
+      overflow: hidden;
+      color: #71859a !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .slide-canvas .compare-image-wrap {
+      padding: 10px;
+      background: #f7f9fb;
+    }
+
+    .slide-canvas .compare-image {
+      border-radius: 2px;
+      box-shadow: 0 5px 16px rgba(44, 72, 102, .1);
+    }
+
+    .slide-canvas .photo-badge {
+      top: 18px;
+      right: 18px;
+      border-radius: 999px;
+    }
+
+    .slide-footer {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 30px;
+      padding-top: 12px;
+      color: #7790aa;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .slide-footer-line {
+      flex: 1;
+      height: 2px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e3ebf3;
+    }
+
+    .slide-footer-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: #397dbe;
+      transition: width .3s ease;
+    }
+
+    .slide-footer-page {
+      min-width: 48px;
+      color: #446c94;
+      text-align: right;
+      letter-spacing: .08em;
+    }
+
+    .viewer.fullscreen {
+      padding: 3.5vh 4vw;
+      background: #dfe7ef;
+    }
+
+    .viewer.fullscreen .slide-canvas { padding: 3vh 3vw 2vh }
+    .viewer.fullscreen .case-header { margin-top: 0; margin-bottom: 2vh }
+    .viewer.fullscreen .compare-grid { margin-bottom: 0 }
+
+    @media (max-width: 768px) {
+      .viewer { padding: 10px }
+      .slide-canvas { padding: 16px 14px 10px }
+      .slide-title { font-size: 21px }
+      .slide-brand { display: none }
+      .slide-canvas .case-header { margin-bottom: 10px; padding: 7px 9px }
+      .slide-canvas .case-title { font-size: 13px }
+      .slide-canvas .compare-card-title { font-size: 15px }
+      .slide-canvas .compare-card-title span { font-size: 12px !important }
+      .slide-footer { padding-top: 8px }
+    }
+
+    /* ===== 示例图一致版 ===== */
+    .viewer {
+      padding: 16px;
+      background: #e9edf2;
+    }
+
+    .slide-canvas {
+      padding: 26px 28px 18px;
+      border: 1px solid #ccd2da;
+      border-top: 1px solid #ccd2da;
+      background:
+        repeating-linear-gradient(156deg, transparent 0 9px, rgba(77, 143, 215, .13) 9px 10px) right bottom / 260px 125px no-repeat,
+        linear-gradient(135deg, #fff 0%, #fff 76%, #f8fbff 100%);
+      box-shadow: 0 5px 18px rgba(60, 72, 86, .14);
+    }
+
+    .slide-canvas::after {
+      top: auto;
+      right: -100px;
+      bottom: -158px;
+      width: 360px;
+      height: 270px;
+      border-color: rgba(77, 143, 215, .2);
+    }
+
+    .slide-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .slide-mark {
+      display: flex;
+      gap: 6px;
+      width: 47px;
+      height: 58px;
+      transform: skew(-20deg);
+    }
+
+    .slide-mark::before,
+    .slide-mark::after {
+      display: block;
+      height: 100%;
+      background: #073678;
+      content: "";
+    }
+
+    .slide-mark::before { width: 28px }
+    .slide-mark::after { width: 10px }
+
+    .slide-title {
+      color: #073678;
+      font-size: clamp(31px, 3vw, 49px);
+      font-weight: 900;
+      letter-spacing: .04em;
+      line-height: 1;
+    }
+
+    .slide-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 0;
+      color: #073678;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+
+    .brand-mark {
+      width: 31px;
+      height: 31px;
+      border: 7px solid #073678;
+      border-radius: 8px;
+      transform: rotate(30deg);
+    }
+
+    .slide-canvas .case-header {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      min-height: 48px;
+      margin: 0 0 12px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .case-number {
+      min-width: 138px;
+      padding: 10px 24px 10px 20px;
+      clip-path: polygon(0 0, 100% 0, 93% 100%, 0 100%);
+      color: #fff;
+      background: #073678;
+      font-size: 20px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .slide-canvas .case-title {
+      color: #073678;
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+
+    .slide-canvas .case-subtitle { display: none }
+
+    .slide-canvas .compare-grid {
+      gap: 18px;
+    }
+
+    .slide-canvas .compare-card {
+      position: relative;
+      border: 0;
+      border-radius: 0;
+      background: #eef2f5;
+    }
+
+    .slide-canvas .compare-card-head {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+      min-width: 144px;
+      min-height: 0;
+      padding: 9px 28px 9px 18px;
+      border: 0;
+      clip-path: polygon(0 0, 100% 0, 88% 100%, 0 100%);
+      background: #ff671d;
+    }
+
+    .slide-canvas .compare-item:nth-child(2) .compare-card-head {
+      background: #11a55c;
+    }
+
+    .slide-canvas .compare-card-title {
+      color: #fff;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .slide-canvas .compare-card-title::before,
+    .slide-canvas .compare-card-title span,
+    .slide-canvas .compare-card-count {
+      display: none;
+    }
+
+    .slide-canvas .compare-image-wrap {
+      padding: 0;
+      background: #eef2f5;
+    }
+
+    .slide-canvas .compare-image {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      box-shadow: none;
+      object-fit: cover;
+    }
+
+    .slide-footer {
+      min-height: 62px;
+      margin-top: 14px;
+      padding: 0 20px;
+      border: 1px solid #a8bfdd;
+      color: #073678;
+      background: rgba(255, 255, 255, .76);
+      font-size: 16px;
+    }
+
+    .slide-footer-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-right: 36px;
+      white-space: nowrap;
+    }
+
+    .slide-footer-item + .slide-footer-item {
+      padding-left: 36px;
+      border-left: 1px solid #d8e0e9;
+    }
+
+    .footer-icon {
+      display: flex;
+      width: 38px;
+      height: 38px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      color: #fff;
+      background: #073678;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .footer-icon.user::before {
+      width: 11px;
+      height: 11px;
+      margin-bottom: 10px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 11px 0 4px #fff;
+      content: "";
+    }
+
+    .footer-icon.status { background: #11a55c }
+    .slide-footer-page {
+      position: absolute;
+      right: 30px;
+      bottom: 22px;
+      z-index: 1;
+      min-width: 72px;
+      color: #073678;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .viewer.fullscreen {
+      padding: 0;
+      background: #fff;
+    }
+
+    .viewer.fullscreen .slide-canvas {
+      padding: 3vh 3vw 2.4vh;
+      border: 0;
+      box-shadow: none;
+    }
+
+    @media (max-width: 980px) {
+      .slide-canvas { padding: 18px 20px 14px }
+      .slide-title { font-size: 29px }
+      .slide-mark { width: 36px; height: 46px }
+      .slide-brand { font-size: 15px }
+      .case-number { min-width: 112px; padding: 8px 18px; font-size: 16px }
+      .slide-canvas .case-title { font-size: 17px }
+      .slide-canvas .compare-card-title { font-size: 17px }
+      .slide-footer { min-height: 50px; font-size: 14px }
+      .footer-icon { width: 30px; height: 30px; font-size: 16px }
+    }
+
+    @media (max-width: 768px) {
+      .slide-title { font-size: 23px }
+      .slide-mark { width: 29px; height: 37px; gap: 4px }
+      .slide-canvas .case-header { gap: 10px; min-height: 38px }
+      .case-number { min-width: 86px; padding: 7px 13px; font-size: 13px }
+      .slide-canvas .case-title { font-size: 13px }
+      .slide-canvas .compare-card-head { min-width: 100px; padding: 7px 18px 7px 12px }
+      .slide-canvas .compare-card-title { font-size: 14px }
+      .slide-footer { display: none }
+      .slide-footer-page { right: 18px; bottom: 12px; font-size: 14px }
+    }
+
+    /* ===== 白底展示版 ===== */
+    .viewer {
+      padding: 0;
+      background:
+        linear-gradient(135deg, rgba(35, 92, 196, 0.06), transparent 22%),
+        linear-gradient(315deg, rgba(35, 92, 196, 0.05), transparent 24%),
+        #f8fbff;
+    }
+
+    #viewerContent {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      padding: 0 18px;
+    }
+
+    #viewerContent > .slide-canvas {
+      flex: 1;
+    }
+
+    .slide-canvas {
+      padding: 24px 32px 18px;
+      background:
+        linear-gradient(140deg, rgba(255,255,255,0.98) 0%, rgba(245,248,255,0.98) 68%, rgba(235,241,252,0.98) 100%),
+        linear-gradient(135deg, rgba(40, 91, 182, 0.05) 0%, transparent 34%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+
+    .slide-canvas::after { display: none }
+
+    .slide-canvas .case-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 72px;
+      margin: 4px 26px 20px;
+    }
+
+    .case-meta {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .case-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px 44px;
+      align-items: center;
+    }
+
+    .case-meta-row--primary {
+      display: grid;
+      grid-template-columns: 260px 220px minmax(220px, 1fr);
+      gap: 0 44px;
+    }
+
+    .meta-item {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 12px;
+      color: #1b3f97;
+      font-size: 23px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .meta-item::before {
+      width: 12px;
+      height: 12px;
+      background: #2557cf;
+      content: "";
+    }
+
+    .meta-label { flex: 0 0 auto; font-weight: 800 }
+    .meta-value {
+      overflow: hidden;
+      color: #4060a7;
+      font-weight: 600;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+      min-width: 218px;
+      padding: 14px 26px;
+      border: 1px solid #b8cbea;
+      border-radius: 22px;
+      color: #178e8d;
+      background: rgba(241, 247, 255, 0.9);
+      box-shadow: 0 8px 30px rgba(31, 87, 200, 0.06);
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .status-pill-icon {
+      display: inline-flex;
+      flex: 0 0 38px;
+      width: 38px;
+      height: 38px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      color: #fff;
+      background: #1a9b96;
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .status-pill.pending,
+    .status-pill.submitted {
+      color: #b87715;
+    }
+
+    .status-pill.pending .status-pill-icon,
+    .status-pill.submitted .status-pill-icon {
+      background: #e39b2d;
+    }
+
+    .status-pill.rejected {
+      color: #c44747;
+    }
+
+    .status-pill.rejected .status-pill-icon {
+      background: #d45252;
+    }
+
+    .slide-canvas .compare-grid { gap: 20px }
+    .slide-canvas .compare-item {
+      display: flex;
+      min-height: 0;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slide-canvas .compare-card {
+      overflow: hidden;
+      border: 1px solid #c8d4e4;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .slide-canvas .compare-card-head {
+      min-width: 150px;
+      padding: 12px 28px 12px 18px;
+      background: #f06e00;
+    }
+
+    .slide-canvas .compare-item:nth-child(2) .compare-card-head {
+      background: #169d99;
+    }
+
+    .slide-canvas .compare-card-head.compare-card-head--after.pending,
+    .slide-canvas .compare-card-head.compare-card-head--after.submitted {
+      background: #e39b2d;
+    }
+
+    .slide-canvas .compare-card-head.compare-card-head--after.approved {
+      background: #169d99;
+    }
+
+    .slide-canvas .compare-card-head.compare-card-head--after.rejected {
+      background: #d45252;
+    }
+
+    .slide-canvas .compare-card-title { font-size: 22px }
+    .slide-canvas .compare-image-wrap {
+      background: #fff;
+      aspect-ratio: 1.28 / 1;
+    }
+    .slide-canvas .compare-image { object-fit: cover }
+    .slide-canvas .compare-empty { min-height: 100%; background: #f7f9fc }
+    .slide-canvas .compare-shot-time {
+      width: 100%;
+      margin-top: 8px;
+      color: #4f6699;
+      font-size: 23px;
+      font-weight: 700;
+      line-height: 1.2;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    @media (min-width: 769px) {
+      .viewer:not(.fullscreen) #viewerContent > .slide-canvas .case-header {
+        padding-top: 16px;
+      }
+
+      .viewer:not(.fullscreen) #viewerContent > .slide-canvas .case-meta {
+        gap: 22px;
+      }
+
+      .viewer:not(.fullscreen) #viewerContent > .slide-canvas .compare-grid {
+        flex: 0 1 64vh;
+        height: 64vh;
+        min-height: 0;
+        margin-top: 28px;
+        margin-bottom: auto;
+      }
+
+      .viewer:not(.fullscreen) #viewerContent > .slide-canvas .compare-item .compare-card {
+        height: 100%;
+      }
+
+      .viewer:not(.fullscreen) #viewerContent > .slide-canvas .compare-image-wrap {
+        min-height: 0;
+        aspect-ratio: auto;
+      }
+
+    }
+
+    .viewer.fullscreen {
+      background:
+        linear-gradient(135deg, rgba(35, 92, 196, 0.06), transparent 22%),
+        linear-gradient(315deg, rgba(35, 92, 196, 0.05), transparent 24%),
+        #f8fbff;
+    }
+    .viewer.fullscreen #viewerContent > .slide-canvas {
+      padding: 3vh 3vw 2vh;
+    }
+    .viewer.fullscreen .slide-canvas .case-header {
+      gap: 23px;
+      min-height: 90px;
+      padding-top: 4vh;
+      padding-bottom: 6vh;
+      margin: 5px 33px 0;
+    }
+    .viewer.fullscreen .case-meta { gap: 50px }
+    .viewer.fullscreen .case-meta-row { gap: 23px 55px }
+    .viewer.fullscreen .case-meta-row--primary {
+      grid-template-columns: 390px 300px minmax(280px, 1fr);
+      gap: 0 36px;
+    }
+    .viewer.fullscreen .meta-item {
+      gap: 15px;
+      font-size: 30px;
+    }
+    .viewer.fullscreen .meta-item--project,
+    .viewer.fullscreen .meta-item--description {
+      font-size: 30px;
+    }
+    .viewer.fullscreen .meta-item--project .meta-value {
+      overflow: visible;
+      text-overflow: clip;
+    }
+    .viewer.fullscreen .meta-item::before {
+      width: 15px;
+      height: 15px;
+    }
+    .viewer.fullscreen .status-pill {
+      gap: 20px;
+      min-width: 273px;
+      padding: 18px 33px;
+      border-radius: 28px;
+      font-size: 23px;
+    }
+    .viewer.fullscreen .status-pill-icon {
+      width: 48px;
+      height: 48px;
+      font-size: 28px;
+    }
+    .viewer.fullscreen .slide-canvas .compare-grid {
+      flex: 0 0 52vh;
+      height: 52vh;
+      min-height: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    .viewer.fullscreen .slide-canvas .compare-item .compare-card {
+      height: 100%;
+    }
+    .viewer.fullscreen .slide-canvas .compare-image-wrap {
+      min-height: 0;
+      aspect-ratio: auto;
+    }
+    .viewer.fullscreen .slide-canvas .compare-shot-time {
+      width: 100%;
+      margin-top: 8px;
+      font-size: 30px;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .slide-canvas { padding: 16px 18px 12px }
+      .slide-canvas .case-header { margin: 0 8px 14px; gap: 12px }
+      .meta-item { font-size: 16px; gap: 9px }
+      .status-pill { min-width: 170px; padding: 10px 16px; font-size: 15px }
+      .status-pill-icon { width: 30px; height: 30px; font-size: 16px }
+    }
+
+    @media (max-width: 768px) {
+      .slide-canvas .case-header {
+        flex-direction: column;
+        align-items: stretch;
+        margin: 0 0 12px;
+      }
+      .case-meta { gap: 10px 16px }
+      .meta-item { font-size: 14px; gap: 8px }
+      .meta-item::before { width: 9px; height: 9px }
+      .status-pill {
+        min-width: 0;
+        width: 100%;
+        justify-content: center;
+        border-radius: 16px;
+        font-size: 14px;
+      }
+      .slide-canvas .compare-grid { gap: 10px }
+      .slide-canvas .compare-card { border-width: 1px }
+      .slide-canvas .compare-card-head {
+        min-width: 104px;
+        padding: 8px 18px 8px 12px;
+      }
+      .slide-canvas .compare-card-title { font-size: 16px }
+      .slide-canvas .compare-image-wrap { aspect-ratio: 1.2 / 1 }
+    }
+
+    body.projector-mode {
+      overflow: hidden;
+    }
+
+    body.projector-mode .app {
+      height: 100vh;
+      min-height: 100vh;
+      flex-direction: row;
+    }
+
+    body.projector-mode .sidebar {
+      position: relative;
+      inset: auto;
+      width: 250px;
+      height: auto;
+      border-right: 1px solid #dbe5f1;
+      border-bottom: 0;
+      box-shadow: none;
+      flex: 0 0 250px;
+    }
+
+    body.projector-mode .sidebar.collapsed {
+      width: 0;
+      height: auto;
+      flex-basis: 0;
+    }
+
+    body.projector-mode .sidebar-header {
+      height: 60px;
+      padding: 0 10px;
+    }
+
+    body.projector-mode .sidebar-title {
+      font-size: 12px;
+      gap: 6px;
+    }
+
+    body.projector-mode .sidebar-count {
+      font-size: 10px;
+    }
+
+    body.projector-mode .sidebar-list {
+      padding: 8px 8px 8px 20px;
+      gap: 10px;
+    }
+
+    body.projector-mode .sidebar-card {
+      aspect-ratio: 1200 / 560;
+    }
+
+    body.projector-mode .case-render-stage {
+      transform-origin: top left;
+    }
+
+    body.projector-mode .sidebar-page-badge {
+      top: 6px;
+      left: -14px;
+      font-size: 13px;
+    }
+
+    body.projector-mode .topbar {
+      height: 60px;
+      padding: 0 14px;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
+
+    body.projector-mode .title-wrap {
+      min-width: 0;
+      gap: 10px;
+    }
+
+    body.projector-mode .page-title-main {
+      font-size: 22px;
+    }
+
+    body.projector-mode .page-subtitle {
+      font-size: 11px;
+    }
+
+    body.projector-mode .toolbar {
+      flex-wrap: nowrap;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    body.projector-mode .btn {
+      padding: 7px 10px;
+      font-size: 11px;
+      border-radius: 8px;
+    }
+
+    body.projector-mode .btn-icon {
+      width: 30px;
+      height: 30px;
+      font-size: 12px;
+    }
+
+    body.projector-mode .viewer {
+      padding: 0;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    body.projector-mode #viewerContent {
+      padding: 0 10px 8px;
+      overflow: hidden;
+    }
+
+    body.projector-mode #viewerContent > .slide-canvas {
+      min-height: 0;
+      flex: 1;
+    }
+
+    body.projector-mode .slide-canvas {
+      padding: 12px 14px 10px;
+    }
+
+    body.projector-mode .slide-canvas .case-header {
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+      min-height: 0;
+      margin: 0 8px 10px;
+    }
+
+    body.projector-mode .case-meta {
+      gap: 8px;
+    }
+
+    body.projector-mode .case-meta-row {
+      gap: 8px 16px;
+    }
+
+    body.projector-mode .case-meta-row--primary {
+      grid-template-columns: 180px 150px minmax(0, 1fr);
+      gap: 0 16px;
+    }
+
+    body.projector-mode .meta-item,
+    body.projector-mode .meta-item--project,
+    body.projector-mode .meta-item--description {
+      gap: 6px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    body.projector-mode .meta-item::before {
+      width: 7px;
+      height: 7px;
+      flex: 0 0 7px;
+    }
+
+    body.projector-mode .meta-label {
+      flex: 0 0 auto;
+    }
+
+    body.projector-mode .meta-value {
+      white-space: nowrap;
+      word-break: normal;
+      text-overflow: ellipsis;
+    }
+
+    body.projector-mode .status-pill {
+      width: auto;
+      min-width: 136px;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+    }
+
+    body.projector-mode .status-pill-icon {
+      width: 24px;
+      height: 24px;
+      font-size: 14px;
+    }
+
+    body.projector-mode .viewer:not(.fullscreen) #viewerContent > .slide-canvas .compare-grid,
+    body.projector-mode .slide-canvas .compare-grid {
+      flex: 0 1 48vh;
+      height: 48vh;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+      margin-bottom: auto;
+    }
+
+    body.projector-mode .slide-canvas .compare-item {
+      gap: 4px;
+    }
+
+    body.projector-mode .slide-canvas .compare-card-head {
+      min-width: 92px;
+      padding: 7px 16px 7px 10px;
+    }
+
+    body.projector-mode .slide-canvas .compare-card-title {
+      font-size: 14px;
+    }
+
+    body.projector-mode .viewer:not(.fullscreen) #viewerContent > .slide-canvas .compare-item .compare-card,
+    body.projector-mode .slide-canvas .compare-item .compare-card {
+      height: 100%;
+    }
+
+    body.projector-mode .viewer:not(.fullscreen) #viewerContent > .slide-canvas .compare-image-wrap,
+    body.projector-mode .slide-canvas .compare-image-wrap {
+      min-height: 0;
+      aspect-ratio: auto;
+    }
+
+    body.projector-mode .slide-canvas .compare-shot-time {
+      margin-top: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    body.projector-mode .bottombar {
+      padding: 8px 14px;
+      gap: 10px;
+      flex-wrap: nowrap;
+    }
+
+    body.projector-mode .progress-container {
+      max-width: 220px;
+      order: 0;
+      width: auto;
+    }
+
+    body.projector-mode .page-indicator {
+      min-width: 48px;
+      font-size: 12px;
+    }
+
+    body.projector-mode .topbar.fullscreen {
+      height: auto;
+      padding: 10px 14px 8px 48px;
+    }
+
+    body.projector-mode .viewer.fullscreen {
+      padding: 0;
+      background:
+        linear-gradient(135deg, rgba(35, 92, 196, 0.05), transparent 20%),
+        linear-gradient(315deg, rgba(35, 92, 196, 0.04), transparent 22%),
+        #f8fbff;
+    }
+
+    body.projector-mode .viewer.fullscreen #viewerContent {
+      padding: 0 8px 8px;
+    }
+
+    body.projector-mode .viewer.fullscreen #viewerContent > .slide-canvas {
+      padding: 10px 12px 8px;
+    }
+
+    body.projector-mode .viewer.fullscreen .slide-canvas .case-header {
+      gap: 10px;
+      min-height: 0;
+      padding-top: 8px;
+      padding-bottom: 0;
+      margin: 0 4px 16px;
+    }
+
+    body.projector-mode .viewer.fullscreen .case-meta {
+      gap: 14px;
+    }
+
+    body.projector-mode .viewer.fullscreen .case-meta-row {
+      gap: 14px 30px;
+    }
+
+    body.projector-mode .viewer.fullscreen .case-meta-row--primary {
+      grid-template-columns: 170px 190px minmax(0, 1fr);
+      gap: 0 30px;
+    }
+
+    body.projector-mode .viewer.fullscreen .meta-item,
+    body.projector-mode .viewer.fullscreen .meta-item--project,
+    body.projector-mode .viewer.fullscreen .meta-item--description {
+      gap: 12px;
+      font-size: 18px;
+    }
+
+    body.projector-mode .viewer.fullscreen .case-meta-row--primary .meta-item:nth-child(2) {
+      margin-left: 28px;
+    }
+
+    body.projector-mode .viewer.fullscreen .case-meta-row--primary .meta-item:nth-child(3) {
+      margin-left: 18px;
+    }
+
+    body.projector-mode .viewer.fullscreen .case-meta-row--primary .meta-item:nth-child(2) .meta-value {
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    body.projector-mode .viewer.fullscreen .case-meta-row--primary .meta-item--project {
+      margin-top: 12px;
+    }
+
+    body.projector-mode .viewer.fullscreen .case-meta-row:last-child .meta-item--description {
+      margin-top: 12px;
+    }
+
+    body.projector-mode .viewer.fullscreen .meta-item::before {
+      width: 6px;
+      height: 6px;
+      flex: 0 0 6px;
+    }
+
+    body.projector-mode .viewer.fullscreen .status-pill {
+      min-width: 122px;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    body.projector-mode .viewer.fullscreen .status-pill-icon {
+      width: 22px;
+      height: 22px;
+      font-size: 12px;
+    }
+
+    body.projector-mode .viewer.fullscreen .slide-canvas .compare-grid {
+      flex: 0 1 50vh;
+      height: 50vh;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    body.projector-mode .viewer.fullscreen .slide-canvas .compare-card-head {
+      min-width: 86px;
+      padding: 6px 14px 6px 10px;
+    }
+
+    body.projector-mode .viewer.fullscreen .slide-canvas .compare-card-title {
+      font-size: 14px;
+    }
+
+    body.projector-mode .viewer.fullscreen .slide-canvas .compare-shot-time {
+      margin-top: 3px;
+      font-size: 12px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 左侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">
+          曝光列表
+          <span class="sidebar-count" id="caseCount">0</span>
+        </div>
+        <button class="btn btn-icon" onclick="toggleSidebar()" title="隐藏列表 (L)">◀</button>
+      </div>
+      <div class="sidebar-list" id="sidebarList">
+        <div class="loading">正在加载案例...</div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <!-- 顶部导航 -->
+      <header class="topbar" id="topbar">
+        <div class="title-wrap">
+          <div class="title-text">
+            <div class="page-title"><span class="page-title-main">6S曝光台</span></div>
+            <div class="page-subtitle" id="pageSubtitle">加载中...</div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="btn" onclick="toggleSidebar()" title="显示/隐藏列表 (L)">
+            <span id="sidebarToggleIcon">◀</span> 列表
+          </button>
+          <button class="btn btn-primary" onclick="toggleFullscreen()" title="全屏模式 (F)">
+            <span id="fullscreenIcon">⛶</span> 全屏
+          </button>
+          <button class="btn" onclick="history.back()">返回</button>
+        </div>
+      </header>
+
+      <!-- 案例展示区 -->
+      <section class="viewer" id="viewer">
+        <div id="viewerContent"></div>
+      </section>
+
+      <!-- 底部进度栏 -->
+      <footer class="bottombar">
+        <div class="nav-buttons">
+          <button class="btn" onclick="selectCase(selectedIndex - 1)">◀ 上一条</button>
+        </div>
+        <div class="progress-container">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="page-indicator" id="pageIndicator">0 / 0</div>
+        <div class="nav-buttons">
+          <button class="btn" onclick="selectCase(selectedIndex + 1)">下一条 ▶</button>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- 提示框 -->
+  <div class="toast" id="toast"></div>
+
+  <!-- 放大预览 -->
+  <div class="viewer-overlay" id="viewerOverlay" onclick="closeZoom(event)">
+    <div class="viewer-modal">
+      <button class="viewer-nav prev" id="zoomPrev" onclick="changeZoomPhoto(-1, event)" aria-label="上一张">‹</button>
+      <img id="zoomImage" alt="放大预览">
+      <button class="viewer-nav next" id="zoomNext" onclick="changeZoomPhoto(1, event)" aria-label="下一张">›</button>
+      <div class="viewer-photo-status">
+        <span id="zoomCounter">1 / 1</span>
+        <span class="viewer-photo-last" id="zoomLast" style="display:none">最后一张</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== 全局状态 =====
+    const API = window.location.origin + "/api";
+    const token = localStorage.getItem("token") || localStorage.getItem("employee_token");
+    const params = new URLSearchParams(location.search);
+    const period = params.get("period") || "week";
+    const dateFrom = params.get("date_from") || "";
+    const dateTo = params.get("date_to") || "";
+    const requestedCaseIndex = Number.parseInt(params.get("case") || "0", 10);
+    let selectedIndex = Number.isFinite(requestedCaseIndex) && requestedCaseIndex >= 0 ? requestedCaseIndex : 0;
+    let report = null;
+    let cases = [];
+    let sidebarVisible = true;
+    let isFullscreen = false;
+    let scrollTimeout = null;
+    let zoomScale = 1;
+    let isDragging = false;
+    let hasDragged = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let translateX = 0;
+    let translateY = 0;
+    let zoomPhotos = [];
+    let zoomPhotoIndex = 0;
+    const mainImageRequest = { before: 0, after: 0 };
+    const preloadCache = new Map();
+
+    // 认证检查
+    if (!token) location.href = "admin/login.html";
+
+    // ===== 工具函数 =====
+    function auth() { return { "Authorization": "Bearer " + token } }
+
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+      }[s]));
+    }
+
+    function toast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2200);
+    }
+
+    function imgList(r, key) {
+      const field = key === "before" ? "before_list" : "after_list";
+      return Array.isArray(r?.[field]) ? r[field] : [];
+    }
+
+    function labelPeriod() {
+      return period === "week" ? "上周" : period === "year" ? "本年" : "本月";
+    }
+
+    function buildReportQuery() {
+      const p = new URLSearchParams();
+      if (period) p.set("period", period);
+      if (dateFrom) p.set("date_from", dateFrom);
+      if (dateTo) p.set("date_to", dateTo);
+      return p.toString();
+    }
+
+    function formatShotTime(value) {
+      if (!value) return "-";
+      const normalized = String(value).replace(" ", "T");
+      const date = new Date(normalized);
+      if (Number.isNaN(date.getTime())) {
+        return String(value).slice(0, 16);
+      }
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      const hh = String(date.getHours()).padStart(2, "0");
+      const mm = String(date.getMinutes()).padStart(2, "0");
+      return `${y}-${m}-${d} ${hh}:${mm}`;
+    }
+
+    function getCaseDisplayData(r) {
+      const before = imgList(r, "before");
+      const after = imgList(r, "after");
+      const beforeImageTime = formatShotTime(r?.before_image_time);
+      const afterImageTime = formatShotTime(r?.after_image_time);
+      const responsible = r?.person_charge || r?.assigned_name || "-";
+      const project = r?.project_code || r?.description || "-";
+      const area = r?.area || r?.project_code || "-";
+      const reviewStatus = r?.review_status || "pending";
+      const statusText =
+        reviewStatus === "approved" ? "已达标"
+          : reviewStatus === "submitted" ? "待审核"
+          : reviewStatus === "rejected" ? "整改未达标"
+          : "待整改";
+      const statusIcon = reviewStatus === "approved" ? "✓" : "!";
+
+      return { before, after, beforeImageTime, afterImageTime, responsible, project, area, reviewStatus, statusText, statusIcon };
+    }
+
+    function renderCompareImage(list, kind, interactive) {
+      const first = list[0] || "";
+      const extra = Math.max(0, list.length - 1);
+      const action = interactive ? ` onclick="openZoom('${kind}')"` : "";
+
+      if (!first) {
+        return `
+          <div class="compare-image-wrap"${action}>
+            <div class="compare-empty">暂无${kind === "before" ? "整改前" : "整改后"}图片</div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="compare-image-wrap"${action}>
+          <img class="compare-image" src="${esc(first)}" alt="${kind === "before" ? "整改前" : "整改后"}">
+          ${extra > 0 ? `<div class="photo-badge">+${extra}</div>` : ""}
+        </div>
+      `;
+    }
+
+    function buildCaseCanvas(r, options = {}) {
+      const { interactive = false } = options;
+      if (!r) {
+        return `
+          <div class="slide-canvas">
+            <div class="loading">暂无案例</div>
+          </div>
+        `;
+      }
+
+      const { before, after, beforeImageTime, afterImageTime, responsible, project, area, reviewStatus, statusText, statusIcon } = getCaseDisplayData(r);
+      const description = r?.description || "-";
+      const afterHeadClass = `compare-card-head compare-card-head--after ${esc(reviewStatus)}`;
+
+      return `
+        <div class="slide-canvas">
+          <div class="case-header">
+            <div class="case-meta">
+              <div class="case-meta-row case-meta-row--primary">
+                <div class="meta-item meta-item--project"><span class="meta-label">项目：</span><span class="meta-value">${esc(project)}</span></div>
+                <div class="meta-item"><span class="meta-label">责任人：</span><span class="meta-value">${esc(responsible)}</span></div>
+                <div class="meta-item"><span class="meta-label">区域：</span><span class="meta-value">${esc(area)}</span></div>
+              </div>
+              <div class="case-meta-row">
+                <div class="meta-item meta-item--description"><span class="meta-label">问题描述：</span><span class="meta-value">${esc(description)}</span></div>
+              </div>
+            </div>
+            <div class="status-pill ${esc(reviewStatus)}">
+              <span class="status-pill-icon">${statusIcon}</span>
+              <span>${statusText}</span>
+            </div>
+          </div>
+          <div class="compare-grid">
+            <div class="compare-item">
+              <div class="compare-card">
+                <div class="compare-card-head">
+                  <div class="compare-card-title">整改前</div>
+                </div>
+                ${renderCompareImage(before, "before", interactive)}
+              </div>
+              <div class="compare-shot-time">拍摄日期：${esc(beforeImageTime || "-")}</div>
+            </div>
+            <div class="compare-item">
+              <div class="compare-card">
+                <div class="${afterHeadClass}">
+                  <div class="compare-card-title">整改后</div>
+                </div>
+                ${renderCompareImage(after, "after", interactive)}
+              </div>
+              <div class="compare-shot-time">拍摄日期：${esc(afterImageTime || "-")}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function mountMainCanvas() {
+      const viewerContent = document.getElementById("viewerContent");
+      if (viewerContent.querySelector(".slide-canvas")) return;
+
+      viewerContent.innerHTML = `
+        <div class="slide-canvas">
+          <div class="case-header">
+            <div class="case-meta">
+              <div class="case-meta-row case-meta-row--primary">
+                <div class="meta-item meta-item--project"><span class="meta-label">项目：</span><span class="meta-value" id="mainProject">-</span></div>
+                <div class="meta-item"><span class="meta-label">责任人：</span><span class="meta-value" id="mainResponsible">-</span></div>
+                <div class="meta-item"><span class="meta-label">区域：</span><span class="meta-value" id="mainArea">-</span></div>
+              </div>
+              <div class="case-meta-row">
+                <div class="meta-item meta-item--description"><span class="meta-label">问题描述：</span><span class="meta-value" id="mainDescription">-</span></div>
+              </div>
+            </div>
+            <div class="status-pill" id="mainStatusPill">
+              <span class="status-pill-icon" id="mainStatusIcon">!</span>
+              <span id="mainStatusText">暂无案例</span>
+            </div>
+          </div>
+          <div class="compare-grid">
+            <div class="compare-item">
+              <div class="compare-card">
+                <div class="compare-card-head">
+                  <div class="compare-card-title">整改前</div>
+                </div>
+                <div class="compare-image-wrap" onclick="openZoom('before')">
+                  <img class="compare-image" id="mainBeforeImage" alt="整改前" style="display:none">
+                  <div class="photo-badge" id="mainBeforeMore" style="display:none"></div>
+                  <div class="compare-empty" id="mainBeforeEmpty">暂无整改前图片</div>
+                </div>
+              </div>
+              <div class="compare-shot-time" id="mainBeforeShotTime">拍摄日期：-</div>
+            </div>
+            <div class="compare-item">
+              <div class="compare-card">
+                <div class="compare-card-head compare-card-head--after" id="mainAfterHead">
+                  <div class="compare-card-title">整改后</div>
+                </div>
+                <div class="compare-image-wrap" onclick="openZoom('after')">
+                  <img class="compare-image" id="mainAfterImage" alt="整改后" style="display:none">
+                  <div class="photo-badge" id="mainAfterMore" style="display:none"></div>
+                  <div class="compare-empty" id="mainAfterEmpty">暂无整改后图片</div>
+                </div>
+              </div>
+              <div class="compare-shot-time" id="mainAfterShotTime">拍摄日期：-</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateMainImage(kind, list, shotTime) {
+      const prefix = kind === "before" ? "mainBefore" : "mainAfter";
+      const imageEl = document.getElementById(prefix + "Image");
+      const emptyEl = document.getElementById(prefix + "Empty");
+      const moreEl = document.getElementById(prefix + "More");
+      const shotTimeEl = document.getElementById(prefix + "ShotTime");
+      const src = list[0] || "";
+      const extra = Math.max(0, list.length - 1);
+      const requestId = ++mainImageRequest[kind];
+      shotTimeEl.textContent = "拍摄日期：" + (shotTime || "-");
+
+      if (!src) {
+        imageEl.removeAttribute("src");
+        imageEl.dataset.src = "";
+        imageEl.style.display = "none";
+        emptyEl.style.display = "flex";
+        moreEl.style.display = "none";
+        return;
+      }
+
+      const applyImage = () => {
+        if (requestId !== mainImageRequest[kind]) return;
+        imageEl.src = src;
+        imageEl.dataset.src = src;
+        imageEl.style.display = "block";
+        emptyEl.style.display = "none";
+        moreEl.textContent = extra > 0 ? `+${extra}` : "";
+        moreEl.style.display = extra > 0 ? "flex" : "none";
+      };
+
+      if (imageEl.dataset.src === src) {
+        applyImage();
+        return;
+      }
+
+      const loader = new Image();
+      loader.onload = applyImage;
+      loader.onerror = () => {
+        if (requestId !== mainImageRequest[kind]) return;
+        imageEl.removeAttribute("src");
+        imageEl.dataset.src = "";
+        imageEl.style.display = "none";
+        emptyEl.style.display = "flex";
+        moreEl.style.display = "none";
+      };
+      loader.src = src;
+    }
+
+    function updateMainCanvas(r) {
+      mountMainCanvas();
+      if (!r) {
+        document.getElementById("mainProject").textContent = "-";
+        document.getElementById("mainDescription").textContent = "-";
+        document.getElementById("mainArea").textContent = "-";
+        document.getElementById("mainResponsible").textContent = "-";
+        document.getElementById("mainStatusPill").className = "status-pill";
+        document.getElementById("mainAfterHead").className = "compare-card-head compare-card-head--after";
+        document.getElementById("mainStatusIcon").textContent = "!";
+        document.getElementById("mainStatusText").textContent = "暂无案例";
+        updateMainImage("before", [], "-");
+        updateMainImage("after", [], "-");
+        return;
+      }
+
+      const { before, after, beforeImageTime, afterImageTime, responsible, project, area, reviewStatus, statusText, statusIcon } = getCaseDisplayData(r);
+      document.getElementById("mainProject").textContent = project;
+      document.getElementById("mainDescription").textContent = r.description || "-";
+      document.getElementById("mainArea").textContent = area;
+      document.getElementById("mainResponsible").textContent = responsible;
+      document.getElementById("mainStatusPill").className = "status-pill " + reviewStatus;
+      document.getElementById("mainAfterHead").className = "compare-card-head compare-card-head--after " + reviewStatus;
+      document.getElementById("mainStatusIcon").textContent = statusIcon;
+      document.getElementById("mainStatusText").textContent = statusText;
+      updateMainImage("before", before, beforeImageTime);
+      updateMainImage("after", after, afterImageTime);
+    }
+
+    function preloadAdjacentCases(index) {
+      [index - 1, index, index + 1].forEach((caseIndex) => {
+        const item = cases[caseIndex];
+        if (!item) return;
+        ["before", "after"].forEach((kind) => {
+          const src = imgList(item, kind)[0];
+          if (!src || preloadCache.has(src)) return;
+          const image = new Image();
+          image.src = src;
+          preloadCache.set(src, image);
+        });
+      });
+    }
+
+    // ===== 侧边栏控制 =====
+    function toggleSidebar() {
+      sidebarVisible = !sidebarVisible;
+      const sidebar = document.getElementById("sidebar");
+      const icon = document.getElementById("sidebarToggleIcon");
+
+      if (sidebarVisible) {
+        sidebar.classList.remove("collapsed");
+        icon.textContent = "◀";
+      } else {
+        sidebar.classList.add("collapsed");
+        icon.textContent = "▶";
+      }
+    }
+
+    // ===== 全屏控制 =====
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          isFullscreen = true;
+          setFullscreenUI(true);
+        }).catch(err => {
+          toast("无法进入全屏模式");
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          isFullscreen = false;
+          setFullscreenUI(false);
+        });
+      }
+    }
+
+    function setFullscreenUI(fullscreen) {
+      const topbar = document.getElementById("topbar");
+      const bottombar = document.querySelector(".bottombar");
+      const sidebar = document.getElementById("sidebar");
+      const viewer = document.getElementById("viewer");
+      const toolbar = document.querySelector(".toolbar");
+
+      if (fullscreen) {
+        topbar.style.display = "";
+        topbar.classList.add("fullscreen");
+        toolbar.style.display = "none";
+        bottombar.style.display = "none";
+        sidebar.style.display = "none";
+        viewer.classList.add("fullscreen");
+      } else {
+        topbar.style.display = "";
+        topbar.classList.remove("fullscreen");
+        toolbar.style.display = "";
+        bottombar.style.display = "";
+        sidebar.style.display = "";
+        viewer.classList.remove("fullscreen");
+      }
+    }
+
+    // 监听全屏变化
+    document.addEventListener("fullscreenchange", () => {
+      isFullscreen = !!document.fullscreenElement;
+      setFullscreenUI(isFullscreen);
+    });
+
+    // ===== 数据加载 =====
+    async function loadReport() {
+      const res = await fetch(API + "/6s/report?" + buildReportQuery(), { headers: auth() });
+      const data = await res.json();
+      if (data.code !== 0) {
+        toast(data.msg || "加载失败");
+        return;
+      }
+      report = data.data;
+      cases = report.cases || [];
+      if (cases.length) selectedIndex = Math.min(selectedIndex, cases.length - 1);
+      else selectedIndex = 0;
+      renderAll();
+    }
+
+    // ===== 渲染函数 =====
+    function renderAll() {
+      document.getElementById("pageSubtitle").textContent =
+        `${labelPeriod()} · ${dateFrom || report?.range?.from || ""} 至 ${dateTo || report?.range?.to || ""}`;
+      document.getElementById("caseCount").textContent = cases.length;
+      renderSidebar();
+      updateMainCanvas(cases[selectedIndex]);
+      preloadAdjacentCases(selectedIndex);
+      updateProgress();
+    }
+
+    function renderSidebar() {
+      const el = document.getElementById("sidebarList");
+      if (!cases.length) {
+        el.innerHTML = '<div class="loading">暂无案例</div>';
+        return;
+      }
+
+      el.innerHTML = cases.map((r, index) => {
+        const active = index === selectedIndex ? " active" : "";
+
+        return `
+          <div class="sidebar-item${active}" onclick="selectCase(${index})">
+            <div class="sidebar-page-badge">${index + 1}</div>
+            <div class="sidebar-card">
+              <div class="case-render case-render--mini">
+                <div class="case-render-stage">
+                  ${buildCaseCanvas(r)}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      layoutMiniPreviews();
+    }
+
+    function updateSidebarActiveState(previousIndex, nextIndex) {
+      const items = document.querySelectorAll(".sidebar-item");
+      if (!items.length) return null;
+
+      if (Number.isInteger(previousIndex) && items[previousIndex]) {
+        items[previousIndex].classList.remove("active");
+      }
+      if (Number.isInteger(nextIndex) && items[nextIndex]) {
+        items[nextIndex].classList.add("active");
+        return items[nextIndex];
+      }
+      return null;
+    }
+
+    function layoutMiniPreviews() {
+      const sourceWidth = 1200;
+      const sourceHeight = 620;
+
+      document.querySelectorAll(".case-render--mini").forEach((container) => {
+        const stage = container.querySelector(".case-render-stage");
+        if (!stage) return;
+
+        const availableWidth = container.clientWidth;
+        const availableHeight = container.clientHeight;
+        if (!availableWidth || !availableHeight) return;
+
+        const scale = Math.min(availableWidth / sourceWidth, availableHeight / sourceHeight);
+        const renderedWidth = sourceWidth * scale;
+        const renderedHeight = sourceHeight * scale;
+
+        stage.style.transform = `scale(${scale})`;
+        stage.style.left = `${Math.max(0, (availableWidth - renderedWidth) / 2)}px`;
+        stage.style.top = `${Math.max(0, (availableHeight - renderedHeight) / 2)}px`;
+      });
+    }
+
+    function updateProgress() {
+      const total = cases.length;
+      const current = selectedIndex + 1;
+      const percent = total > 0 ? (current / total) * 100 : 0;
+
+      document.getElementById("progressFill").style.width = `${percent}%`;
+      document.getElementById("pageIndicator").textContent = `${current} / ${total}`;
+    }
+
+    // ===== 案例切换 =====
+    function selectCase(index) {
+      if (!cases.length) return;
+      const nextIndex = Math.max(0, Math.min(index, cases.length - 1));
+      if (nextIndex === selectedIndex) return;
+
+      const previousIndex = selectedIndex;
+      selectedIndex = nextIndex;
+      const activeItem = updateSidebarActiveState(previousIndex, nextIndex);
+      updateMainCanvas(cases[selectedIndex]);
+      preloadAdjacentCases(selectedIndex);
+      updateProgress();
+
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: "nearest", behavior: "auto" });
+      }
+    }
+
+    // ===== 放大预览 =====
+    function openZoom(kind) {
+      const current = cases[selectedIndex];
+      if (!current) return;
+
+      const list = imgList(current, kind);
+      if (!list.length) {
+        toast("暂无图片");
+        return;
+      }
+
+      zoomPhotos = list;
+      zoomPhotoIndex = 0;
+      renderZoomPhoto();
+      document.getElementById("viewerOverlay").classList.add("show");
+    }
+
+    function renderZoomPhoto() {
+      const src = zoomPhotos[zoomPhotoIndex];
+      if (!src) return;
+
+      zoomScale = 1;
+      translateX = 0;
+      translateY = 0;
+      const zoomImg = document.getElementById("zoomImage");
+      zoomImg.src = src;
+      zoomImg.style.transform = `translate(0px, 0px) scale(1)`;
+      document.getElementById("zoomCounter").textContent = `${zoomPhotoIndex + 1} / ${zoomPhotos.length}`;
+      document.getElementById("zoomLast").style.display =
+        zoomPhotoIndex === zoomPhotos.length - 1 ? "" : "none";
+      document.getElementById("zoomPrev").disabled = zoomPhotoIndex === 0;
+      document.getElementById("zoomNext").disabled = zoomPhotoIndex === zoomPhotos.length - 1;
+      preloadZoomNeighbors();
+    }
+
+    function preloadZoomNeighbors() {
+      [zoomPhotoIndex - 1, zoomPhotoIndex + 1].forEach((index) => {
+        const src = zoomPhotos[index];
+        if (!src || preloadCache.has(src)) return;
+        const image = new Image();
+        image.src = src;
+        preloadCache.set(src, image);
+      });
+    }
+
+    function changeZoomPhoto(step, event) {
+      if (event) event.stopPropagation();
+      const nextIndex = Math.max(0, Math.min(zoomPhotoIndex + step, zoomPhotos.length - 1));
+      if (nextIndex === zoomPhotoIndex) return;
+      zoomPhotoIndex = nextIndex;
+      renderZoomPhoto();
+    }
+
+    function closeZoom(event) {
+      if (event) event.stopPropagation();
+      document.getElementById("viewerOverlay").classList.remove("show");
+      document.getElementById("zoomImage").removeAttribute("src");
+      zoomPhotos = [];
+      zoomPhotoIndex = 0;
+      zoomScale = 1;
+      translateX = 0;
+      translateY = 0;
+    }
+
+    // 预览图片滚轮缩放
+    document.getElementById("viewerOverlay").addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const zoomImg = document.getElementById("zoomImage");
+
+      if (e.deltaY < 0) {
+        zoomScale = Math.min(zoomScale + 0.15, 3);
+      } else {
+        zoomScale = Math.max(zoomScale - 0.15, 0.5);
+      }
+
+      zoomImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomScale})`;
+    }, { passive: false });
+
+    // 预览图片拖拽移动
+    const zoomImgEl = document.getElementById("zoomImage");
+    let initX = 0, initY = 0;
+
+    zoomImgEl.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      isDragging = true;
+      hasDragged = false;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      initX = translateX;
+      initY = translateY;
+      zoomImgEl.style.cursor = "grabbing";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasDragged = true;
+      }
+      translateX = initX + dx;
+      translateY = initY + dy;
+      zoomImgEl.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomScale})`;
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (isDragging) {
+        isDragging = false;
+        zoomImgEl.style.cursor = "grab";
+      }
+    });
+
+    // 点击图片关闭 - 区分拖拽和点击
+    zoomImgEl.addEventListener("click", (e) => {
+      if (hasDragged) {
+        e.stopPropagation();
+        hasDragged = false;
+        return;
+      }
+      closeZoom(e);
+    });
+
+    // 触摸事件支持
+    zoomImgEl.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      isDragging = true;
+      hasDragged = false;
+      dragStartX = touch.clientX;
+      dragStartY = touch.clientY;
+      initX = translateX;
+      initY = translateY;
+    }, { passive: false });
+
+    zoomImgEl.addEventListener("touchmove", (e) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStartX;
+      const dy = touch.clientY - dragStartY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasDragged = true;
+      }
+      translateX = initX + dx;
+      translateY = initY + dy;
+      zoomImgEl.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomScale})`;
+    }, { passive: false });
+
+    zoomImgEl.addEventListener("touchend", (e) => {
+      isDragging = false;
+      if (hasDragged) {
+        e.preventDefault();
+        hasDragged = false;
+      } else {
+        closeZoom();
+      }
+    });
+
+    // ===== 键盘快捷键 =====
+    document.addEventListener("keydown", (e) => {
+      // 忽略输入框内的按键
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      const zoomOpen = document.getElementById("viewerOverlay").classList.contains("show");
+
+      switch (e.key) {
+        case "Escape":
+          if (zoomOpen) {
+            closeZoom();
+          } else if (isFullscreen) {
+            document.exitFullscreen();
+          } else {
+            closeZoom();
+          }
+          break;
+        case "F5":
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case "ArrowUp":
+        case "ArrowLeft":
+          e.preventDefault();
+          if (zoomOpen) changeZoomPhoto(-1);
+          else selectCase(selectedIndex - 1);
+          break;
+        case "ArrowDown":
+        case "ArrowRight":
+          e.preventDefault();
+          if (zoomOpen) changeZoomPhoto(1);
+          else selectCase(selectedIndex + 1);
+          break;
+        case "f":
+        case "F":
+          toggleFullscreen();
+          break;
+        case "l":
+        case "L":
+          if (!isFullscreen) toggleSidebar();
+          break;
+      }
+    });
+
+    // ===== 鼠标滚轮切换 =====
+    document.getElementById("viewer").addEventListener("wheel", (e) => {
+      e.preventDefault();
+
+      if (scrollTimeout) return;
+
+      scrollTimeout = setTimeout(() => {
+        scrollTimeout = null;
+      }, 300);
+
+      if (e.deltaY > 0) {
+        selectCase(selectedIndex + 1);
+      } else if (e.deltaY < 0) {
+        selectCase(selectedIndex - 1);
+      }
+    }, { passive: false });
+
+    // ===== 初始化 =====
+    window.addEventListener("resize", layoutMiniPreviews);
+    loadReport();
+  </script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

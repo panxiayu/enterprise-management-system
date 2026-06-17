@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>投票列表 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/mobile-theme.css">
+    <style>
+        :root {
+            --bg: #F0F7FF;
+            --card: #ffffff;
+            --border: #D6E9FF;
+            --primary: #4A90E2;
+            --secondary: #65B3FF;
+            --accent: #22C58D;
+            --text: #1D2B5A;
+            --text-soft: #5B72A9;
+            --radius: 22px;
+            --transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+            --shadow: 0 8px 24px rgba(74, 144, 226, 0.12);
+            --shadow-hover: 0 16px 40px rgba(74, 144, 226, 0.18);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding-bottom: 80px;
+            padding-top: 20px;
+        }
+
+        /* 序列入场动画 */
+        .fade-item {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: var(--transition);
+        }
+        .fade-in {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 680px;
+                padding: 0 24px;
+            }
+            .ios-card {
+                padding: 24px 28px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 800px;
+            }
+        }
+
+        .ios-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 22px 26px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .ios-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary);
+        }
+        .ios-card:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        .ios-card h3 {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .ios-card p {
+            font-size: 14px;
+            color: var(--text-soft);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .card-meta {
+            font-size: 13px;
+            color: var(--text-soft);
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 6px;
+        }
+
+        .status-success { background: rgba(74,144,226,0.1); color: var(--primary); }
+        .status-danger { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .status-warning { background: rgba(255,149,0,0.1); color: #ff9500; }
+        .status-default { background: rgba(74,144,226,0.08); color: var(--primary); }
+        .status-info { background: rgba(101,179,255,0.15); color: var(--secondary); }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-soft);
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--secondary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-soft);
+        }
+        .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+        .tabbar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 76px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 20px;
+            border-top: 1px solid var(--border);
+            z-index: 999;
+        }
+
+        .tab-item {
+            font-size: 12px;
+            color: var(--text-soft);
+            text-align: center;
+            transition: var(--transition);
+        }
+        .tab-item.active { color: var(--primary); }
+        .tab-icon { font-size: 24px; margin-bottom: 4px; display: block; }
+
+        .toast {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loading" class="loading fade-item" style="display: none;">加载中...</div>
+        <div id="emptyState" class="empty-state fade-item" style="display: none;">
+            <div class="empty-icon">🗳️</div>
+            <div>暂无进行中的投票</div>
+        </div>
+        <div id="votingList"></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/auth-guard.js"></script>
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let token = localStorage.getItem('employee_token');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!token) {
+                window.location.href = window.location.origin + '/';
+                return;
+            }
+            loadVotings();
+        });
+
+        function loadVotings() {
+            document.getElementById('loading').style.display = 'block';
+            fetch(`${API_URL}/voting/list`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                if (data.code === 0) {
+                    if (data.data.length === 0) {
+                        document.getElementById('emptyState').style.display = 'block';
+                    } else {
+                        renderVotings(data.data);
+                    }
+                } else {
+                    showToast(data.msg || '加载失败');
+                }
+
+                // 序列入场动画
+                const items = document.querySelectorAll('.fade-item');
+                items.forEach((el, i) => {
+                    setTimeout(() => el.classList.add('fade-in'), 150 * i);
+                });
+            })
+            .catch(err => {
+                document.getElementById('loading').style.display = 'none';
+                showToast('加载失败');
+            });
+        }
+
+        function renderVotings(votings) {
+            const now = new Date();
+            const list = document.getElementById('votingList');
+            list.innerHTML = votings.map(v => {
+                const startDate = parseLocalDateTime(v.startDate);
+                const endDate = parseLocalDateTime(v.endDate);
+                const isEnded = endDate && endDate < now;
+                const notStarted = startDate && startDate > now;
+
+                let statusClass = 'status-success';
+                let statusText = '进行中';
+                if (isEnded) {
+                    statusClass = 'status-danger';
+                    statusText = '已结束';
+                } else if (notStarted) {
+                    statusClass = 'status-warning';
+                    statusText = '未开始';
+                }
+
+                return `
+                    <div class="ios-card fade-item" onclick="goToVoting('${v.anonymousToken}')">
+                        <h3>${v.title || '未命名投票'}</h3>
+                        <p>${v.description || '暂无描述'}</p>
+                        <div class="card-meta">${formatDateTime(v.startDate)} ~ ${formatDateTime(v.endDate)}</div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                            ${v.isAnonymous ? '<span class="status-badge status-default">🔒 匿名</span>' : ''}
+                            ${v.multipleChoice ? '<span class="status-badge status-info">多选</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 动画
+            const items = list.querySelectorAll('.fade-item');
+            items.forEach((el, i) => {
+                setTimeout(() => el.classList.add('fade-in'), 150 * i);
+            });
+        }
+
+        function goToVoting(anonymousToken) {
+            window.location.href = `mobile-voting.html?token=${anonymousToken}`;
+        }
+
+        function goBack() {
+            window.location.href = 'employee.html';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function parseLocalDateTime(dtStr) {
+            if (!dtStr) return null;
+            if (dtStr.endsWith('Z')) return new Date(dtStr);
+            const normalized = dtStr.replace(/[T\s]/g, '-');
+            const parts = normalized.split('-');
+            if (parts.length >= 5) {
+                return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4]);
+            }
+            return new Date(dtStr);
+        }
+
+        function formatDateTime(dt) {
+            if (!dt) return '-';
+            if (typeof dt === 'string' && dt.includes('T')) {
+                const [datePart, timePart] = dt.split('T');
+                const dateParts = datePart.split('-');
+                const timeParts = timePart.split(':');
+                return `${dateParts[0]}-${dateParts[1]}-${dateParts[2]} ${timeParts[0]}:${timeParts[1]}`;
+            }
+            return dt;
+        }
+    </script>
+</body>
+</html>

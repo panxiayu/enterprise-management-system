@@ -1,0 +1,3236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工管理 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <script src="js/sortable.min.js"></script>
+    <script src="/js/admin-session.js"></script>
+    <script src="js/api.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+        html::-webkit-scrollbar { width: 6px; }
+        html::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        html::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        html::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        .container { width: 100% !important; max-width: 1600px !important; margin: 0 auto; padding: 20px 24px; box-sizing: border-box; overflow-x: auto; }
+
+        /* 顶部工具栏 */
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; width: 100%; box-sizing: border-box; }
+        .toolbar-left { display: flex; align-items: center; gap: 12px; }
+        .toolbar-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+        .toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+        .page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+
+        /* 按钮 */
+        .btn { padding: 8px 14px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); color: white; box-shadow: 0 3px 10px rgba(59,130,246,0.3); }
+        .btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--white); border-color: var(--border-dark); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #f87171 100%); color: white; box-shadow: 0 3px 10px rgba(220,38,38,0.3); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+        /* 表格 */
+        .table-container { width: 100%; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.6); box-sizing: border-box; overflow-x: auto; overflow-y: visible; margin-top: 15px; margin-bottom: 10px; }
+        .table-container { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+        .table-container::-webkit-scrollbar { height: 6px; }
+        .table-container::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        .table-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
+        .table-container::-webkit-scrollbar-corner { background: transparent; }
+        .table-scroll-inner { overflow-x: auto; overflow-y: auto; min-height: 400px; height: calc(100vh - 140px); display: block; padding-bottom: 10px; box-sizing: border-box; }
+        .table-scroll-inner { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+        .table-scroll-inner::-webkit-scrollbar { height: 6px; width: 6px; }
+        .table-scroll-inner::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        .table-scroll-inner::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        .table-scroll-inner::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
+        .table-scroll-inner::-webkit-scrollbar-corner { background: transparent; }
+        table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+        .btn-col { background: linear-gradient(135deg, #7FCEF7 0%, #5BB8E0 50%, #A8B0D0 100%); color: #fff; font-weight: 600; box-shadow: 0 4px 16px rgba(59,130,246,0.3); }
+        .btn-col:hover { background: linear-gradient(135deg, #5BB8E0 0%, #4AA8D0 50%, #8A9AB0 100%); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.4); }
+        /* 冻结列样式 - 工号姓名始终在最左边 */
+        thead { background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 13; }
+        th { padding: 4px 6px; text-align: center !important; font-weight: 700; color: var(--text); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); white-space: nowrap; background: rgba(255,255,255,0.98); vertical-align: middle !important; height: 34px; box-sizing: border-box; position: relative; z-index: 5; }
+        td { padding: 3px 6px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text); text-align: center !important; background: rgba(255,255,255,0.98); vertical-align: middle !important; height: 26px; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody { min-height: 200px; }
+        /* 冻结列 - 序号工号姓名固定，z-index低于普通th */
+        th[data-key="serial"], td[data-key="serial"] { position: sticky; left: 0; z-index: 12; background: rgba(255,255,255,0.98); width: 60px; min-width: 60px; }
+        th[data-key="employee_id"], td[data-key="employee_id"] { position: sticky; left: 60px; z-index: 12; background: rgba(255,255,255,0.98); width: 70px; min-width: 70px; }
+        th[data-key="name"], td[data-key="name"] { position: sticky; left: 130px; z-index: 12; background: rgba(255,255,255,0.98); width: 70px; min-width: 70px; }
+        thead { background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 13; }
+        /* 隐藏列完全不显示 */
+        th[style*="display: none"], td[style*="display: none"] { display: none !important; }
+        /* 状态列完全隐藏 */
+        th[data-key="status"], td[data-key="status"] { display: none; }
+        /* 电话列向右偏移，避免档住性别的统计 */
+        th[data-key="phone"], td[data-key="phone"] { padding-left: 4px; }
+        tbody tr td:first-child { text-align: center; }
+        tbody tr td:first-child .checkbox-cell { display: block; margin: 0 auto; }
+        tbody tr:hover td { background: var(--bg-hover); }
+        tbody tr.not-in-sync-row td { color: var(--danger) !important; background: rgba(220, 38, 38, 0.05); }
+        .clickable-link { cursor: pointer; color: var(--text); text-decoration: none; font-weight: 500; display: inline-block; text-align: center; }
+        .clickable-link:hover { text-decoration: underline; color: var(--accent); }
+        .checkbox-cell { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
+
+        /* 状态提示 */
+        .loading, .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; }
+        .empty-state { padding: 60px 20px; }
+        .info-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-size: 13px; color: var(--text); padding: 6px 10px; background: var(--bg-input); border-radius: var(--radius); border: 1px solid var(--border); min-height: 32px; display: flex; align-items: center; }
+
+        /* 模态框 */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(30,58,138,0.4); backdrop-filter: blur(20px); align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-box { background: var(--white); border-radius: var(--radius-lg); padding: 20px; width: 90%; max-width: 400px; box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.5); animation: modalIn 0.25s ease; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+        .modal-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+        /* 表单项 */
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-secondary); font-size: 12px; }
+        .form-control { width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; color: var(--text); box-sizing: border-box; transition: all 0.2s; }
+        .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); background: var(--white); }
+        .form-control::placeholder { color: var(--text-muted); }
+        select.form-control { background: var(--bg-input); }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+
+        /* 显示列下拉 */
+        .column-dropdown label { display: flex; align-items: center; gap: 6px; padding: 5px 4px; cursor: pointer; font-size: 12px; color: var(--text); }
+        .column-dropdown label:hover { color: var(--accent); }
+        .column-dropdown input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width: 14px; height: 14px; margin: 0; padding: 0; vertical-align: middle; }
+        .column-dropdown { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; overflow-x: hidden; }
+        .dropdown-wrapper { position: relative; display: inline-block; }
+        .dropdown-wrapper .column-dropdown { visibility: hidden; opacity: 0; transform: translateY(-8px); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none; }
+        .dropdown-wrapper.open .column-dropdown { visibility: visible; opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .column-dropdown::-webkit-scrollbar { width: 6px; height: 6px; }
+        .column-dropdown::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        .column-dropdown::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        .column-dropdown::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
+        .column-dropdown::-webkit-scrollbar-corner { background: transparent; }
+        #columnCheckboxes::-webkit-scrollbar { width: 6px; }
+        #columnCheckboxes::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
+        #columnCheckboxes::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        #columnCheckboxes::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
+        #columnCheckboxes { display: flex; flex-direction: column; flex-wrap: nowrap; }
+        .column-drag-handle { cursor: move; margin-right: 4px; color: var(--text-muted); font-size: 10px; }
+        th.dragging {
+            transform: translateY(-8px) scale(0.88);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            border-radius: 12px;
+            z-index: 100;
+            position: relative;
+            background: white;
+        }
+        th.drag-over {
+            background: rgba(59, 130, 246, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 0 0 2px var(--accent);
+        }
+        th { transition: none; }
+
+        /* Sortable.js 拖拽样式 */
+        .sortable-ghost {
+            opacity: 0.4;
+            background: rgba(59, 130, 246, 0.15);
+            transform: scale(0.5);
+            border-radius: 8px;
+        }
+        .sortable-drag {
+            border-radius: 12px !important;
+            border: 0.5px solid rgba(0,0,0,0.06) !important;
+            opacity: 1 !important;
+            background: white !important;
+        }
+        #staffHeaderRow th.is-dragging {
+            transform: scale(0.5);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            background: white;
+            opacity: 1;
+            position: relative;
+            z-index: 9999;
+        }
+        th { transition: none; }
+
+        /* 卡片列表 */
+        .card-list { display: flex; flex-direction: column; gap: 8px; }
+        .staff-card { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0; transition: all 0.2s ease; cursor: pointer; }
+        .staff-card:hover { border-color: var(--border-dark); box-shadow: var(--shadow); transform: translateY(-1px); }
+        .staff-card.selected { border-color: var(--accent); background: var(--bg-hover); }
+        .staff-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .staff-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
+        .staff-name { font-weight: 600; font-size: 14px; color: var(--text); }
+        .staff-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+        .staff-field { display: flex; align-items: center; gap: 4px; }
+        .staff-field-label { color: var(--text-muted); }
+        .staff-actions { display: flex; gap: 8px; }
+        .staff-card .checkbox-cell { width: 18px; height: 18px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 筛选下拉 - 表头筛选（全局容器） */
+        .header-filter-dropdown { background: white; border: 1px solid #d1d5db; border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); min-width: 235px; max-height: 400px; overflow: hidden; }
+        .header-filter-dropdown .th-dropdown-header { display: flex; align-items: center; padding: 6px 8px; border-bottom: 1px solid #e5e7eb; gap: 8px; background: #f9fafb; }
+        .header-filter-dropdown .th-dropdown-search { padding: 4px 8px; border-bottom: 1px solid #e5e7eb; }
+        .header-filter-dropdown .th-dropdown-search input { width: 100%; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; box-sizing: border-box; background: var(--bg-input); color: var(--text); }
+        .header-filter-dropdown .th-dropdown-search input:focus { outline: none; border-color: var(--accent); }
+        .header-filter-dropdown .th-select-all { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: #374151; flex-shrink: 0; }
+        .header-filter-dropdown .th-select-all input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width: 14px; height: 14px; margin: 0; }
+        .header-filter-dropdown .th-select-all:hover { color: #1f2937; }
+        .header-filter-dropdown .th-dropdown-list { padding: 4px 0; max-height: 260px; overflow-y: auto; }
+        .header-filter-dropdown .th-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; cursor: pointer; font-size: 12px; color: #374151; position: relative; }
+        .header-filter-dropdown .th-dropdown-item:hover { background: #f3f4f6; }
+        .header-filter-dropdown .th-dropdown-item:hover input[type="checkbox"] { accent-color: var(--accent); }
+        .header-filter-dropdown .th-dropdown-item:hover .single-select-btn { display: block !important; opacity: 1 !important; }
+        .header-filter-dropdown .th-dropdown-item .single-select-btn { display: none; opacity: 0; }
+        .header-filter-dropdown .th-dropdown-item .single-select-btn:hover { background: var(--success); border-color: var(--success); }
+        .header-filter-dropdown .th-dropdown-item input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width: 14px; height: 14px; flex-shrink: 0; margin: 0; position: relative; z-index: 2; }
+        .header-filter-dropdown .th-dropdown-sort { display: flex; align-items: center; padding: 3px 8px; gap: 4px; }
+        .header-filter-dropdown .th-dropdown-sort button { flex: 1; padding: 2px 0; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-input); color: var(--text); font-size: 10px; cursor: pointer; }
+        .header-filter-dropdown .th-dropdown-sort button:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+        .header-filter-dropdown .th-item-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-filter-dropdown .th-dropdown-date { padding: 6px 8px; }
+        .header-filter-dropdown .th-dropdown-manual { background: white; border: none !important; box-shadow: none !important; }
+        .header-filter-dropdown .th-dropdown-manual input { background: white; border-color: var(--border); box-shadow: none; }
+        .header-filter-dropdown .th-dropdown-date input { width: 100%; padding: 5px 6px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 11px; background: var(--bg-input); color: var(--text); }
+        .header-filter-dropdown .th-dropdown-date input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+        .header-filter-dropdown .th-dropdown-date-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+        .header-filter-dropdown .th-dropdown-date-row span { color: var(--text-muted); font-size: 10px; }
+        /* 表头筛选按钮 */
+        .th-filter-btn { cursor: pointer; background: none; border: none; padding: 0; font: inherit; color: inherit; display: inline-block; text-align: center; margin: 0 auto; }
+        .th-filter-btn { display: inline-flex; align-items: center; justify-content: center; gap: 2px; color: var(--text); }
+        .th-filter-btn-text { display: inline-flex; align-items: center; text-align: center; }
+        .th-filter-btn:hover { color: var(--accent); }
+        .th-filter-btn.th-filter-btn-active { color: var(--success); }
+        .th-filter-btn.th-filter-btn-active:hover { color: var(--success); }
+        .th-filter-icon { font-size: 8px; display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; margin-top: -1px; margin-left: 0.5px; }
+        .th-filter-icon svg { width: 11px; height: 11px; }
+        .th-filter-count { background: var(--accent); color: white; border-radius: 8px; padding: 0 4px; font-size: 8px; display: inline-flex; align-items: center; justify-content: center; height: 14px; line-height: 14px; }
+        .th-filter-count { background: var(--accent); color: white; border-radius: 8px; padding: 0 4px; font-size: 8px; margin-left: 2px; height: 14px; line-height: 14px; }
+        /* 下拉滚动条 */
+        .header-filter-dropdown .th-dropdown-list::-webkit-scrollbar { width: 5px; }
+        .header-filter-dropdown .th-dropdown-list::-webkit-scrollbar-track { background: transparent; }
+        .header-filter-dropdown .th-dropdown-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+        .header-filter-dropdown .th-dropdown-list::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
+        /* 复选框不确定状态 */
+        input[type="checkbox"]:indeterminate { background: var(--text-secondary); }
+        /* 入职日期分级下拉样式 */
+        .header-filter-dropdown .date-row:hover { background: #e5e7eb !important; }
+        .header-filter-dropdown .date-row:hover .single-select-btn { display: block !important; opacity: 1 !important; }
+        .header-filter-dropdown .date-row .single-select-btn { display: none; opacity: 0; }
+        .header-filter-dropdown .date-row .single-select-btn:hover { background: var(--success); border-color: var(--success); }
+        .header-filter-dropdown .date-day-item:hover { background: #f3f4f6; }
+        .header-filter-dropdown .date-day-item:hover .single-select-btn { display: block !important; opacity: 1 !important; }
+        .header-filter-dropdown .date-day-item .single-select-btn { display: none; opacity: 0; }
+        .header-filter-dropdown .date-day-item .single-select-btn:hover { background: var(--success); border-color: var(--success); }
+        .header-filter-dropdown .date-row input[type="checkbox"], .header-filter-dropdown .date-day-item input[type="checkbox"] { cursor: pointer; }
+        .header-filter-dropdown .expand-icon { transition: transform 0.2s; }
+
+        /* 标签页切换 */
+        .tab-bar { position: relative; display: flex; gap: 0; margin: 0; background: var(--bg); padding: 3px; border-radius: var(--radius); width: fit-content; overflow: hidden; }
+        .tab-bar::before { content: ''; position: absolute; top: 3px; left: 3px; width: calc(50% - 3px); height: calc(100% - 6px); background: var(--white); border-radius: calc(var(--radius) - 2px); box-shadow: var(--shadow); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 0; }
+        .tab-bar.student::before { transform: translateX(100%); }
+        .tab-btn { position: relative; padding: 8px 20px; border: none; border-radius: calc(var(--radius) - 2px); cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; background: transparent; color: var(--text-secondary); transition: color 0.3s; z-index: 1; }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--primary); }
+        .detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .detail-section { background: var(--white); border-radius: var(--radius-lg); padding: 14px; border: 1px solid var(--border); }
+        .detail-section-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+        .detail-section-title::before { content: ''; width: 3px; height: 12px; background: var(--accent); border-radius: 2px; flex: 0 0 auto; }
+        .detail-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+        .detail-record-block { margin-top: 16px; }
+        .detail-record-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--text); }
+        .detail-table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--white); }
+        .detail-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 12px; }
+        .detail-table th { padding: 6px 8px; text-align: center; background: var(--bg-hover); position: static; height: auto; }
+        .detail-table th:first-child,
+        .detail-table td:first-child { text-align: left !important; }
+        .detail-table td { padding: 6px 8px; height: auto; background: transparent; }
+        .detail-table tbody tr:last-child td { border-bottom: none; }
+        .detail-actions { margin-top: 20px; display: flex; gap: 10px; }
+
+        @media (max-width: 768px) {
+            body {
+                background: linear-gradient(180deg, #f4f8ff 0%, #e7f0ff 100%);
+            }
+
+            .container {
+                padding: 12px;
+                overflow-x: visible;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                margin-bottom: 10px;
+            }
+
+            .toolbar-left,
+            .toolbar-right {
+                width: 100%;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+
+            .toolbar-right {
+                gap: 8px;
+                justify-content: flex-end;
+            }
+
+            .page-title {
+                font-size: 22px;
+            }
+
+            .tab-bar {
+                width: 100%;
+                margin: 0 !important;
+            }
+
+            .tab-btn {
+                flex: 1;
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            #syncTimeDisplay {
+                width: auto;
+                margin: 0 !important;
+                font-size: 12px !important;
+                white-space: nowrap;
+            }
+
+            .btn,
+            .btn-sm {
+                min-height: 36px;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .toolbar-actions {
+                width: auto;
+                justify-content: flex-end;
+                flex-wrap: nowrap;
+                gap: 6px;
+                overflow-x: auto;
+                overflow-y: visible;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .toolbar-actions::-webkit-scrollbar {
+                display: none;
+            }
+
+            .dropdown-wrapper {
+                flex: 0 0 auto;
+                width: auto;
+            }
+
+            #colBtn {
+                width: auto;
+                white-space: nowrap;
+            }
+
+            .toolbar-actions .btn,
+            .toolbar-actions .btn-sm {
+                flex: 0 0 auto;
+                white-space: nowrap;
+            }
+
+            #columnMenu {
+                left: auto;
+                right: 0 !important;
+                min-width: 180px !important;
+                width: min(280px, calc(100vw - 24px));
+                max-height: min(70vh, 560px) !important;
+            }
+
+            #searchBar {
+                margin: 8px 0 0 !important;
+                flex-direction: row;
+                align-items: center !important;
+                gap: 8px !important;
+                padding: 6px 0 !important;
+            }
+
+            #globalSearchInput {
+                width: auto;
+                flex: 1 1 auto;
+            }
+
+            #searchBar .btn {
+                width: auto;
+                flex: 0 0 auto;
+                min-width: 64px;
+            }
+
+            .table-container {
+                margin-top: 12px;
+                border-radius: 16px;
+                overflow-x: auto;
+                overflow-y: visible;
+            }
+
+            .table-scroll-inner {
+                min-height: 0;
+                height: auto;
+                max-height: none;
+                overflow-x: auto;
+                overflow-y: visible;
+                padding-bottom: 6px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            table {
+                width: max-content;
+                min-width: 100%;
+                table-layout: fixed;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+
+            th,
+            td {
+                font-size: 11px;
+                line-height: 1.2;
+            }
+
+            th {
+                padding: 4px 5px;
+                height: 30px;
+                background: rgba(255,255,255,0.98);
+            }
+
+            td {
+                padding: 3px 5px;
+                height: 24px;
+            }
+
+            th[data-key="serial"], td[data-key="serial"] {
+                width: 42px !important;
+                min-width: 42px !important;
+                left: 0 !important;
+            }
+
+            th[data-key="employee_id"], td[data-key="employee_id"] {
+                width: 62px !important;
+                min-width: 62px !important;
+                left: 42px !important;
+            }
+
+            th[data-key="name"], td[data-key="name"] {
+                width: 64px !important;
+                min-width: 64px !important;
+                left: 104px !important;
+            }
+
+            .clickable-link {
+                display: inline-block;
+                max-width: 100%;
+            }
+
+            .modal-box {
+                width: calc(100% - 24px);
+                max-width: none;
+                padding: 16px;
+            }
+
+            .staff-detail-modal-box {
+                width: calc(100% - 16px) !important;
+                max-width: none !important;
+                max-height: 92vh !important;
+                padding: 14px !important;
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .detail-fields {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .detail-section {
+                padding: 12px;
+                border-radius: 14px;
+            }
+
+            .detail-section-title {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+
+            .detail-table-wrap {
+                margin: 0 -2px;
+            }
+
+            .detail-table {
+                min-width: 520px;
+                font-size: 11px;
+            }
+
+            .detail-table th,
+            .detail-table td {
+                padding: 6px;
+            }
+
+            .detail-actions .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 932px) and (orientation: landscape) {
+            .container {
+                padding: 10px 14px;
+            }
+
+            .toolbar {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+
+            .toolbar-left {
+                width: auto;
+                flex: 0 0 auto;
+            }
+
+            .toolbar-right {
+                width: auto;
+                flex: 1;
+                justify-content: flex-end;
+                flex-wrap: nowrap;
+                gap: 10px;
+            }
+
+            .page-title {
+                font-size: 20px;
+                white-space: nowrap;
+            }
+
+            .tab-bar {
+                width: auto;
+                flex: 0 0 auto;
+                margin: 0 !important;
+            }
+
+            .tab-btn {
+                min-width: 88px;
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+
+            .toolbar-actions {
+                width: auto;
+                max-width: 48vw;
+                gap: 6px;
+            }
+
+            #syncTimeDisplay {
+                font-size: 11px !important;
+            }
+
+            #searchBar {
+                margin-top: 6px !important;
+                gap: 6px !important;
+                padding: 4px 0 !important;
+            }
+
+            #globalSearchInput {
+                height: 34px !important;
+                font-size: 12px !important;
+            }
+
+            #searchBar .btn {
+                min-width: 58px;
+                min-height: 34px;
+                padding: 7px 10px;
+            }
+
+            .table-container {
+                margin-top: 10px;
+            }
+
+            .table-scroll-inner {
+                height: calc(100vh - 120px);
+                min-height: 0;
+                overflow-y: auto;
+            }
+
+            th,
+            td {
+                font-size: 10px;
+            }
+
+            th {
+                height: 28px;
+                padding: 4px;
+            }
+
+            td {
+                height: 22px;
+                padding: 2px 4px;
+            }
+
+            .staff-detail-modal-box {
+                width: calc(100% - 20px) !important;
+                max-height: 88vh !important;
+                padding: 12px !important;
+            }
+
+            .detail-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            .detail-fields {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+            }
+
+            .detail-section {
+                padding: 10px;
+            }
+
+            .detail-table {
+                min-width: 640px;
+            }
+
+            .detail-actions {
+                justify-content: flex-end;
+            }
+
+            .detail-actions .btn {
+                width: auto;
+                min-width: 96px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部工具栏 -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <span class="page-title">人员管理</span>
+            </div>
+            <div class="toolbar-right" style="position:relative;">
+                <div class="tab-bar" style="margin: 0 12px 0 0;">
+                    <button class="tab-btn active" data-tab="employee" onclick="switchTab('employee')">员工名册</button>
+                    <button class="tab-btn" data-tab="student" onclick="switchTab('student')">学生名册</button>
+                </div>
+                <div class="toolbar-actions">
+                    <span id="syncTimeDisplay" style="font-size:12px;color:var(--text-muted);margin-right:12px;font-weight:400;"></span>
+                    <button class="btn btn-secondary btn-sm" onclick="goBack()">返回</button>
+                    <button class="btn btn-secondary btn-sm" onclick="clearAllFilters()">取消筛选</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showSyncModal()">同步</button>
+                    <div class="dropdown-wrapper" id="colDropdown">
+                        <button class="btn btn-sm btn-col" id="colBtn">☰ 显示列</button>
+                        <div id="columnMenu" class="column-dropdown" style="position:absolute; right:0; top:100%; margin-top:5px; background: rgba(255,255,255,0.9); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); z-index: 100; min-width: 180px; max-height: 400px; display: flex; flex-direction: column; transition: max-height 0.3s ease, min-width 0.3s ease;">
+                            <div style="display:flex; align-items:center; gap:6px; padding:6px 6px 6px 10px; border-bottom:1px solid var(--border); flex-shrink:0;">
+                                <input type="checkbox" id="selectAllColumns" onchange="toggleAllColumns(this.checked)" style="accent-color:var(--accent); width:14px; height:14px; margin:0; padding:0; vertical-align:middle;">
+                                <span style="color:var(--text-muted); font-size:11px; flex-shrink:0;">☰</span>
+                                <span style="font-size:12px; color:var(--text); flex-shrink:0;">全选</span>
+                                <button type="button" id="expandAllColsBtn" onclick="toggleShowAllColumns()" style="margin-left:auto; padding:3px 8px; border:1px solid var(--border); border-radius:4px; background:var(--bg-input); color:var(--text); font-size:10px; cursor:pointer;">展开全部</button>
+                            </div>
+                            <div id="columnCheckboxes" style="flex:1; overflow-y: auto; max-height: 340px; padding-left: 6px;"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="showImportModal()" style="display:none;">导入</button>
+                    <button class="btn btn-primary btn-sm" onclick="openAddModal()" style="display:none;">+ 添加</button>
+                    <button class="btn btn-danger btn-sm" onclick="batchDelete()" style="display:none;">删除</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div id="searchBar" style="margin: 12px 0; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 4px 0;">
+            <input type="text" id="globalSearchInput" placeholder="搜索姓名、工号..." style="flex:1; padding:8px 12px; border:2px solid var(--border); border-radius:10px; background:var(--bg-input); color:var(--text); font-size:13px; box-sizing:border-box; height:38px; outline:none;" oninput="handleGlobalSearch(this.value)">
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('globalSearchInput').value='';handleGlobalSearch('')" style="flex-shrink:0;">清除</button>
+        </div>
+
+        <!-- 卡片列表 -->
+        <div id="loading" class="loading" style="display: none;">加载中...</div>
+        <div id="emptyState" class="empty-state" style="display: none;">暂无员工数据</div>
+        <div id="tableContainer" class="table-container" style="display: none;">
+            <div class="table-scroll-inner">
+                <table>
+                    <thead id="staffThead">
+                        <tr id="staffHeaderRow"></tr>
+                    </thead>
+                    <tbody id="staffList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加员工弹窗 -->
+    <div id="addModal" class="modal">
+        <div class="modal-box">
+            <div class="modal-title">添加员工</div>
+            <form onsubmit="submitAddStaff(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>工号 *</label>
+                        <input type="text" id="staffEmployeeId" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>姓名 *</label>
+                        <input type="text" id="staffName" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>部门</label>
+                        <input type="text" id="staffDepartment" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>班组</label>
+                        <input type="text" id="staffTeam" class="form-control">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>电话</label>
+                        <input type="tel" id="staffPhone" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>入职日期</label>
+                        <input type="date" id="staffHireDate" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 导入弹窗 -->
+    <div id="importModal" class="modal">
+        <div class="modal-box">
+            <div class="modal-title">批量导入</div>
+            <form onsubmit="handleImport(event)">
+                <div class="form-group">
+                    <label>上传 Excel 文件</label>
+                    <input type="file" name="file" accept=".xlsx,.xls" class="form-control" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">导入</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 员工详情弹窗 -->
+    <div id="staffDetailModal" class="modal">
+        <div class="modal-box staff-detail-modal-box" style="max-width:1500px; max-height:90vh; overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div class="modal-title">员工详情</div>
+                <button class="btn-close" onclick="closeStaffDetailModal()" style="background:none;border:none;font-size:20px;cursor:pointer;">&times;</button>
+            </div>
+            <div id="staffDetailContent">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑员工弹窗 -->
+    <div id="editStaffModal" class="modal">
+        <div class="modal-box" style="max-width:600px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div class="modal-title">编辑员工</div>
+                <button class="btn-close" onclick="closeEditStaffModal()" style="background:none;border:none;font-size:20px;cursor:pointer;">&times;</button>
+            </div>
+            <div id="editStaffResult" style="margin-bottom:12px;padding:10px;border-radius:var(--radius);display:none;"></div>
+            <form onsubmit="handleEditStaff(event)">
+                <div id="editStaffFields"></div>
+                <div class="modal-actions" style="margin-top:16px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditStaffModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 同步弹窗 -->
+    <div id="syncModal" class="modal">
+        <div class="modal-box">
+            <div class="modal-title">从 SMB 同步</div>
+            <div class="modal-desc">从配置的共享数据源同步员工信息</div>
+            <div id="syncResult" class="sync-result" style="display:none; margin: 16px 0; padding: 16px; border-radius: var(--radius); background: var(--bg-hover);"></div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary btn-sm" id="syncCancelBtn" onclick="closeSyncModal()">取消</button>
+                <button class="btn btn-primary btn-sm" id="syncConfirmBtn" onclick="handleSync()">确认同步</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 表头筛选下拉容器（挂载到body避免sticky定位问题） -->
+    <div id="headerFilterDropdown" class="header-filter-dropdown" style="position:absolute; top:0; left:0; z-index:9999; display:none;"></div>
+
+    <script>
+        const API_URL = window.location.origin + '/api';
+        const hasAdminSession = window.AdminSession && window.AdminSession.ensureValid ? window.AdminSession.ensureValid() : !!getToken();
+        if (!hasAdminSession) {
+            window.location.replace(window.location.origin + '/admin/login.html');
+        }
+        let currentStaffData = [];
+        let loadStaffController = null; // 用于取消上一个请求
+
+        // 标签页切换
+        let currentTab = localStorage.getItem('staffListTab') || 'employee';
+        let allStaffData = []; // 员工名册数据
+        let allStudentData = []; // 学生名册数据
+
+        // 列配置是否已从API数据同步过（持久化到localStorage）
+        function isColumnsSynced() {
+            return localStorage.getItem('columnsSynced') === 'true';
+        }
+        function setColumnsSynced(val) {
+            localStorage.setItem('columnsSynced', val ? 'true' : 'false');
+        }
+
+        // 标签页切换
+        async function switchTab(tab) {
+            if (currentTab === tab) return;
+            currentTab = tab;
+            localStorage.setItem('staffListTab', tab);
+
+            // 更新标签按钮状态和滑动背景
+            const tabBar = document.querySelector('.tab-bar');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            tabBar.classList.toggle('student', tab === 'student');
+
+            // 清空搜索和筛选
+            document.getElementById('globalSearchInput').value = '';
+            globalSearchKeyword = '';
+            clearAllFilters();
+
+            // 重新渲染表头（使用对应的列配置）
+            renderTableHeader();
+
+            // 重新绑定筛选按钮事件
+            initHeaderFilterDropdowns();
+
+            // 加载对应数据（不重置表格状态，保持显示）
+            loadStaff(false);
+        }
+
+        // 获取当前API路径
+        function getCurrentApiUrl() {
+            return currentTab === 'student' ? `${API_URL}/student-roster` : `${API_URL}/staff`;
+        }
+
+        // 获取列配置存储键名
+        function getColumnsStorageKey() {
+            return currentTab === 'student' ? 'studentRosterColumns' : 'staffColumns';
+        }
+
+        // 获取筛选存储键名前缀
+        function getFilterStoragePrefix() {
+            return currentTab === 'student' ? 'studentRosterFilter_' : 'staffFilter_';
+        }
+
+        function getSortStorageKey() {
+            return currentTab === 'student' ? 'studentRosterSort' : 'staffSort';
+        }
+
+        // 列配置 - 员工名册
+        const COLUMNS = [
+            { key: 'serial', label: '序号', visible: true, sortable: true, width: '60px' },
+            { key: 'employee_id', label: '工号', visible: true, sortable: true, width: '70px' },
+            { key: 'name', label: '姓名', visible: true, sortable: true, width: '70px' },
+            { key: 'gender', label: '性别', visible: true, sortable: false, width: '58px' },
+            { key: 'phone', label: '电话', visible: true, sortable: false, width: '110px' },
+            { key: 'department', label: '部门', visible: true, sortable: true, width: '90px' },
+            { key: 'team', label: '班组', visible: true, sortable: false, width: '80px' },
+            { key: 'position', label: '职位', visible: true, sortable: false, width: '80px' },
+            { key: 'hire_date', label: '入职日期', visible: true, sortable: true, width: '100px' },
+            { key: 'id_card', label: '身份证号', visible: false, sortable: false, width: '160px' },
+            { key: 'birthday', label: '出生年月', visible: false, sortable: false, width: '100px' },
+            { key: 'nationality', label: '民族', visible: false, sortable: false, width: '70px' },
+            { key: 'household', label: '户口性质', visible: false, sortable: false, width: '80px' },
+            { key: 'address', label: '家庭住址', visible: false, sortable: false, width: '200px' },
+            { key: 'current_address', label: '现居住地址', visible: false, sortable: false, width: '200px' },
+            { key: 'education', label: '学历', visible: false, sortable: false, width: '60px' },
+            { key: 'major', label: '专业', visible: false, sortable: false, width: '100px' },
+            { key: 'graduate_school', label: '毕业院校', visible: false, sortable: false, width: '120px' },
+            { key: 'contract_signed', label: '合同签订', visible: false, sortable: false, width: '80px' },
+            { key: 'contract_period', label: '合同期限', visible: false, sortable: false, width: '80px' },
+            { key: 'category', label: '类别', visible: false, sortable: false, width: '70px' },
+            { key: 'bank_account', label: '工资卡账号', visible: false, sortable: false, width: '160px' },
+            { key: 'bank_name', label: '开户行', visible: false, sortable: false, width: '120px' },
+            { key: 'emergency_contact', label: '紧急联系人', visible: false, sortable: false, width: '80px' },
+            { key: 'emergency_relation', label: '与本人关系', visible: false, sortable: false, width: '80px' },
+            { key: 'emergency_phone', label: '紧急联系电话', visible: false, sortable: false, width: '110px' },
+            { key: 'status', label: '状态', visible: false, sortable: true, width: '60px' }
+        ];
+
+        // 列配置 - 学生名册（精简版）
+        const STUDENT_COLUMNS = [
+            { key: 'serial', label: '序号', visible: true, sortable: true, width: '60px' },
+            { key: 'employee_id', label: '工号', visible: true, sortable: true, width: '70px' },
+            { key: 'name', label: '姓名', visible: true, sortable: true, width: '70px' },
+            { key: 'school', label: '学校', visible: true, sortable: true, width: '100px' },
+            { key: 'department', label: '部门', visible: true, sortable: true, width: '80px' },
+            { key: 'sub_department', label: '子部门', visible: true, sortable: false, width: '100px' },
+            { key: 'position', label: '职位', visible: true, sortable: false, width: '70px' },
+            { key: 'training_date', label: '实训日期', visible: true, sortable: true, width: '100px' },
+            { key: 'dinggang_date', label: '顶岗日期', visible: true, sortable: true, width: '100px' },
+            { key: 'phone', label: '联系电话', visible: true, sortable: false, width: '120px' },
+            { key: 'id_card', label: '身份证号码', visible: true, sortable: false, width: '160px' },
+            { key: 'home_address', label: '家庭住址', visible: true, sortable: false, width: '200px' },
+            { key: 'education', label: '学历', visible: true, sortable: false, width: '60px' },
+            { key: 'major', label: '专业', visible: true, sortable: false, width: '100px' },
+            { key: 'emergency_contact', label: '紧急联系人', visible: true, sortable: false, width: '80px' },
+            { key: 'emergency_relation', label: '相互关系', visible: true, sortable: false, width: '70px' },
+            { key: 'emergency_phone', label: '紧急联系电话', visible: true, sortable: false, width: '110px' },
+            { key: 'name_pinyin', label: '拼音', visible: true, sortable: true, width: '80px' }
+        ];
+
+        // 获取当前列配置
+        function getCurrentColumns() {
+            return currentTab === 'student' ? STUDENT_COLUMNS : COLUMNS;
+        }
+
+        // 从后端加载用户列配置（失败时回退到localStorage）
+        async function loadColumnConfig() {
+            const columns = getCurrentColumns();
+            // 先从localStorage快速恢复（同步操作，用户立即看到效果）
+            let localData = null;
+            try {
+                const savedLocal = localStorage.getItem(getColumnsStorageKey());
+                console.log('[DEBUG] loadColumnConfig localStorage raw:', savedLocal);
+                if (savedLocal) {
+                    localData = JSON.parse(savedLocal);
+                    console.log('[DEBUG] loadColumnConfig localData:', JSON.stringify(localData));
+                    if (Array.isArray(localData)) {
+                        // 兼容旧格式：按索引应用
+                        columns.forEach((col, i) => {
+                            if (localData[i] !== undefined) col.visible = localData[i];
+                        });
+                    } else if (typeof localData === 'object') {
+                        // 新格式：按key应用
+                        columns.forEach(col => {
+                            if (localData[col.key] !== undefined) col.visible = localData[col.key];
+                        });
+                    }
+                }
+                // 始终隐藏状态列（员工名册）
+                columns.forEach(col => { if (col.key === 'status') col.visible = false; });
+                console.log('[DEBUG] After localStorage restore, columns:', JSON.stringify(columns.map(c => ({k:c.key,v:c.visible}))));
+            } catch(e) {
+                console.warn('localStorage恢复失败:', e);
+            }
+            // 异步从后端加载最新配置（只有localStorage为空时才使用后端数据）
+            const configKey = currentTab === 'student' ? 'student_columns' : 'staff_columns';
+            try {
+                const res = await fetch(`${API_URL}/staff/column-config?key=${configKey}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const json = await res.json();
+                console.log('[DEBUG] loadColumnConfig API response:', JSON.stringify(json));
+                // 只有当localStorage没有数据时才使用后端数据
+                if (json && json.code === 0 && json.data && localData === null) {
+                    const cfg = json.data;
+                    if (Array.isArray(cfg)) {
+                        columns.forEach((col, i) => {
+                            if (cfg[i] !== undefined) col.visible = cfg[i];
+                        });
+                    } else if (typeof cfg === 'object') {
+                        columns.forEach(col => {
+                            if (cfg[col.key] !== undefined) col.visible = cfg[col.key];
+                        });
+                    }
+                    // 始终隐藏状态列
+                    columns.forEach(col => { if (col.key === 'status') col.visible = false; });
+                    // 同步到localStorage
+                    const backupData = {};
+                    columns.forEach(col => { backupData[col.key] = col.visible; });
+                    backupData._order = columns.map(c => c.key);
+                    localStorage.setItem(getColumnsStorageKey(), JSON.stringify(backupData));
+                }
+            } catch(e) {
+                console.warn('从后端加载列配置失败，继续使用localStorage:', e);
+            }
+        }
+
+        // 保存列配置到后端（同时保存到localStorage作为后备）
+        async function saveColumnConfig() {
+            // 使用对象格式保存（key -> visible），避免顺序问题
+            const columns = getCurrentColumns();
+            const data = {};
+            columns.forEach(col => {
+                data[col.key] = col.visible;
+            });
+            // 保存列顺序
+            const order = columns.map(c => c.key);
+            data._order = order;
+            // 先保存到localStorage
+            localStorage.setItem(getColumnsStorageKey(), JSON.stringify(data));
+            // 尝试保存到后端
+            const configKey = currentTab === 'student' ? 'student_columns' : 'staff_columns';
+            try {
+                const res = await fetch(`${API_URL}/staff/column-config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    body: JSON.stringify({ key: configKey, data })
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const json = await res.json();
+                if (json && json.code === 0) {
+                    showToast('配置已保存');
+                } else {
+                    showToast('保存失败: ' + (json?.msg || '未知错误'), 'error');
+                }
+            } catch(e) {
+                showToast('保存失败: 网络错误', 'error');
+            }
+        }
+
+        // 显示上次同步时间
+        async function showSyncTime() {
+            const el = document.getElementById('syncTimeDisplay');
+            if (!el) return;
+            try {
+                const token = getToken();
+                const res = await fetch(`${API_URL}/staff/sync-time`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.code === 0 && data.data) {
+                    const d = new Date(data.data);
+                    const month = d.getMonth() + 1;
+                    const day = d.getDate();
+                    const hour = String(d.getHours()).padStart(2, '0');
+                    const minute = String(d.getMinutes()).padStart(2, '0');
+                    el.textContent = `上次同步: ${month}月${day}日 ${hour}:${minute}`;
+                } else {
+                    el.textContent = '';
+                }
+            } catch {
+                el.textContent = '';
+            }
+        }
+        let toastTimeout = null;
+        function showToast(msg, type = 'success') {
+            let toast = document.getElementById('saveToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'saveToast';
+                toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:6px;z-index:9999;font-size:12px;transition:opacity 0.2s, transform 0.2s;opacity:0;transform:translateX(-50%) translateY(-10px);backdrop-filter:blur(10px);background:rgba(255,255,255,0.7);box-shadow:0 2px 12px rgba(0,0,0,0.08);color:#333';
+                document.body.appendChild(toast);
+            }
+            // 清除之前的timeout
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+            toastTimeout = setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(-10px)';
+            }, 1000);
+        }
+
+        // 切换列显示/隐藏
+        function toggleColumn(key) {
+            const columns = getCurrentColumns();
+            const col = columns.find(c => c.key === key);
+            if (col) {
+                col.visible = !col.visible;
+                saveColumnConfig().catch(()=>{});
+                updateTableColumns();
+                updateColumnCheckboxes();
+            }
+        }
+
+        // 更新复选框状态
+        let draggedItem = null;
+        let showAllColsExpanded = false;
+
+        // 展开/收起所有列
+        function toggleShowAllColumns() {
+            showAllColsExpanded = !showAllColsExpanded;
+            const menu = document.getElementById('columnMenu');
+            const items = document.getElementById('columnCheckboxes');
+            const btn = document.getElementById('expandAllColsBtn');
+            if (showAllColsExpanded) {
+                menu.style.maxHeight = '2200px';
+                menu.style.overflow = 'hidden';
+                menu.style.minWidth = '380px';
+                items.style.maxHeight = 'none';
+                items.style.display = 'block';
+                items.style.columnCount = '2';
+                items.style.columnGap = '8px';
+                if (btn) btn.textContent = '收起';
+            } else {
+                menu.style.maxHeight = '400px';
+                menu.style.overflow = 'hidden';
+                menu.style.minWidth = '180px';
+                items.style.maxHeight = '340px';
+                items.style.display = 'flex';
+                items.style.columnCount = 'unset';
+                if (btn) btn.textContent = '展开全部';
+            }
+        }
+
+        function updateColumnCheckboxes() {
+            const container = document.getElementById('columnCheckboxes');
+            if (!container) return;
+            const columns = getCurrentColumns();
+            const cols = columns.filter(c => c.key !== 'status');
+            // 所有列都可以调整
+            const otherCols = cols;
+            const allOtherVisible = otherCols.length > 0 && otherCols.every(c => c.visible);
+            const selectAll = document.getElementById('selectAllColumns');
+            if (selectAll) selectAll.checked = allOtherVisible;
+            container.innerHTML = cols.map((col, idx) => {
+                const isLocked = ['serial', 'employee_id', 'name'].includes(col.key);
+                const isDraggable = !isLocked;
+                return `<div class="col-item" draggable="${isDraggable}" data-key="${col.key}" style="display:flex; align-items:center; gap:6px; padding:6px 4px; cursor:${isLocked ? 'not-allowed' : 'move'}; user-select:none; box-sizing:border-box; opacity:${isLocked ? '0.5' : '1'};">
+                    <input type="checkbox" ${col.visible ? 'checked' : ''} ${isLocked ? 'disabled' : ''} onchange="toggleColumn('${col.key}')" style="accent-color:var(--accent); flex-shrink:0; width:14px; height:14px; margin:0; padding:0; vertical-align:middle;">
+                    <span style="color:var(--text-muted); font-size:11px; flex-shrink:0; line-height:1;">☰</span>
+                    <span style="font-size:12px; flex-shrink:0; line-height:1; color:${isLocked ? 'var(--text-muted)' : 'var(--text)'};">${col.label}</span>
+                </div>`;
+            }).join('');
+            
+            // Add drag events
+            container.querySelectorAll('.col-item').forEach(item => {
+                item.addEventListener('dragstart', e => {
+                    draggedItem = item;
+                    item.style.opacity = '0.5';
+                    e.dataTransfer.effectAllowed = 'move';
+                });
+                item.addEventListener('dragend', () => {
+                    item.style.opacity = '1';
+                    draggedItem = null;
+                });
+                item.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    if (item !== draggedItem) {
+                        item.style.borderTop = '2px solid var(--accent)';
+                    }
+                });
+                item.addEventListener('dragleave', () => {
+                    item.style.borderTop = '';
+                });
+                item.addEventListener('drop', e => {
+                    e.preventDefault();
+                    item.style.borderTop = '';
+                    if (item === draggedItem) return;
+
+                    const fromKey = draggedItem.dataset.key;
+                    const toKey = item.dataset.key;
+
+                    // 禁止将其他列拖到 serial, employee_id, name 之前
+                    if (['serial', 'employee_id', 'name'].includes(toKey)) return;
+
+                    const fromIdx = columns.findIndex(c => c.key === fromKey);
+                    const toIdx = columns.findIndex(c => c.key === toKey);
+
+                    // Reorder columns
+                    const [moved] = columns.splice(fromIdx, 1);
+                    columns.splice(toIdx, 0, moved);
+
+                    saveColumnConfig().catch(()=>{});
+                    // 只更新表头单元格位置，不重新渲染整个表头
+                    updateHeaderOrder();
+                    updateColumnCheckboxes();
+                });
+            });
+        }
+
+        // 全选/取消全选
+        function toggleAllColumns(checked) {
+            const columns = getCurrentColumns();
+            columns.forEach(col => {
+                if (col.key !== 'status') {
+                    // 取消全选时，保留序号、工号、姓名
+                    if (checked || (col.key !== 'serial' && col.key !== 'employee_id' && col.key !== 'name')) {
+                        col.visible = checked;
+                    }
+                }
+            });
+            saveColumnConfig().catch(()=>{});
+            renderTableHeader();
+            updateTableColumns();
+            updateColumnCheckboxes();
+        }
+
+        // 只更新表头单元格顺序
+        function updateHeaderOrder() {
+            const row = document.getElementById('staffHeaderRow');
+            const ths = Array.from(row.querySelectorAll('th'));
+            const columns = getCurrentColumns();
+            // 按columns顺序重新排列TH
+            ths.sort((a, b) => {
+                const keyA = a.dataset.key;
+                const keyB = b.dataset.key;
+                const idxA = columns.findIndex(c => c.key === keyA);
+                const idxB = columns.findIndex(c => c.key === keyB);
+                return idxA - idxB;
+            });
+            ths.forEach(th => row.appendChild(th));
+
+            // 同时更新表体行的TD顺序
+            const tbody = document.getElementById('staffList');
+            tbody.querySelectorAll('tr').forEach(tr => {
+                const tds = Array.from(tr.querySelectorAll('td'));
+                tds.sort((a, b) => {
+                    const keyA = a.dataset.key;
+                    const keyB = b.dataset.key;
+                    const idxA = columns.findIndex(c => c.key === keyA);
+                    const idxB = columns.findIndex(c => c.key === keyB);
+                    return idxA - idxB;
+                });
+                tds.forEach(td => tr.appendChild(td));
+            });
+        }
+
+        // 更新表格列显示
+        function updateTableColumns() {
+            // 检查是否有可见列
+            const columns = getCurrentColumns();
+            const visibleCols = columns.filter(c => c.visible);
+            const allHidden = visibleCols.length === 0;
+
+            // 只更新现有表头单元格的显示状态（不重建）
+            const headers = document.querySelectorAll('#staffHeaderRow th');
+            headers.forEach(th => {
+                const key = th.dataset.key;
+                const col = columns.find(c => c.key === key);
+                if (col) {
+                    th.style.display = col.visible ? '' : 'none';
+                }
+            });
+
+            const tbody = document.getElementById('staffList');
+
+            if (allHidden) {
+                // 所有列都隐藏，隐藏所有行，显示空消息
+                tbody.querySelectorAll('tr').forEach(row => row.style.display = 'none');
+                // 显示空消息行
+                let emptyRow = tbody.querySelector('.empty-message-row');
+                if (!emptyRow) {
+                    emptyRow = document.createElement('tr');
+                    emptyRow.className = 'empty-message-row';
+                    emptyRow.innerHTML = `<td colspan="${columns.length}" style="text-align:center; padding:40px; color:var(--text-muted);">空</td>`;
+                    tbody.appendChild(emptyRow);
+                }
+                emptyRow.style.display = '';
+            } else {
+                // 有可见列，重新渲染表格
+                if (currentStaffData.length > 0) {
+                    renderStaffTable(currentStaffData);
+                                    }
+                // 隐藏空消息行
+                const emptyRow = tbody.querySelector('.empty-message-row');
+                if (emptyRow) emptyRow.style.display = 'none';
+            }
+        }
+
+        function renderTableHeader() {
+            const thead = document.getElementById('staffThead');
+            const row = document.getElementById('staffHeaderRow');
+            const columns = getCurrentColumns(); // 根据当前标签获取对应列配置
+            const visibleNonCheckbox = columns.filter(c => c.visible);
+            const allHidden = visibleNonCheckbox.length === 0;
+
+            function getFilterIcon(key) {
+                // 箭头颜色由父级按钮的 class 控制
+                return `<span class="th-filter-icon">▼</span>`;
+            }
+
+            function getFilterCount(key) {
+                return `<span class="th-filter-count" id="${key}Count" style="display:none;"></span>`;
+            }
+
+            function getSerialCount() {
+                return `<span class="th-filter-count" id="serialCount"></span>`;
+            }
+
+            row.innerHTML = columns.map(col => {
+                const isFrozen = false;
+                // 所有数据列都可以筛选（除了 status）
+                const isFilterable = col.key !== 'status';
+
+                let thContent = col.label;
+                // 序号列显示总数 - 无筛选箭头
+                if (col.key === 'serial') {
+                    thContent = `<span class="th-filter-btn-text">${col.label}${getSerialCount()}</span>`;
+                } else if (isFilterable) {
+                    const isFiltered = hasActiveFilter(col.key);
+                    const btnClass = isFiltered ? 'th-filter-btn th-filter-btn-active' : 'th-filter-btn';
+                    thContent = `<button type="button" class="${btnClass}" data-filter="${col.key}"><span class="th-filter-btn-text">${col.label}</span>${getFilterIcon(col.key)}</button>`;
+                }
+
+                return `<th data-key="${col.key}" class="${isFrozen ? 'frozen' : ''}" style="text-align:center; width:${col.width}; min-width:${col.width}; cursor:pointer; display:${col.visible ? '' : 'none'};">${thContent}</th>`;
+            }).join('');
+
+            // 设置序号统计数字
+            const serialCountEl = row.querySelector('#serialCount');
+            const currentData = currentTab === 'student' ? window.allStudentData : window.allStaffData;
+            if (serialCountEl) {
+                serialCountEl.textContent = currentData ? currentData.length : 0;
+                serialCountEl.style.display = 'inline-block';
+            }
+
+            initSortable();
+            // 初始化表头筛选下拉
+            initHeaderFilterDropdowns();
+        }
+
+        // 当前打开的下拉key
+        let currentFilterKey = null;
+
+        // 初始化表头筛选下拉
+        function initHeaderFilterDropdowns() {
+            console.log('[DEBUG] initHeaderFilterDropdowns called');
+            const btns = document.querySelectorAll('.th-filter-btn');
+            console.log('[DEBUG] Found', btns.length, 'filter buttons');
+            // 绑定表头筛选按钮点击事件
+            btns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const filterKey = btn.dataset.filter;
+                    const dropdown = document.getElementById('headerFilterDropdown');
+
+                    // 如果点击同一个按钮，关闭下拉
+                    if (currentFilterKey === filterKey && dropdown.style.display === 'block') {
+                        dropdown.style.display = 'none';
+                        currentFilterKey = null;
+                        return;
+                    }
+
+                    // 关闭下拉
+                    dropdown.style.display = 'none';
+
+                    // 设置当前下拉key
+                    currentFilterKey = filterKey;
+
+                    // 填充内容
+                    populateHeaderFilterOptions(filterKey, dropdown);
+
+                    // 计算并设置位置
+                    const btnRect = btn.getBoundingClientRect();
+                    dropdown.style.top = (btnRect.bottom + 4) + 'px';
+                    dropdown.style.left = btnRect.left + 'px';
+
+                    // 显示下拉
+                    dropdown.style.display = 'block';
+                });
+            });
+
+            // 点击其他地方关闭下拉
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.th-filter-btn') && !e.target.closest('#headerFilterDropdown')) {
+                    const dropdown = document.getElementById('headerFilterDropdown');
+                    if (dropdown) dropdown.style.display = 'none';
+                    currentFilterKey = null;
+                }
+            });
+
+            // 阻止下拉内部点击冒泡
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('#headerFilterDropdown')) {
+                    e.stopPropagation();
+                }
+            });
+        }
+
+        // 填充表头筛选下拉的选项
+        function populateHeaderFilterOptions(key, dropdown) {
+            const filterPrefix = getFilterStoragePrefix();
+            // 入职日期 - Excel风格分级下拉（年展开→月→日）
+            if (key === 'hire_date') {
+                // 从数据中提取年月日分级结构（联动筛选 - 只显示匹配其他列筛选条件的数据）
+                const yearMap = {};
+                const filteredData = getFilteredDataForColumn('hire_date');
+                filteredData.forEach(s => {
+                    if (!s.hire_date) return;
+                    const d = parseDate(s.hire_date);
+                    if (!d) return;
+                    const y = d.getFullYear();
+                    const m = d.getMonth() + 1;
+                    const day = d.getDate();
+                    if (!yearMap[y]) yearMap[y] = { months: {}, _count: 0 };
+                    if (!yearMap[y].months[m]) yearMap[y].months[m] = { days: {}, _count: 0 };
+                    yearMap[y].months[m].days[day] = true;
+                    yearMap[y]._count++;
+                    yearMap[y].months[m]._count++;
+                });
+
+                // 读取已保存的筛选状态
+                const savedFilterStr = localStorage.getItem(filterPrefix + 'hire_date');
+                let savedValues = null;
+                if (savedFilterStr !== null) {
+                    try {
+                        savedValues = JSON.parse(savedFilterStr) || null;
+                    } catch(e) { savedValues = null; }
+                }
+
+                const years = Object.keys(yearMap).sort((a, b) => b - a); // 降序
+
+                // 如果有手动日期输入，根据日期范围计算哪些日期应该被选中
+                const manualStart = localStorage.getItem(filterPrefix + 'HireDateManualStart');
+                const manualEnd = localStorage.getItem(filterPrefix + 'HireDateManualEnd');
+                if (manualStart || manualEnd) {
+                    const startDate = manualStart ? parseFlexibleDate(manualStart) : null;
+                    const endDate = manualEnd ? parseFlexibleDate(manualEnd, true) : null;
+                    if (startDate || endDate) {
+                        // 计算哪些日期在范围内
+                        savedValues = [];
+                        years.forEach(y => {
+                            const yNum = parseInt(y);
+                            Object.keys(yearMap[y].months).forEach(m => {
+                                const mNum = parseInt(m);
+                                Object.keys(yearMap[y].months[m].days).forEach(d => {
+                                    const dNum = parseInt(d);
+                                    const date = new Date(yNum, mNum - 1, dNum);
+                                    const startOk = !startDate || date >= startDate;
+                                    const endOk = !endDate || date <= endDate;
+                                    if (startOk && endOk) {
+                                        savedValues.push(y + '-' + m + '-' + d);
+                                    }
+                                });
+                            });
+                        });
+                    }
+                }
+
+                // 生成分级HTML
+                const allChecked = savedValues === null;
+                const savedStart = localStorage.getItem(filterPrefix + 'HireDateManualStart') || '';
+                const savedEnd = localStorage.getItem(filterPrefix + 'HireDateManualEnd') || '';
+                let html = `<div class="th-dropdown-manual" style="padding:8px 10px;">
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                        <span style="font-size:11px; color:#6b7280; width:20px;">从</span>
+                        <input type="text" id="hireDateManualStart" value="${savedStart}" placeholder="输入日期" onkeydown="if(event.key==='Enter')onHireDateManualChange()" style="flex:1; padding:4px 6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:white; color:var(--text);">
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:11px; color:#6b7280; width:20px;">到</span>
+                        <input type="text" id="hireDateManualEnd" value="${savedEnd}" placeholder="输入日期" onkeydown="if(event.key==='Enter')onHireDateManualChange()" style="flex:1; padding:4px 6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:white; color:var(--text);">
+                    </div>
+                </div>
+                <div class="th-dropdown-sort">
+                    <button onclick="sortColumn('${key}', 'asc')">升序 ↑</button>
+                    <button onclick="sortColumn('${key}', 'desc')">降序 ↓</button>
+                </div>
+                <div class="th-dropdown-list" id="hireDateTree" style="max-height:200px; overflow-y:auto; padding:4px 0;">
+                <div class="date-year-item" style="margin:1px 4px;">
+                    <div class="date-row" style="display:flex; align-items:center; gap:6px; padding:5px 8px; cursor:pointer;">
+                        <span style="width:14px;"></span>
+                        <input type="checkbox" id="hire_dateAll" ${allChecked ? 'checked' : ''} onchange="toggleAllHireDate(this.checked)" style="accent-color:var(--accent); cursor:pointer; width:14px; height:14px;">
+                        <span style="font-weight:600; font-size:12px; color:#374151;">全选</span>
+                    </div>
+                </div>`;
+
+                years.forEach(y => {
+                    const yearCount = yearMap[y]._count;
+                    const yearChecked = savedValues === null || savedValues.some(v => String(v) === y || String(v).startsWith(y + '-'));
+                    html += `<div class="date-year-item" style="margin:1px 4px;">
+                        <div class="date-row" style="display:flex; align-items:center; gap:6px; padding:5px 8px; cursor:pointer;">
+                            <span class="expand-icon" id="expandYear${y}" onclick="event.stopPropagation(); toggleYear(${y})" style="width:14px; text-align:center; font-size:10px; color:#6b7280; cursor:pointer;">▶</span>
+                            <input type="checkbox" id="year${y}" onclick="event.stopPropagation();" onchange="onYearChange(${y}, this.checked)" ${yearChecked ? 'checked' : ''} style="accent-color:var(--accent); cursor:pointer; width:14px; height:14px;">
+                            <span onclick="event.stopPropagation(); toggleYear(${y})" style="font-weight:600; font-size:12px; color:#374151; cursor:pointer;">${y}年</span>
+                            <span style="color:#9ca3af; font-size:11px;">(${yearCount})</span>
+                            <button onclick="event.stopPropagation(); singleSelectHireDate('${y}')" class="single-select-btn" style="padding:1px 4px; border:1px solid var(--success); border-radius:4px; background:var(--success); color:#fff; font-size:10px; cursor:pointer; margin-left:auto; flex-shrink:0;">仅筛选此项</button>
+                        </div>
+                        <div class="year-months" id="year${y}Months" style="display:none; margin-left:20px;">`;
+
+                    const months = Object.keys(yearMap[y].months).sort((a, b) => a - b);
+                    months.forEach(m => {
+                        const monthCount = yearMap[y].months[m]._count;
+                        const monthLabel = m + '月';
+                        const monthChecked = savedValues === null || savedValues.some(v => v.startsWith(y + '-' + m + '-'));
+                        html += `<div class="date-month-item" style="margin:1px 4px;">
+                            <div class="date-row" style="display:flex; align-items:center; gap:6px; padding:4px 6px; cursor:pointer;">
+                                <span class="expand-icon" id="expandMonth${y}${m}" onclick="event.stopPropagation(); toggleMonth(${y}, ${m})" style="width:14px; text-align:center; font-size:10px; color:#6b7280; cursor:pointer;">▶</span>
+                                <input type="checkbox" id="month${y}${m}" onclick="event.stopPropagation();" onchange="onMonthChange(${y}, ${m}, this.checked)" ${monthChecked ? 'checked' : ''} style="accent-color:var(--accent); cursor:pointer; width:14px; height:14px;">
+                                <span onclick="event.stopPropagation(); toggleMonth(${y}, ${m})" style="font-size:12px; color:#374151; cursor:pointer;">${monthLabel}</span>
+                                <span style="color:#9ca3af; font-size:11px;">(${monthCount})</span>
+                                <button onclick="event.stopPropagation(); singleSelectHireDate('${y}-${m}')" class="single-select-btn" style="padding:1px 4px; border:1px solid var(--success); border-radius:4px; background:var(--success); color:#fff; font-size:10px; cursor:pointer; margin-left:auto; flex-shrink:0;">仅筛选此项</button>
+                            </div>
+                            <div class="month-days" id="month${y}${m}Days" style="display:none; margin-left:38px;">`;
+
+                        const days = Object.keys(yearMap[y].months[m].days).sort((a, b) => a - b);
+                        days.forEach(d => {
+                            const dayValue = String(y) + '-' + String(m) + '-' + String(d);
+                            const dayChecked = savedValues === null || savedValues.includes(dayValue);
+                            html += `<div class="date-day-item" style="display:flex; align-items:center; gap:4px; padding:3px 4px; cursor:pointer; border-radius:4px;">
+                                <input type="checkbox" class="day-check" data-date="${dayValue}" id="day${y}${m}${d}" onclick="event.stopPropagation();" onchange="onDayChange('${dayValue}', this.checked)" ${dayChecked ? 'checked' : ''} style="accent-color:var(--accent); cursor:pointer; width:14px; height:14px;">
+                                <span onclick="event.stopPropagation();" style="font-size:12px; color:#374151; cursor:pointer; flex-shrink:0;">${d}日</span>
+                                <button onclick="event.stopPropagation(); singleSelectHireDate('${dayValue}')" class="single-select-btn" style="padding:1px 4px; border:1px solid var(--success); border-radius:4px; background:var(--success); color:#fff; font-size:10px; cursor:pointer; margin-left:auto; flex-shrink:0;">仅筛选此项</button>
+                            </div>`;
+                        });
+
+                        html += `</div></div>`;
+                    });
+
+                    html += `</div></div>`;
+                });
+
+                if (years.length === 0) {
+                    html += '<div style="padding:10px; text-align:center; color:#9ca3af; font-size:12px;">无日期数据</div>';
+                }
+
+                html += '</div>';
+                dropdown.innerHTML = html;
+                return;
+            }
+
+            // ========== 其他字段筛选 ==========
+
+            // 其他字段：获取唯一值（联动筛选 - 根据其他列的筛选条件过滤）
+            const filteredData = getFilteredDataForColumn(key);
+            const valuesSet = new Set();
+            filteredData.forEach(s => {
+                if (s[key]) valuesSet.add(s[key]);
+            });
+            const allValues = [...valuesSet];
+            if (!allValues || allValues.length === 0) {
+                dropdown.innerHTML = '<div style="padding:10px;text-align:center;color:var(--text-muted);font-size:12px;">无数据</div>';
+                return;
+            }
+
+            // 排序
+            allValues.sort((a, b) => {
+                if (typeof a === 'string') return a.localeCompare(b, 'zh-CN');
+                return a - b;
+            });
+
+            // 读取已保存的筛选状态
+            // null = 从未筛选过（默认全选），[] = 用户清空了所有选项
+            const savedFilterStr = localStorage.getItem(filterPrefix + key);
+            let savedValues = null;
+            if (savedFilterStr !== null) {
+                try {
+                    savedValues = JSON.parse(savedFilterStr) || [];
+                } catch(e) {
+                    savedValues = null;
+                }
+            }
+
+            // 构建下拉HTML
+            let html = `<div class="th-dropdown-header" style="justify-content:space-between;">
+                <label class="th-select-all" style="display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="${key}All">
+                    <span>全选</span>
+                </label>
+                <input type="text" id="${key}Search" placeholder="搜索" style="flex:1; margin-left:8px; padding:4px 8px; border:1px solid var(--border); border-radius:4px; font-size:11px; background:var(--bg-input); color:var(--text);">
+            </div>
+            <div class="th-dropdown-sort">
+                <button onclick="sortColumn('${key}', 'asc')">升序 ↑</button>
+                <button onclick="sortColumn('${key}', 'desc')">降序 ↓</button>
+            </div>
+            <div class="th-dropdown-list" id="${key}List">`;
+
+            // 根据筛选结果自动勾选：如果savedValues为null，则勾选在filteredData中存在的值
+            // 如果savedValues有值，则勾选savedValues中在filteredData里存在的值
+            allValues.forEach(val => {
+                const displayVal = val || '(空)';
+                let isChecked;
+                if (savedValues === null) {
+                    // 从未筛选过，默认勾选所有在筛选结果中存在的值
+                    isChecked = filteredData.some(s => s[key] === val);
+                } else {
+                    // 之前筛选过，只勾选之前筛选的值中在当前筛选结果里存在的
+                    isChecked = savedValues.includes(val);
+                }
+                const checked = isChecked ? 'checked' : '';
+                const encodedVal = encodeURIComponent(val == null ? '' : String(val));
+                html += `<div class="th-dropdown-item">
+                    <input type="checkbox" class="${key}-check" value="${val}" ${checked}>
+                    <span class="th-item-text">${displayVal}</span>
+                    <button onclick="event.stopPropagation(); singleSelect('${key}', '${encodedVal}')" class="single-select-btn" style="padding:1px 6px; border:1px solid var(--success); border-radius:4px; background:var(--success); color:#fff; font-size:10px; cursor:pointer; flex-shrink:0; margin-left:8px;">仅筛选此项</button>
+                </div>`;
+            });
+
+            html += '</div>';
+            dropdown.innerHTML = html;
+
+            // 绑定搜索事件
+            const searchInput = document.getElementById(key + 'Search');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const keyword = this.value.toLowerCase();
+                    const items = listContainer.querySelectorAll('.th-dropdown-item');
+                    items.forEach(item => {
+                        const text = item.querySelector('.th-item-text').textContent.toLowerCase();
+                        item.style.display = text.includes(keyword) ? 'flex' : 'none';
+                    });
+                });
+            }
+
+            // 绑定全选复选框事件
+            const allCheckbox = document.getElementById(key + 'All');
+            const listContainer = document.getElementById(key + 'List');
+            const checkboxes = listContainer.querySelectorAll(`.${key}-check`);
+
+            // 更新全选状态
+            function updateAllState() {
+                const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+                allCheckbox.checked = checkedCount === checkboxes.length;
+                allCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+            }
+            updateAllState();
+
+            // 全选点击 - 直接应用筛选
+            allCheckbox.addEventListener('change', function() {
+                checkboxes.forEach(cb => cb.checked = this.checked);
+                // 直接应用筛选
+                const checkedValues = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+                if (checkedValues.length === checkboxes.length) {
+                    localStorage.removeItem(filterPrefix + key);
+                } else {
+                    localStorage.setItem(filterPrefix + key, JSON.stringify(checkedValues));
+                }
+                applyHeaderFilter();
+            });
+
+            // 单个复选框点击 - 勾选包含，取消勾选则排除
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    const currentCheckboxes = listContainer.querySelectorAll(`.${key}-check`);
+                    const checkedValues = Array.from(currentCheckboxes).filter(c => c.checked).map(c => c.value);
+                    if (checkedValues.length === 0) {
+                        // 没有任何勾选 → 排除全部（保存特殊标记）
+                        localStorage.setItem(filterPrefix + key, JSON.stringify([]));
+                    } else {
+                        // 正常保存勾选状态
+                        localStorage.setItem(filterPrefix + key, JSON.stringify(checkedValues));
+                    }
+                    updateAllState();
+                    applyHeaderFilter();
+                });
+            });
+
+        }
+
+        // ========== 入职日期分级筛选函数（全局） ==========
+        // 展开/折叠年
+        function toggleYear(y) {
+            const el = document.getElementById('year' + y + 'Months');
+            const icon = document.getElementById('expandYear' + y);
+            if (!el) return;
+            const isHidden = el.style.display === 'none';
+            el.style.display = isHidden ? 'block' : 'none';
+            icon.textContent = isHidden ? '▼' : '▶';
+        }
+
+        // 展开/折叠月
+        function toggleMonth(y, m) {
+            const el = document.getElementById('month' + y + m + 'Days');
+            const icon = document.getElementById('expandMonth' + y + m);
+            if (!el) return;
+            const isHidden = el.style.display === 'none';
+            el.style.display = isHidden ? 'block' : 'none';
+            icon.textContent = isHidden ? '▼' : '▶';
+        }
+
+        // 点击日行选中
+        function toggleDay(dayValue, rowEl) {
+            const checkbox = rowEl.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            onDayChange(dayValue, checkbox.checked);
+        }
+
+        // 年复选框
+        function onYearChange(y, checked) {
+            const monthsDiv = document.getElementById('year' + y + 'Months');
+            if (!monthsDiv) return;
+            monthsDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = checked);
+            saveHireDateFilter();
+        }
+
+        // 月复选框
+        function onMonthChange(y, m, checked) {
+            const daysDiv = document.getElementById('month' + y + m + 'Days');
+            if (!daysDiv) return;
+            daysDiv.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = checked);
+            saveHireDateFilter();
+        }
+
+        // 日复选框
+        function onDayChange(dayValue, checked) {
+            saveHireDateFilter();
+        }
+
+        // 全选/取消全选
+        function toggleAllHireDate(checked) {
+            if (checked) {
+                // 勾选全选 - 清除筛选，显示所有
+                document.querySelectorAll('#hireDateTree input[type="checkbox"]').forEach(cb => cb.checked = true);
+                localStorage.removeItem(filterPrefix + 'hire_date');
+                // 清空手动输入
+                document.getElementById('hireDateManualStart').value = '';
+                document.getElementById('hireDateManualEnd').value = '';
+                localStorage.removeItem(filterPrefix + 'HireDateManualStart');
+                localStorage.removeItem(filterPrefix + 'HireDateManualEnd');
+            } else {
+                // 取消全选 - 设置空数组，隐藏所有
+                document.querySelectorAll('#hireDateTree input[type="checkbox"]').forEach(cb => cb.checked = false);
+                localStorage.setItem(filterPrefix + 'hire_date', JSON.stringify([]));
+                // 清空手动输入
+                document.getElementById('hireDateManualStart').value = '';
+                document.getElementById('hireDateManualEnd').value = '';
+                localStorage.removeItem(filterPrefix + 'HireDateManualStart');
+                localStorage.removeItem(filterPrefix + 'HireDateManualEnd');
+            }
+            applyHeaderFilter();
+        }
+
+        // 入职日期手动输入筛选
+        function onHireDateManualChange() {
+            const startVal = document.getElementById('hireDateManualStart').value.trim();
+            const endVal = document.getElementById('hireDateManualEnd').value.trim();
+            // 使用特殊key存储手动输入的日期范围（原始字符串）
+            if (startVal) {
+                localStorage.setItem(filterPrefix + 'HireDateManualStart', startVal);
+            } else {
+                localStorage.removeItem(filterPrefix + 'HireDateManualStart');
+            }
+            if (endVal) {
+                localStorage.setItem(filterPrefix + 'HireDateManualEnd', endVal);
+            } else {
+                localStorage.removeItem(filterPrefix + 'HireDateManualEnd');
+            }
+            // 清除树形筛选
+            localStorage.removeItem(filterPrefix + 'hire_date');
+            // 同步更新树形勾选状态
+            syncTreeFromManualInput(startVal, endVal);
+            // 关闭下拉
+            const dropdown = document.getElementById('headerFilterDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            currentFilterKey = null;
+            applyHeaderFilter();
+        }
+
+        // 根据手动输入同步更新树的勾选状态
+        function syncTreeFromManualInput(startVal, endVal) {
+            if (!startVal && !endVal) {
+                // 全选
+                document.querySelectorAll('#hireDateTree input[type="checkbox"]').forEach(cb => cb.checked = true);
+                return;
+            }
+            const startDate = startVal ? parseFlexibleDate(startVal) : null;
+            const endDate = endVal ? parseFlexibleDate(endVal, true) : null;
+            if (!startDate && !endDate) {
+                document.querySelectorAll('#hireDateTree input[type="checkbox"]').forEach(cb => cb.checked = true);
+                return;
+            }
+            // 遍历所有日复选框，设置状态
+            document.querySelectorAll('.day-check').forEach(cb => {
+                const dateVal = cb.dataset.date;
+                const d = parseDate(dateVal);
+                if (!d) {
+                    cb.checked = false;
+                    return;
+                }
+                const startOk = !startDate || d >= startDate;
+                const endOk = !endDate || d <= endDate;
+                cb.checked = startOk && endOk;
+            });
+            // 遍历月复选框
+            document.querySelectorAll('input[id^="month"]').forEach(cb => {
+                const id = cb.id;
+                const y = id.substring(5, 9);
+                const m = parseInt(id.substring(9));
+                const daysInMonth = document.querySelectorAll(`.day-check[data-date^="${y}-${m}-"]`);
+                const allChecked = Array.from(daysInMonth).every(dc => dc.checked);
+                const someChecked = Array.from(daysInMonth).some(dc => dc.checked);
+                cb.checked = allChecked;
+                cb.indeterminate = someChecked && !allChecked;
+            });
+            // 遍历年复选框
+            document.querySelectorAll('input[id^="year"]').forEach(cb => {
+                const id = cb.id;
+                if (id === 'hire_dateAll') return;
+                if (id.length !== 8 && id.length !== 9) return;
+                const y = id.replace('year', '');
+                if (!/^\d{4}$/.test(y)) return;
+                const monthsInYear = document.querySelectorAll(`.day-check[data-date^="${y}-"]`);
+                const allChecked = Array.from(monthsInYear).every(dc => dc.checked);
+                const someChecked = Array.from(monthsInYear).some(dc => dc.checked);
+                cb.checked = allChecked;
+                cb.indeterminate = someChecked && !allChecked;
+            });
+        }
+
+        // 解析灵活日期格式，支持：20250101(YYYYMMDD)、202511(YYYYMM)、2025110(YYYYMD)等
+        function parseFlexibleDate(str, isEndDate = false) {
+            if (!str) return null;
+            str = str.replace(/[-\/]/g, ''); // 去掉分隔符
+            if (!/^\d+$/.test(str)) return null;
+            let year, month, day;
+            if (str.length === 8) {
+                year = parseInt(str.substring(0, 4));
+                month = parseInt(str.substring(4, 6));
+                day = parseInt(str.substring(6, 8));
+            } else if (str.length === 7) {
+                year = parseInt(str.substring(0, 4));
+                month = parseInt(str.substring(4, 5));
+                day = parseInt(str.substring(5, 7));
+            } else if (str.length === 6) {
+                year = parseInt(str.substring(0, 4));
+                month = parseInt(str.substring(4, 6));
+                day = 1;
+            } else if (str.length === 5) {
+                year = parseInt(str.substring(0, 4));
+                month = parseInt(str.substring(4, 5));
+                day = 1;
+            } else if (str.length === 4) {
+                // 纯年份：起始日期用1月1日，结束日期用12月31日
+                year = parseInt(str);
+                if (isEndDate) {
+                    month = 12;
+                    day = 31;
+                } else {
+                    month = 1;
+                    day = 1;
+                }
+            } else {
+                return null;
+            }
+            if (month < 1 || month > 12) return null;
+            if (day < 1 || day > 31) return null;
+            const d = new Date(year, month - 1, day);
+            if (isNaN(d.getTime())) return null;
+            return d;
+        }
+
+        // 清除筛选
+        function clearHireDateFilter() {
+            localStorage.removeItem(filterPrefix + 'hire_date');
+            localStorage.removeItem(filterPrefix + 'HireDateManualStart');
+            localStorage.removeItem(filterPrefix + 'HireDateManualEnd');
+            if (currentFilterKey) {
+                const dropdown = document.getElementById('headerFilterDropdown');
+                if (dropdown) populateHeaderFilterOptions(currentFilterKey, dropdown);
+            }
+            applyHeaderFilter();
+        }
+
+        // 入职日期仅筛选此项
+        function singleSelectHireDate(dayValue) {
+            const filterPrefix = getFilterStoragePrefix();
+            localStorage.setItem(filterPrefix + 'hire_date', JSON.stringify([dayValue]));
+            // 清空手动输入
+            localStorage.removeItem(filterPrefix + 'HireDateManualStart');
+            localStorage.removeItem(filterPrefix + 'HireDateManualEnd');
+            // 关闭下拉
+            const dropdown = document.getElementById('headerFilterDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            currentFilterKey = null;
+            applyHeaderFilter();
+        }
+
+        // 保存筛选状态
+        function saveHireDateFilter() {
+            const filterPrefix = getFilterStoragePrefix();
+            const checked = [];
+            document.querySelectorAll('.day-check:checked').forEach(d => {
+                checked.push(d.dataset.date);
+            });
+            if (checked.length === 0 || checked.length === document.querySelectorAll('.day-check').length) {
+                localStorage.removeItem(filterPrefix + 'hire_date');
+            } else {
+                localStorage.setItem(filterPrefix + 'hire_date', JSON.stringify(checked));
+            }
+            applyHeaderFilter();
+        }
+
+        // 单选 - 选中此项，取消其他
+        function singleSelect(key, val) {
+            val = decodeURIComponent(val);
+            const filterPrefix = getFilterStoragePrefix();
+            const listContainer = document.getElementById(key + 'List');
+            if (!listContainer) return;
+            const checkboxes = listContainer.querySelectorAll(`.${key}-check`);
+            // 只选中当前项
+            checkboxes.forEach(cb => {
+                cb.checked = (cb.value === val);
+            });
+            // 保存并应用
+            localStorage.setItem(filterPrefix + key, JSON.stringify([val]));
+            applyHeaderFilter();
+            updateDropdownAllState(key);
+            // 关闭下拉
+            const dropdown = document.getElementById('headerFilterDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            currentFilterKey = null;
+        }
+
+        // 更新下拉的全选状态
+        function updateDropdownAllState(key) {
+            const listContainer = document.getElementById(key + 'List');
+            if (!listContainer) return;
+            const checkboxes = listContainer.querySelectorAll(`.${key}-check`);
+            const allCheckbox = document.getElementById(key + 'All');
+            if (!allCheckbox) return;
+            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            allCheckbox.checked = checkedCount === checkboxes.length;
+            allCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+        }
+
+        // 排序列
+        function sortColumn(key, order) {
+            // 保存排序状态
+            localStorage.setItem(getSortStorageKey(), JSON.stringify({ key, order }));
+            refreshFilteredTable();
+            // 关闭下拉
+            const dropdown = document.getElementById('headerFilterDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+            currentFilterKey = null;
+        }
+
+        function applyCurrentSort(data) {
+            let sortConfig = null;
+            try {
+                sortConfig = JSON.parse(localStorage.getItem(getSortStorageKey()) || 'null');
+            } catch (e) {
+                sortConfig = null;
+            }
+
+            if (!sortConfig || !sortConfig.key || !sortConfig.order) {
+                return data;
+            }
+
+            const { key, order } = sortConfig;
+            return [...data].sort((a, b) => {
+                let va = a[key] || '';
+                let vb = b[key] || '';
+                if (key === 'hire_date' || key === 'training_date' || key === 'dinggang_date' || key === 'birthday') {
+                    const da = va ? new Date(va) : new Date(0);
+                    const db = vb ? new Date(vb) : new Date(0);
+                    return order === 'asc' ? da - db : db - da;
+                }
+                if (key === 'seniority') {
+                    const toMonths = (str) => {
+                        if (!str) return 0;
+                        const years = str.match(/(\d+)年/);
+                        const months = str.match(/(\d+)月/);
+                        return (years ? parseInt(years[1], 10) * 12 : 0) + (months ? parseInt(months[1], 10) : 0);
+                    };
+                    const ma = toMonths(va);
+                    const mb = toMonths(vb);
+                    return order === 'asc' ? ma - mb : mb - ma;
+                }
+                if (!isNaN(va) && !isNaN(vb)) {
+                    return order === 'asc' ? va - vb : vb - va;
+                }
+                return order === 'asc'
+                    ? String(va).localeCompare(String(vb), 'zh-CN')
+                    : String(vb).localeCompare(String(va), 'zh-CN');
+            });
+        }
+
+        // 应用表头筛选
+        // 解析日期，支持 YYYYMMDD 和 YYYY-MM-DD 格式
+        function parseDate(str) {
+            if (!str) return null;
+            str = str.trim();
+            // YYYYMMDD 格式
+            if (/^\d{8}$/.test(str)) {
+                return new Date(str.substring(0, 4), parseInt(str.substring(4, 6)) - 1, str.substring(6, 8));
+            }
+            // YYYY-MM-DD 格式
+            const d = new Date(str);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        function applyGlobalSearchFilter(data) {
+            if (!globalSearchKeyword) return data;
+            return data.filter(item =>
+                Object.values(item).some(val =>
+                    val !== null && val !== undefined &&
+                    String(val).toLowerCase().includes(globalSearchKeyword)
+                )
+            );
+        }
+
+        function applyStoredHeaderFilters(data) {
+            let filtered = data;
+            const filterPrefix = getFilterStoragePrefix();
+            const filterableKeys = getCurrentColumns().filter(c => c.key !== 'status').map(c => c.key);
+
+            filterableKeys.forEach(key => {
+                if (key === 'hire_date') {
+                    const manualStart = localStorage.getItem(filterPrefix + 'HireDateManualStart');
+                    const manualEnd = localStorage.getItem(filterPrefix + 'HireDateManualEnd');
+                    if (manualStart || manualEnd) {
+                        const startDate = manualStart ? parseFlexibleDate(manualStart) : null;
+                        const endDate = manualEnd ? parseFlexibleDate(manualEnd, true) : null;
+                        filtered = filtered.filter(s => {
+                            if (!s.hire_date) return false;
+                            const d = parseDate(s.hire_date);
+                            if (!d) return false;
+                            const startOk = !startDate || d >= startDate;
+                            const endOk = !endDate || d <= endDate;
+                            return startOk && endOk;
+                        });
+                        return;
+                    }
+                    const savedFilterStr = localStorage.getItem(filterPrefix + 'hire_date');
+                    if (savedFilterStr === null) return;
+                    let savedValues = [];
+                    try {
+                        savedValues = JSON.parse(savedFilterStr) || [];
+                    } catch (e) {
+                        return;
+                    }
+                    if (savedValues.length === 0) {
+                        filtered = [];
+                        return;
+                    }
+                    filtered = filtered.filter(s => {
+                        if (!s.hire_date) return false;
+                        const d = parseDate(s.hire_date);
+                        if (!d) return false;
+                        const y = d.getFullYear();
+                        const m = d.getMonth() + 1;
+                        const day = d.getDate();
+                        const dateVal = String(y) + '-' + String(m) + '-' + String(day);
+                        return savedValues.some(v => {
+                            if (v === dateVal) return true;
+                            const parts = String(v).split('-');
+                            if (parts.length === 2 && parseInt(parts[0]) === y && parseInt(parts[1]) === m) return true;
+                            if (parts.length === 1 && parseInt(parts[0]) === y) return true;
+                            return false;
+                        });
+                    });
+                    return;
+                }
+
+                const savedFilterStr = localStorage.getItem(filterPrefix + key);
+                if (!savedFilterStr) return;
+
+                let savedValues = [];
+                try {
+                    savedValues = JSON.parse(savedFilterStr) || [];
+                } catch (e) {
+                    return;
+                }
+
+                if (savedValues.length === 0) {
+                    filtered = [];
+                    return;
+                }
+
+                filtered = filtered.filter(s => {
+                    if (s[key] === undefined || s[key] === null || s[key] === '') return false;
+                    return savedValues.includes(s[key]);
+                });
+            });
+
+            return filtered;
+        }
+
+        function refreshFilteredTable() {
+            const originalData = currentTab === 'student' ? window.allStudentData : window.allStaffData;
+            if (!originalData) return;
+
+            const filtered = applyCurrentSort(applyGlobalSearchFilter(applyStoredHeaderFilters(originalData)));
+            currentStaffData = filtered;
+
+            const filterableKeys = getCurrentColumns().filter(c => c.key !== 'status').map(c => c.key);
+            filterableKeys.forEach(key => {
+                if (key !== 'serial') updateFilterCount(key);
+                if (key !== 'serial') updateFilterIcon(key);
+            });
+
+            const serialCountEl = document.getElementById('serialCount');
+            if (serialCountEl) {
+                serialCountEl.textContent = filtered.length;
+            }
+
+            renderStaffTable(filtered);
+        }
+
+        // 清除所有筛选，恢复全部选中
+        function clearAllFilters() {
+            const prefix = getFilterStoragePrefix();
+            // 清除所有localStorage中的筛选状态
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith(prefix)) {
+                    localStorage.removeItem(key);
+                }
+            });
+            // 清除入职日期手动输入
+            localStorage.removeItem(prefix + 'HireDateManualStart');
+            localStorage.removeItem(prefix + 'HireDateManualEnd');
+            // 重新应用筛选（此时应该全部选中）
+            applyHeaderFilter();
+            // 重新渲染表头下拉（如果有打开的下拉）
+            if (currentFilterKey) {
+                const dropdown = document.getElementById('headerFilterDropdown');
+                if (dropdown) {
+                    populateHeaderFilterOptions(currentFilterKey, dropdown);
+                }
+            }
+        }
+
+        function applyHeaderFilter() {
+            refreshFilteredTable();
+        }
+
+        // 更新筛选计数
+        function updateFilterCount(key) {
+            const countEl = document.getElementById(key + 'Count');
+            if (!countEl) return;
+
+            const filterPrefix = getFilterStoragePrefix();
+            const savedFilterStr = localStorage.getItem(filterPrefix + key);
+
+            // 无筛选条件 = 隐藏
+            if (!savedFilterStr) {
+                countEl.style.display = 'none';
+                countEl.textContent = '';
+                return;
+            }
+
+            let savedValues = [];
+            try {
+                savedValues = JSON.parse(savedFilterStr) || [];
+            } catch(e) {
+                countEl.style.display = 'none';
+                return;
+            }
+
+            if (savedValues.length === 0) {
+                countEl.style.display = 'inline';
+                countEl.textContent = '0';
+            } else {
+                countEl.textContent = savedValues.length;
+                countEl.style.display = 'inline';
+            }
+        }
+
+        // 检查列是否有激活的筛选
+        function hasActiveFilter(key) {
+            const filterPrefix = getFilterStoragePrefix();
+            if (key === 'hire_date') {
+                const savedFilterStr = localStorage.getItem(filterPrefix + 'hire_date');
+                const manualStart = localStorage.getItem(filterPrefix + 'HireDateManualStart');
+                const manualEnd = localStorage.getItem(filterPrefix + 'HireDateManualEnd');
+                console.log('[DEBUG] hire_date check:', 'savedFilterStr=', savedFilterStr, 'manualStart=', manualStart, 'manualEnd=', manualEnd);
+                if (savedFilterStr !== null) return true; // 树形筛选
+                if (manualStart || manualEnd) return true; // 手动日期筛选
+                return false;
+            }
+            const savedFilterStr = localStorage.getItem(filterPrefix + key);
+            return savedFilterStr !== null;
+        }
+
+        // 更新筛选图标
+        function updateFilterIcon(key) {
+            const btn = document.querySelector(`.th-filter-btn[data-filter="${key}"]`);
+            if (!btn) return;
+            const isFiltered = hasActiveFilter(key);
+            if (isFiltered) {
+                btn.classList.add('th-filter-btn-active');
+            } else {
+                btn.classList.remove('th-filter-btn-active');
+            }
+        }
+
+        // 获取字段的所有唯一值
+        function getUniqueValues(key) {
+            if (window.allFieldValues && window.allFieldValues[key]) {
+                return window.allFieldValues[key];
+            }
+            if (!currentStaffData || currentStaffData.length === 0) return [];
+            const values = new Set();
+            currentStaffData.forEach(s => {
+                if (s[key]) values.add(s[key]);
+            });
+            return [...values];
+        }
+
+        // 获取其他列筛选条件过滤后的数据（用于联动筛选）
+        function getFilteredDataForColumn(excludeKey) {
+            const originalData = currentTab === 'student' ? window.allStudentData : window.allStaffData;
+            if (!originalData) return [];
+
+            let filtered = applyGlobalSearchFilter(originalData);
+            const filterPrefix = getFilterStoragePrefix();
+
+            // 应用其他列的筛选条件
+            getCurrentColumns().filter(c => c.key !== 'status' && c.key !== excludeKey).forEach(col => {
+                if (col.key === 'hire_date') {
+                    // 检查手动输入的日期范围
+                    const manualStart = localStorage.getItem(filterPrefix + 'HireDateManualStart');
+                    const manualEnd = localStorage.getItem(filterPrefix + 'HireDateManualEnd');
+                    if (manualStart || manualEnd) {
+                        const startDate = manualStart ? parseFlexibleDate(manualStart) : null;
+                        const endDate = manualEnd ? parseFlexibleDate(manualEnd, true) : null;
+                        filtered = filtered.filter(s => {
+                            if (!s.hire_date) return false;
+                            const d = parseDate(s.hire_date);
+                            if (!d) return false;
+                            const startOk = !startDate || d >= startDate;
+                            const endOk = !endDate || d <= endDate;
+                            return startOk && endOk;
+                        });
+                        return;
+                    }
+                    // 树形筛选
+                    const savedFilterStr = localStorage.getItem(filterPrefix + 'hire_date');
+                    if (savedFilterStr === null) return;
+                    let savedValues = [];
+                    try {
+                        savedValues = JSON.parse(savedFilterStr) || [];
+                    } catch(e) { return; }
+                    if (savedValues.length === 0) {
+                        filtered = [];
+                        return;
+                    }
+                    filtered = filtered.filter(s => {
+                        if (!s.hire_date) return false;
+                        const d = parseDate(s.hire_date);
+                        if (!d) return false;
+                        const y = d.getFullYear();
+                        const m = d.getMonth() + 1;
+                        const day = d.getDate();
+                        const dateVal = String(y) + '-' + String(m) + '-' + String(day);
+                        return savedValues.some(v => {
+                            if (v === dateVal) return true;
+                            const parts = String(v).split('-');
+                            if (parts.length === 2 && parseInt(parts[0]) === y && parseInt(parts[1]) === m) return true;
+                            if (parts.length === 1 && parseInt(parts[0]) === y) return true;
+                            return false;
+                        });
+                    });
+                    return;
+                }
+
+                const savedFilterStr = localStorage.getItem(filterPrefix + col.key);
+                if (!savedFilterStr) return;
+                
+                let savedValues = [];
+                try {
+                    savedValues = JSON.parse(savedFilterStr) || [];
+                } catch(e) { return; }
+                
+                // null = 全选，[] = 全不选
+                if (savedValues === null || savedValues.length === 0) return;
+                
+                filtered = filtered.filter(s => {
+                    if (s[col.key] === undefined || s[col.key] === null || s[col.key] === '') return false;
+                    return savedValues.includes(s[col.key]);
+                });
+            });
+            
+            return filtered;
+        }
+
+        let sortableInstance = null;
+
+        function initSortable() {
+            // 表头拖拽功能已移除，改用显示列下拉来调整顺序
+        }
+
+        // 过滤列
+        function filterColumns(keyword) {
+            const items = document.querySelectorAll('#columnCheckboxes .col-item');
+            items.forEach(item => {
+                const label = item.querySelector('span:last-child').textContent;
+                item.style.display = label.includes(keyword) ? 'flex' : 'none';
+            });
+        }
+
+        // 切换列菜单显示
+        function toggleColumnMenu(e) {
+            if (e) e.stopPropagation();
+            const menu = document.getElementById('columnMenu');
+            const isHidden = menu.style.display === 'none' || menu.style.display === '';
+            if (isHidden) {
+                updateColumnCheckboxes();
+                menu.style.display = 'block';
+                menu.style.opacity = '1';
+                menu.style.transform = 'translateX(-50%) translateY(0)';
+            } else {
+                closeColumnMenu();
+            }
+        }
+
+        function openColumnMenu() {
+            const menu = document.getElementById('columnMenu');
+            if (menu._openTimeout) return;
+            menu._openTimeout = setTimeout(() => {
+                menu._openTimeout = null;
+                if (menu._leaveTimeout) { clearTimeout(menu._leaveTimeout); menu._leaveTimeout = null; }
+                updateColumnCheckboxes();
+                menu.style.display = 'block';
+                menu.style.opacity = '1';
+                menu.style.transform = 'translateX(-50%) translateY(0)';
+            }, 200);
+        }
+
+        function closeColumnMenu() {
+            const menu = document.getElementById('columnMenu');
+            menu._leaveTimeout = setTimeout(() => {
+                menu.style.opacity = '0';
+                menu.style.transform = 'translateX(-50%) translateY(-8px)';
+                setTimeout(() => {
+                    if (menu.style.opacity === '0') menu.style.display = 'none';
+                }, 200);
+            }, 200);
+        }
+
+        // 显示列下拉
+        function initColDropdown() {
+            const wrapper = document.getElementById('colDropdown');
+            let closeTimer = null;
+
+            function openMenu() {
+                if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+                closeOtherDropdowns('colDropdown');
+                wrapper.classList.add('open');
+                // 重置展开状态
+                showAllColsExpanded = false;
+                const menu = document.getElementById('columnMenu');
+                const items = document.getElementById('columnCheckboxes');
+                const btn = document.getElementById('expandAllColsBtn');
+                if (menu) {
+                    menu.style.maxHeight = '400px';
+                    menu.style.overflow = 'hidden';
+                    menu.style.minWidth = '180px';
+                }
+                if (items) {
+                    items.style.maxHeight = '340px';
+                    items.style.display = 'flex';
+                    items.style.columnCount = 'unset';
+                }
+                if (btn) btn.textContent = '展开全部';
+                updateColumnCheckboxes();
+            }
+
+            function closeMenu() {
+                wrapper.classList.remove('open');
+                showAllColsExpanded = false;
+            }
+
+            function scheduleClose() {
+                if (closeTimer) clearTimeout(closeTimer);
+                closeTimer = setTimeout(closeMenu, 400);
+            }
+
+            wrapper.addEventListener('mouseenter', openMenu);
+            wrapper.addEventListener('mouseleave', scheduleClose);
+        }
+
+        function closeOtherDropdowns(exceptId) {
+            // Only colDropdown now
+        }
+
+        // 点击外部关闭菜单
+        document.addEventListener('click', function(e) {
+            const colDropdown = document.getElementById('colDropdown');
+            if (colDropdown && colDropdown.classList.contains('open')) {
+                const colMenu = document.getElementById('columnMenu');
+                const colBtn = document.getElementById('colBtn');
+                const isClickInside = colMenu.contains(e.target) || colBtn.contains(e.target);
+                if (!isClickInside) {
+                    colDropdown.classList.remove('open');
+                }
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[DEBUG] DOMContentLoaded, token:', !!getToken());
+            if (!getToken()) { window.location.href = 'admin/login.html'; return; }
+            // 权限检查
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            if (!currentUser.can_manage_staff) { alert('无权限访问人员管理'); window.location.href = 'dashboard.html'; return; }
+
+            // 恢复标签页状态
+            const savedTab = localStorage.getItem('staffListTab') || 'employee';
+            currentTab = savedTab;
+            const tabBar = document.querySelector('.tab-bar');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === savedTab);
+            });
+            tabBar.classList.toggle('student', savedTab === 'student');
+
+            console.log('[DEBUG] Before loadColumnConfig, columns:', JSON.stringify(getCurrentColumns().map(c => ({k:c.key,v:c.visible}))));
+            await loadColumnConfig();
+            console.log('[DEBUG] After loadColumnConfig, columns:', JSON.stringify(getCurrentColumns().map(c => ({k:c.key,v:c.visible}))));
+            renderTableHeader();
+            initColDropdown();
+            initHeaderFilterDropdowns();
+            showSyncTime();
+            setInterval(showSyncTime, 60000);
+
+            loadStaff();
+        });
+
+        // 根据数据动态同步列配置（只在首次加载时执行，保留用户已有的visible设置）
+        function syncColumnsFromData(data) {
+            if (!data || data.length === 0) return;
+            // 排除的字段
+            const excludeKeys = ['id', '_', 'created_at', 'updated_at', 'exam_permission', 'meal_permission', 'task_permission', 's6_permission', 'guest_meal_permission', 'department_id', 'position_id'];
+            // 字段中文名映射
+            const labelMap = {
+                'serial': '序号',
+                'employee_id': '工号',
+                'name': '姓名',
+                'phone': '电话',
+                'department': '部门',
+                'team': '班组',
+                'position': '职位',
+                'hire_date': '入职日期',
+                'id_card': '身份证号码',
+                'gender': '性别',
+                'birthday': '出生年月',
+                'nationality': '民族',
+                'household': '户口',
+                'address': '家庭住址',
+                'current_address': '现居住地址',
+                'education': '学历',
+                'major': '专业',
+                'graduate_school': '毕业院校',
+                'graduate_date': '毕业时间',
+                'contract_signed': '是否已签合同',
+                'contract_period': '合同期限',
+                'category': '类别',
+                'bank_account': '工资卡账号',
+                'bank_name': '开户行',
+                'bank_branch': '开户支行',
+                'bank_code': '行号',
+                'status': '状态',
+                'leave_date': '离职日期',
+                'seniority': '工龄',
+                'oa': 'OA',
+                'employer': '所属单位',
+                'office_phone': '办公室座机',
+                'virtual_phone': '虚拟座机',
+                'id_validity': '有效期限',
+                'age': '年龄',
+                'trial_period': '试用期限',
+                'trial_eval_date': '试用期评价日期',
+                'confirmed': '是否转正',
+                'confirmed_date': '转正日期',
+                'nda': '保密协议',
+                'non_compete': '竞业协议',
+                'job_change_record': '调岗调薪记录',
+                'insurance_start_date': '缴纳日期',
+                'insurance_end_date': '停缴日期',
+                'emergency_contact': '紧急联系人',
+                'emergency_relation': '与本人关系',
+                'emergency_phone': '紧急联系电话',
+                'car_plate': '车牌号',
+                'other_info': '其他信息'
+            };
+            // 列宽度映射
+            const widthMap = {
+                'serial': '50px',
+                'employee_id': '90px',
+                'name': '80px',
+                'phone': '110px',
+                'department': '90px',
+                'team': '80px',
+                'position': '80px',
+                'hire_date': '100px',
+                'id_card': '160px',
+                'gender': '50px',
+                'birthday': '100px',
+                'nationality': '70px',
+                'household': '80px',
+                'address': '200px',
+                'current_address': '200px',
+                'education': '60px',
+                'major': '100px',
+                'graduate_school': '120px',
+                'graduate_date': '100px',
+                'contract_signed': '80px',
+                'contract_period': '80px',
+                'category': '70px',
+                'bank_account': '160px',
+                'bank_name': '100px',
+                'bank_branch': '120px',
+                'bank_code': '80px',
+                'status': '60px',
+                'leave_date': '100px',
+                'seniority': '70px',
+                'oa': '60px',
+                'employer': '100px',
+                'office_phone': '100px',
+                'virtual_phone': '100px',
+                'id_validity': '100px',
+                'age': '50px',
+                'trial_period': '80px',
+                'trial_eval_date': '120px',
+                'confirmed': '70px',
+                'confirmed_date': '100px',
+                'nda': '70px',
+                'non_compete': '70px',
+                'job_change_record': '200px',
+                'insurance_start_date': '100px',
+                'insurance_end_date': '100px',
+                'emergency_contact': '80px',
+                'emergency_relation': '80px',
+                'emergency_phone': '110px',
+                'car_plate': '120px',
+                'other_info': '150px'
+            };
+            // 从localStorage获取已保存的列配置
+            let savedConfig = null;
+            try {
+                const saved = localStorage.getItem(getColumnsStorageKey());
+                if (saved) savedConfig = JSON.parse(saved);
+            } catch(e) {}
+            // 获取 API 返回的所有字段
+            const keys = new Set();
+            data.forEach(item => {
+                Object.keys(item).forEach(k => {
+                    if (!excludeKeys.includes(k) && !k.startsWith('_')) keys.add(k);
+                });
+            });
+            // 收集已有的列 key
+            const existingKeys = new Set(COLUMNS.map(c => c.key));
+            // 添加 API 中有但 COLUMNS 中没有的新列
+            let newColsAdded = false;
+            keys.forEach(key => {
+                if (!existingKeys.has(key)) {
+                    // 如果有保存的配置，用保存的值；否则默认显示
+                    const savedVisible = savedConfig && savedConfig[key] !== undefined ? savedConfig[key] : true;
+                    COLUMNS.push({
+                        key: key,
+                        label: labelMap[key] || key,
+                        visible: savedVisible,
+                        sortable: true,
+                        width: widthMap[key] || '100px'
+                    });
+                    newColsAdded = true;
+                }
+            });
+            // 恢复列顺序 - 不再根据localStorage排序，保持COLUMNS定义顺序
+            // 添加新列后标记已完成同步
+            if (newColsAdded) {
+                setColumnsSynced(true);
+                // 更新localStorage，添加新列的可见性和顺序
+                if (savedConfig) {
+                    COLUMNS.forEach(col => {
+                        if (savedConfig[col.key] === undefined) {
+                            savedConfig[col.key] = col.visible;
+                        }
+                    });
+                    savedConfig._order = COLUMNS.map(c => c.key);
+                    localStorage.setItem('staffColumns', JSON.stringify(savedConfig));
+                }
+            }
+            console.log('[DEBUG] syncColumnsFromData done, COLUMNS:', JSON.stringify(COLUMNS.map(c => ({k:c.key,v:c.visible}))));
+        }
+
+        function loadStaff(isInitialLoad = true) {
+            const tableContainer = document.getElementById('tableContainer');
+            const loading = document.getElementById('loading');
+            const emptyState = document.getElementById('emptyState');
+
+            if (isInitialLoad) {
+                loading.style.display = 'block';
+                tableContainer.style.display = 'none';
+                emptyState.style.display = 'none';
+                // 筛选时淡出效果
+                tableContainer.style.transition = 'opacity 0.2s ease';
+                tableContainer.style.opacity = '0';
+            }
+
+            const apiUrl = getCurrentApiUrl();
+            let url = `${apiUrl}?`;
+
+            // 取消上一个请求
+            if (loadStaffController) {
+                loadStaffController.abort();
+            }
+            loadStaffController = new AbortController();
+
+            fetch(url, { headers: { 'Authorization': `Bearer ${getToken()}` }, signal: loadStaffController.signal })
+            .then(res => res.json())
+            .then(data => {
+                if (isInitialLoad) {
+                    loading.style.display = 'none';
+                }
+                if (data.code === 0 || data.success) {
+                    // 先保存原始数据
+                    const originalData = data.data || [];
+                    console.log('[DEBUG] API response for', currentTab, ':', originalData.length, 'records');
+                    if (currentTab === 'student') {
+                        window.allStudentData = originalData; // 保存学生数据
+                    } else {
+                        window.allStaffData = originalData; // 保存员工数据
+                    }
+
+                    // 收集所有字段的唯一值（用于下拉选项）
+                    const fieldValues = {};
+                    // 动态获取所有列进行唯一值收集
+                    const allKeys = new Set();
+                    originalData.forEach(s => {
+                        Object.keys(s).forEach(k => {
+                            if (!k.startsWith('_') && k !== 'id') allKeys.add(k);
+                        });
+                    });
+                    allKeys.forEach(key => {
+                        const set = new Set();
+                        originalData.forEach(s => {
+                            if (s[key]) set.add(s[key]);
+                        });
+                        fieldValues[key] = [...set].sort((a, b) => {
+                            if (typeof a === 'string') return a.localeCompare(b, 'zh-CN');
+                            return a - b;
+                        });
+                    });
+                    window.allFieldValues = fieldValues;
+
+                    // Excel 风格客户端筛选 - 搜索和复选框同时生效
+                    // 先同步列配置，确保获取到所有列（仅员工名册需要）
+                    if (currentTab !== 'student') {
+                        syncColumnsFromData(originalData);
+                    }
+
+                    // 重新渲染表头
+                    renderTableHeader();
+                    refreshFilteredTable();
+                    if (isInitialLoad) {
+                        tableContainer.style.display = 'block';
+                        requestAnimationFrame(() => {
+                            tableContainer.style.opacity = '1';
+                        });
+                    }
+                } else {
+                    alert(data.msg);
+                }
+            })
+            .catch(err => {
+                if (err.name === 'AbortError') return; // 忽略取消的请求
+                document.getElementById('loading').style.display = 'none';
+                alert('加载失败');
+            });
+        }
+
+        // 全局搜索
+        let globalSearchKeyword = '';
+        function handleGlobalSearch(keyword) {
+            globalSearchKeyword = keyword.trim().toLowerCase();
+            refreshFilteredTable();
+        }
+
+        function renderStaffTable(list) {
+            console.log('[DEBUG] renderStaffTable called with', list.length, 'items, currentTab:', currentTab);
+            const columns = getCurrentColumns();
+            console.log('[DEBUG] columns:', columns.filter(c => c.visible).map(c => c.key));
+            const visibleNonCheckbox = columns.filter(c => c.visible);
+            const allHidden = visibleNonCheckbox.length === 0;
+            if (allHidden) {
+                document.getElementById('staffList').innerHTML = `<tr><td colspan="${columns.length}" style="text-align:center; padding:40px; color:var(--text-muted);">空</td></tr>`;
+                return;
+            }
+            if (list.length === 0) {
+                // 无数据时显示空白行，表头和表格容器保持显示
+                const colCount = columns.filter(c => c.visible).length;
+                document.getElementById('staffList').innerHTML = `<tr><td colspan="${colCount}" style="text-align:center; padding:40px; color:var(--text-muted);"></td></tr>`;
+                return;
+            }
+            const html = list.map((s, idx) => {
+                const isInactive = s.status === 'inactive';
+                // 检查是否不在同步名单中（红色标记）
+                const isNotInSync = notInExcelStaffIds.has(s.employee_id);
+                const rowClass = isInactive ? 'inactive-row' : (isNotInSync ? 'not-in-sync-row' : '');
+                const rowStyle = isInactive ? 'color:#999;text-decoration:line-through;' : (isNotInSync ? 'color:var(--danger);' : '');
+                const cells = columns.map(col => {
+                    const visStyle = !col.visible ? 'display:none;' : '';
+                    const alignStyle = isNotInSync ? 'text-align:center; color:var(--danger);' : 'text-align:center; color:var(--text);';
+                    const dataLabel = col.label || '';
+                    if (col.key === 'serial') {
+                        const style = `width:${col.width}; min-width:${col.width}; ${alignStyle} ${visStyle}`;
+                        return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}">${idx + 1}</td>`;
+                    }
+                    if (col.key === 'employee_id') {
+                        const style = `width:${col.width}; min-width:${col.width}; ${alignStyle} ${visStyle}`;
+                        const linkStyle = isNotInSync ? 'color:var(--danger);' : '';
+                        return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}"><span class="clickable-link" style="${linkStyle}" onclick="viewStaff(${s.id})">${s.employee_id || '-'}</span></td>`;
+                    }
+                    if (col.key === 'name') {
+                        const style = `width:${col.width}; min-width:${col.width}; ${alignStyle} ${visStyle}`;
+                        const linkStyle = isNotInSync ? 'color:var(--danger);' : '';
+                        return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}"><span class="clickable-link" style="${linkStyle}" onclick="viewStaff(${s.id})">${s.name}</span></td>`;
+                    }
+                    if (col.key === 'status') {
+                        const style = `${alignStyle} ${visStyle}`;
+                        const sClass = s.status === 'inactive' ? 'badge-inactive' : 'badge-active';
+                        const sText = s.status === 'inactive' ? '离职' : '在职';
+                        return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}"><span class="badge ${sClass}">${sText}</span></td>`;
+                    }
+                    if (col.key === 'team') {
+                        let teamVal = s.team || '';
+                        if (teamVal.includes('/')) {
+                            teamVal = teamVal.split('/').pop();
+                        }
+                        const style = `${alignStyle} ${visStyle}`;
+                        return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}">${teamVal}</td>`;
+                    }
+                    const style = `${alignStyle} ${visStyle}`;
+                    return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}">${s[col.key] || '-'}</td>`;
+                }).join('');
+                return `<tr class="${rowClass}" style="${rowStyle}">${cells}</tr>`;
+            }).join('');
+            document.getElementById('staffList').innerHTML = html;
+            // 更新序号列的统计数字
+            const serialCountEl = document.getElementById('serialCount');
+            if (serialCountEl) {
+                serialCountEl.textContent = list.length;
+            }
+        }
+
+        function viewStaff(id) {
+            document.getElementById('staffDetailContent').innerHTML = '<div class="loading">加载中...</div>';
+            document.getElementById('staffDetailModal').classList.add('active');
+            fetchStaffDetail(id);
+        }
+
+        function closeStaffDetailModal() {
+            document.getElementById('staffDetailModal').classList.remove('active');
+        }
+
+        let currentStaffDetail = null;
+
+        function fetchStaffDetail(id) {
+            const token = getToken();
+            const detailApi = currentTab === 'student' ? `${API_URL}/student-roster/${id}` : `${API_URL}/staff/${id}`;
+            fetch(detailApi, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0 || data.success) {
+                    currentStaffDetail = data.data;
+                    if (currentTab === 'student') {
+                        renderStudentDetailPopup(data.data);
+                    } else {
+                        renderStaffDetailPopup(data.data);
+                    }
+                } else {
+                    document.getElementById('staffDetailContent').innerHTML = `<div style="color:var(--danger);padding:20px;">${data.msg || '加载失败'}</div>`;
+                }
+            })
+            .catch(err => {
+                document.getElementById('staffDetailContent').innerHTML = '<div style="color:var(--danger);padding:20px;">加载失败</div>';
+            });
+        }
+
+        function renderStaffDetailPopup(s) {
+            const formatValue = (v, fmt) => v !== null && v !== undefined && v !== '' ? (fmt ? fmt(v) : v) : '-';
+
+            const categories = [
+                {
+                    title: '基本信息',
+                    fields: [
+                        { label: '工号', key: 'employee_id' },
+                        { label: '姓名', key: 'name' },
+                        { label: '部门', key: 'department' },
+                        { label: '班组', key: 'team' },
+                        { label: '职位', key: 'position' },
+                        { label: '入职日期', key: 'hire_date' },
+                        { label: '离职日期', key: 'leave_date' },
+                        { label: '工龄', key: 'seniority' },
+                        { label: '状态', key: 'status', format: v => v === 'active' ? '在职' : '离职' },
+                        { label: '电话', key: 'phone' },
+                        { label: 'OA账号', key: 'oa' },
+                        { label: '雇主', key: 'employer' },
+                        { label: '办公室电话', key: 'office_phone' },
+                        { label: '虚拟网电话', key: 'virtual_phone' }
+                    ]
+                },
+                {
+                    title: '个人信息',
+                    fields: [
+                        { label: '性别', key: 'gender' },
+                        { label: '出生年月', key: 'birthday' },
+                        { label: '民族', key: 'nationality' },
+                        { label: '身份证', key: 'id_card' },
+                        { label: '身份证有效期', key: 'id_validity' },
+                        { label: '年龄', key: 'age' },
+                        { label: '户口', key: 'household' },
+                        { label: '现住址', key: 'current_address' },
+                        { label: '家庭住址', key: 'address' }
+                    ]
+                },
+                {
+                    title: '教育信息',
+                    fields: [
+                        { label: '学历', key: 'education' },
+                        { label: '专业', key: 'major' },
+                        { label: '毕业院校', key: 'graduate_school' },
+                        { label: '毕业日期', key: 'graduate_date' }
+                    ]
+                },
+                {
+                    title: '合同信息',
+                    fields: [
+                        { label: '合同是否签署', key: 'contract_signed' },
+                        { label: '合同期限', key: 'contract_period' },
+                        { label: '类别', key: 'category' },
+                        { label: '试用期', key: 'trial_period' },
+                        { label: '转正日期', key: 'confirmed_date' },
+                        { label: '是否转正', key: 'confirmed' },
+                        { label: '保密协议', key: 'nda' },
+                        { label: '竞业协议', key: 'non_compete' }
+                    ]
+                },
+                {
+                    title: '银行信息',
+                    fields: [
+                        { label: '银行卡', key: 'bank_account' },
+                        { label: '开户行', key: 'bank_name' },
+                        { label: '支行', key: 'bank_branch' },
+                        { label: '银行代码', key: 'bank_code' }
+                    ]
+                },
+                {
+                    title: '紧急联系',
+                    fields: [
+                        { label: '紧急联系人', key: 'emergency_contact' },
+                        { label: '与紧急联系人的关系', key: 'emergency_relation' },
+                        { label: '紧急联系电话', key: 'emergency_phone' },
+                        { label: '车牌', key: 'car_plate' }
+                    ]
+                }
+            ];
+
+            let html = '<div class="detail-grid">';
+            categories.forEach(cat => {
+                html += `
+                    <div class="detail-section">
+                        <div class="detail-section-title">${cat.title}</div>
+                        <div class="detail-fields">
+                            ${cat.fields.map(f => `
+                                <div style="display:flex;flex-direction:column;gap:2px;">
+                                    <span class="info-label">${f.label}</span>
+                                    <div class="info-value" style="font-size:12px;">${formatValue(s[f.key], f.format)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            // 考试记录
+            if (s.examScores && s.examScores.length > 0) {
+                html += `
+                    <div class="detail-record-block">
+                        <div class="detail-record-title">考试成绩</div>
+                        <div class="detail-table-wrap">
+                        <table class="detail-table">
+                            <thead><tr>
+                                <th>考试名称</th>
+                                <th>成绩</th>
+                                <th>状态</th>
+                                <th>日期</th>
+                                <th>操作</th>
+                            </tr></thead>
+                            <tbody>
+                                ${s.examScores.map(e => `
+                                    <tr style="border-bottom:1px solid var(--border);">
+                                        <td>${e.title || '-'}</td>
+                                        <td style="text-align:center;">${e.score != null ? e.score : '-'}</td>
+                                        <td style="text-align:center;">${e.status || '-'}</td>
+                                        <td style="text-align:center;">${e.created_at ? new Date(e.created_at).toLocaleDateString('zh-CN') : '-'}</td>
+                                        <td style="text-align:center;">
+                                            <button onclick="printExamPaper(${e.id})" style="padding:4px 10px;background:#4A90E2;color:white;border:none;border-radius:4px;cursor:pointer;font-size:11px;">打印</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 报餐记录
+            if (s.mealOrders && s.mealOrders.length > 0) {
+                html += `
+                    <div class="detail-record-block">
+                        <div class="detail-record-title">报餐记录</div>
+                        <div class="detail-table-wrap">
+                        <table class="detail-table">
+                            <thead><tr>
+                                <th>活动名称</th>
+                                <th>报餐类型</th>
+                                <th>人数</th>
+                                <th>日期</th>
+                            </tr></thead>
+                            <tbody>
+                                ${s.mealOrders.map(m => `
+                                    <tr style="border-bottom:1px solid var(--border);">
+                                        <td>${m.title || '-'}</td>
+                                        <td style="text-align:center;">${m.meal_type || '-'}</td>
+                                        <td style="text-align:center;">${m.employee_count || 0}</td>
+                                        <td style="text-align:center;">${m.signup_date || '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="detail-actions">
+                    <button class="btn btn-primary" onclick="openEditStaffModal()">编辑</button>
+                </div>
+            `;
+
+            document.getElementById('staffDetailContent').innerHTML = html;
+        }
+
+        function renderStudentDetailPopup(s) {
+            const formatValue = (v) => v !== null && v !== undefined && v !== '' ? v : '-';
+            const fields = [
+                { label: '工号', key: 'employee_id' },
+                { label: '姓名', key: 'name' },
+                { label: '学校', key: 'school' },
+                { label: '部门', key: 'department' },
+                { label: '子部门', key: 'sub_department' },
+                { label: '职位', key: 'position' },
+                { label: '实训日期', key: 'training_date' },
+                { label: '顶岗日期', key: 'dinggang_date' },
+                { label: '联系电话', key: 'phone' },
+                { label: '身份证号码', key: 'id_card' },
+                { label: '家庭住址', key: 'home_address' },
+                { label: '学历', key: 'education' },
+                { label: '专业', key: 'major' },
+                { label: '紧急联系人', key: 'emergency_contact' },
+                { label: '相互关系', key: 'emergency_relation' },
+                { label: '紧急联系电话', key: 'emergency_phone' }
+            ];
+
+            const html = `
+                <div class="detail-section">
+                    <div class="detail-section-title">学生信息</div>
+                    <div class="detail-fields" style="gap:8px;">
+                        ${fields.map(f => `
+                            <div style="display:flex;flex-direction:column;gap:2px;">
+                                <span class="info-label">${f.label}</span>
+                                <div class="info-value" style="font-size:12px;">${formatValue(s[f.key])}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('staffDetailContent').innerHTML = html;
+        }
+
+        function closeEditStaffModal() {
+            document.getElementById('editStaffModal').classList.remove('active');
+        }
+
+        function openEditStaffModal() {
+            if (!currentStaffDetail) return;
+            document.getElementById('editStaffResult').style.display = 'none';
+            document.getElementById('editStaffFields').innerHTML = '';
+
+            const editFields = [
+                { key: 'employee_id', label: '工号', type: 'text', required: true },
+                { key: 'name', label: '姓名', type: 'text', required: true },
+                { key: 'phone', label: '电话', type: 'text' },
+                { key: 'department', label: '部门', type: 'text' },
+                { key: 'team', label: '班组', type: 'text' },
+                { key: 'position', label: '职位', type: 'text' },
+                { key: 'hire_date', label: '入职日期', type: 'date' },
+                { key: 'status', label: '状态', type: 'select', options: [{ v: 'active', t: '在职' }, { v: 'inactive', t: '离职' }] },
+                { key: 'gender', label: '性别', type: 'text' },
+                { key: 'birthday', label: '出生年月', type: 'date' },
+                { key: 'id_card', label: '身份证', type: 'text' },
+                { key: 'bank_account', label: '银行卡', type: 'text' }
+            ];
+
+            let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+            editFields.forEach(f => {
+                const val = currentStaffDetail[f.key] || '';
+                html += `<div class="form-group" style="margin-bottom:8px;">
+                    <label style="display:block;margin-bottom:4px;font-size:12px;color:var(--text-secondary);">${f.label}${f.required ? ' *' : ''}</label>`;
+                if (f.type === 'select') {
+                    html += `<select id="edit_${f.key}" class="form-control" ${f.required ? 'required' : ''} style="padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;width:100%;box-sizing:border-box;">`;
+                    html += `<option value="">请选择</option>`;
+                    f.options.forEach(o => {
+                        html += `<option value="${o.v}" ${val === o.v ? 'selected' : ''}>${o.t}</option>`;
+                    });
+                    html += `</select>`;
+                } else {
+                    html += `<input type="${f.type}" id="edit_${f.key}" class="form-control" value="${val}" ${f.required ? 'required' : ''} style="padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;width:100%;box-sizing:border-box;">`;
+                }
+                html += '</div>';
+            });
+            html += '</div>';
+            document.getElementById('editStaffFields').innerHTML = html;
+            document.getElementById('editStaffModal').classList.add('active');
+        }
+
+        function handleEditStaff(e) {
+            e.preventDefault();
+            if (!currentStaffDetail) return;
+
+            const resultDiv = document.getElementById('editStaffResult');
+            resultDiv.style.display = 'none';
+
+            // 收集表单数据，对比原数据只更新变化的字段
+            const editFields = ['employee_id', 'name', 'phone', 'department', 'team', 'position', 'hire_date', 'status', 'gender', 'birthday', 'id_card', 'bank_account'];
+            const updateData = {};
+
+            editFields.forEach(key => {
+                const el = document.getElementById('edit_' + key);
+                if (!el) return;
+                let newVal = el.value;
+                let oldVal = currentStaffDetail[key] || '';
+
+                // 类型转换
+                if (key === 'hire_date' || key === 'birthday') {
+                    if (newVal !== oldVal) updateData[key] = newVal || null;
+                } else if (key === 'status') {
+                    if (newVal !== oldVal) updateData[key] = newVal;
+                } else {
+                    if (newVal !== oldVal) updateData[key] = newVal;
+                }
+            });
+
+            // 检查是否有更新
+            const keys = Object.keys(updateData);
+            if (keys.length === 0) {
+                resultDiv.innerHTML = '<span style="color:var(--text-muted);">没有修改任何数据</span>';
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = 'var(--bg-hover)';
+                return;
+            }
+
+            const token = getToken();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.textContent = '保存中...';
+            btn.disabled = true;
+
+            fetch(`${API_URL}/staff/${currentStaffDetail.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) {
+                    resultDiv.innerHTML = '<span style="color:var(--success);">✓ 保存成功</span>';
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.background = 'rgba(35,165,89,0.1)';
+                    // 刷新详情
+                    fetchStaffDetail(currentStaffDetail.id);
+                    // 刷新列表
+                    loadStaff();
+                    btn.textContent = '保存';
+                    btn.disabled = false;
+                } else {
+                    resultDiv.innerHTML = `<span style="color:var(--danger);">✗ ${data.msg || '保存失败'}</span>`;
+                    resultDiv.style.display = 'block';
+                    resultDiv.style.background = 'rgba(235,87,87,0.1)';
+                    btn.textContent = '重试';
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                resultDiv.innerHTML = '<span style="color:var(--danger);">✗ 网络错误</span>';
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = 'rgba(235,87,87,0.1)';
+                btn.textContent = '重试';
+                btn.disabled = false;
+            });
+        }
+
+        function goBack() { window.location.href = 'dashboard.html'; }
+
+        // 添加员工
+        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+        function submitAddStaff(e) {
+            e.preventDefault();
+            const data = {
+                employee_id: document.getElementById('staffEmployeeId').value,
+                name: document.getElementById('staffName').value,
+                phone: document.getElementById('staffPhone').value,
+                department: document.getElementById('staffDepartment').value,
+                team: document.getElementById('staffTeam').value,
+                hire_date: document.getElementById('staffHireDate').value,
+                status: 'active'
+            };
+            fetch(`${API_URL}/staff`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) { alert('添加成功'); closeAddModal(); loadStaff(); }
+                else { alert(data.msg); }
+            })
+            .catch(() => alert('添加失败'));
+        }
+
+        // 批量删除
+        function batchDelete() {
+            const checked = document.querySelectorAll('tbody input[type="checkbox"]:checked');
+            if (checked.length === 0) { alert('请先选择'); return; }
+            if (!confirm(`确定删除 ${checked.length} 名员工？`)) return;
+            Promise.all([...checked].map(cb =>
+                fetch(`${API_URL}/staff/${cb.value}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } })
+                .then(res => res.json())
+            )).then(results => {
+                const fail = results.filter(r => r.code !== 0).length;
+                alert(fail === 0 ? `删除成功` : `成功${results.length - fail}，失败${fail}`);
+                loadStaff();
+            });
+        }
+
+        // 导入
+        function showImportModal() { document.getElementById('importModal').style.display = 'flex'; }
+        function closeImportModal() { document.getElementById('importModal').style.display = 'none'; }
+        function handleImport(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            fetch(`${API_URL}/staff/bulk-import`, { method: 'POST', body: formData, headers: { 'Authorization': `Bearer ${getToken()}` } })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) { alert('导入成功'); closeImportModal(); loadStaff(); }
+                else { alert(data.msg || '导入失败'); }
+            })
+            .catch(() => alert('导入失败'));
+        }
+
+        // 同步
+        function showSyncModal() {
+            const syncDesc = document.querySelector('#syncModal .modal-desc');
+            if (syncDesc) {
+                syncDesc.textContent = currentTab === 'student'
+                    ? '从配置的共享数据源同步学生信息'
+                    : '从配置的共享数据源同步员工信息';
+            }
+            document.getElementById('syncResult').style.display = 'none';
+            document.getElementById('syncResult').innerHTML = '';
+            document.getElementById('syncResult').style.background = '';
+            document.getElementById('syncConfirmBtn').style.display = '';
+            document.getElementById('syncConfirmBtn').textContent = '确认同步';
+            document.getElementById('syncConfirmBtn').disabled = false;
+            document.getElementById('syncCancelBtn').textContent = '取消';
+            document.getElementById('syncCancelBtn').disabled = false;
+            document.getElementById('syncModal').style.display = 'flex';
+        }
+        function closeSyncModal() { document.getElementById('syncModal').style.display = 'none'; }
+        // 存储不在Excel中的人员ID，用于表格红色显示
+        let notInExcelStaffIds = new Set();
+
+        async function handleSync() {
+            const btn = document.getElementById('syncConfirmBtn');
+            const cancelBtn = document.getElementById('syncCancelBtn');
+            const resultDiv = document.getElementById('syncResult');
+            btn.textContent = '同步中...';
+            btn.disabled = true;
+            cancelBtn.disabled = true;
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 180000); // 3分钟超时
+                // 根据当前标签页选择不同的同步API
+                const syncApi = currentTab === 'student' ? `${API_URL}/student-roster/sync` : `${API_URL}/staff/sync-from-smb`;
+                const res = await fetch(syncApi, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${getToken()}` },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                const data = await res.json();
+                if (data.code === 0 || data.success) {
+                    const r = data.data || data || {};
+                    // 记录不在Excel中的人员ID
+                    notInExcelStaffIds = new Set((r.notInExcel || []).map(s => s.employee_id));
+
+                    let html = `<div style="color: var(--success); font-weight: 600; margin-bottom: 10px;">✓ 同步完成</div>`;
+                    html += `<div style="display: flex; gap: 20px; flex-wrap: wrap;">`;
+                    html += `<div>新增: <strong style="color: var(--success);">${r.inserted || 0}</strong> 人</div>`;
+                    html += `<div>更新: <strong style="color: var(--accent);">${r.updated || 0}</strong> 人</div>`;
+                    if (r.skipped && r.skipped.length > 0) {
+                        html += `<div>跳过: <strong>${r.skipped.length}</strong> 人</div>`;
+                    }
+                    html += `</div>`;
+                    if (r.notInExcel && r.notInExcel.length > 0) {
+                        html += `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--danger);">`;
+                        html += `<strong>不在Excel中 (${r.notInExcel.length}人，已标红):</strong> ${r.notInExcel.slice(0, 10).map(s => s.name + '(' + s.employee_id + ')').join(', ')}${r.notInExcel.length > 10 ? '...' : ''}`;
+                        html += `</div>`;
+                    }
+                    resultDiv.innerHTML = html;
+                    resultDiv.style.background = 'rgba(35,165,89,0.1)';
+                    resultDiv.style.display = 'block';
+                    btn.style.display = 'none';
+                    cancelBtn.textContent = '关闭';
+                    cancelBtn.disabled = false;
+                    // 记录同步时间到数据库
+                    fetch(`${API_URL}/staff/sync-time`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${getToken()}`
+                        },
+                        body: JSON.stringify({ result: 'success' })
+                    }).then(() => showSyncTime());
+                    loadStaff();
+                } else {
+                    resultDiv.innerHTML = `<div style="color: var(--danger);">✗ ${data.msg || '同步失败'}</div>`;
+                    resultDiv.style.background = 'rgba(220,38,38,0.1)';
+                    resultDiv.style.display = 'block';
+                    btn.textContent = '重试';
+                    btn.disabled = false;
+                    cancelBtn.disabled = false;
+                }
+            } catch (e) {
+                const isTimeout = e.name === 'AbortError';
+                resultDiv.innerHTML = `<div style="color: var(--danger);">✗ ${isTimeout ? '同步超时，请重试' : '网络错误'}</div>`;
+                resultDiv.style.background = 'rgba(220,38,38,0.1)';
+                resultDiv.style.display = 'block';
+                btn.textContent = '重试';
+                btn.disabled = false;
+                cancelBtn.disabled = false;
+            }
+        }
+
+        // 打印试卷
+        function printExamPaper(recordId) {
+            window.open('exam-print.html?id=' + recordId, '_blank');
+        }
+    </script>
+</body>
+</html>

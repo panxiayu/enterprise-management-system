@@ -1,0 +1,632 @@
+/**
+ * 移动端主题样式表
+ * 为移动端页面提供统一的设计系统和可复用组件
+ *
+ * 使用方式：
+ * 1. 在页面 <head> 中引入本文件
+ * 2. 使用预定义的 CSS 变量和类名
+ */
+
+/* ========================
+   CSS 变量 - 设计系统
+   ======================== */
+:root {
+    /* 主色调 */
+    --mobile-primary: #FFB700;
+    --mobile-primary-dark: #E6A600;
+    --mobile-primary-light: #FFF3D6;
+
+    /* 辅助色 */
+    --mobile-secondary: #3B82F6;
+    --mobile-secondary-dark: #2563EB;
+    --mobile-secondary-light: #DBEAFE;
+
+    /* 状态色 */
+    --mobile-success: #10B981;
+    --mobile-success-light: #D1FAE5;
+    --mobile-danger: #EF4444;
+    --mobile-danger-light: #FEE2E2;
+
+    /* 文字色 */
+    --mobile-text-primary: #111827;
+    --mobile-text-secondary: #6B7280;
+    --mobile-text-tertiary: #9CA3AF;
+    --mobile-text-inverse: #FFFFFF;
+
+    /* 背景色 */
+    --mobile-bg-page: #F5F6F8;
+    --mobile-bg-card: #FFFFFF;
+    --mobile-bg-hover: #F9FAFB;
+
+    /* 边框色 */
+    --mobile-border-light: #E5E7EB;
+    --mobile-border-medium: #D1D5DB;
+
+    /* 阴影 */
+    --mobile-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --mobile-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --mobile-shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+    --mobile-shadow-xl: 0 12px 36px rgba(0,0,0,0.16);
+
+    /* 圆角 */
+    --mobile-radius-sm: 8px;
+    --mobile-radius-md: 12px;
+    --mobile-radius-lg: 16px;
+    --mobile-radius-xl: 20px;
+    --mobile-radius-full: 9999px;
+
+    /* 动画 */
+    --mobile-transition-fast: 0.15s ease;
+    --mobile-transition-normal: 0.25s ease;
+    --mobile-transition-slow: 0.35s ease;
+    --mobile-animate-duration: 0.6s;
+}
+
+/* ========================
+   基础重置
+   ======================== */
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none;
+}
+
+.mobile-page {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    background: var(--mobile-bg-page);
+    margin: 0 auto;
+    padding: 20px 16px 100px;
+    box-sizing: border-box;
+}
+
+.mobile-page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--mobile-text-primary);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
+
+.mobile-page-subtitle {
+    font-size: 14px;
+    color: var(--mobile-text-secondary);
+}
+
+/* ========================
+   卡片组件
+   ======================== */
+.mobile-card {
+    background: var(--mobile-bg-card);
+    border-radius: var(--mobile-radius-xl);
+    box-shadow: var(--mobile-shadow-md);
+    overflow: hidden;
+    transition: box-shadow var(--mobile-transition-normal), transform var(--mobile-transition-normal);
+    margin-bottom: 16px;
+}
+
+.mobile-card:hover {
+    box-shadow: var(--mobile-shadow-lg);
+}
+
+.mobile-card:active {
+    transform: scale(0.99);
+}
+
+/* 卡片内部间距 */
+.mobile-card-padding {
+    padding: 18px 20px;
+}
+
+/* ========================
+   列表卡片项
+   ======================== */
+.mobile-list-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    background: var(--mobile-bg-card);
+    border-radius: var(--mobile-radius-xl);
+    box-shadow: var(--mobile-shadow-md);
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all var(--mobile-transition-fast);
+}
+
+.mobile-list-item:active {
+    transform: scale(0.98);
+    background: var(--mobile-bg-hover);
+}
+
+.mobile-list-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--mobile-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+}
+
+.mobile-list-icon.blue {
+    background: linear-gradient(135deg, var(--mobile-secondary-light), #BFDBFE);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.25);
+}
+
+.mobile-list-icon.yellow {
+    background: linear-gradient(135deg, var(--mobile-primary-light), #FDE68A);
+    box-shadow: 0 4px 12px rgba(251,191,36,0.25);
+}
+
+.mobile-list-icon.green {
+    background: linear-gradient(135deg, var(--mobile-success-light), #A7F3D0);
+    box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+}
+
+.mobile-list-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.mobile-list-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--mobile-text-primary);
+    margin-bottom: 4px;
+}
+
+.mobile-list-desc {
+    font-size: 13px;
+    color: var(--mobile-text-secondary);
+}
+
+.mobile-list-arrow {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--mobile-bg-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mobile-text-tertiary);
+    font-size: 18px;
+    transition: all var(--mobile-transition-fast);
+}
+
+.mobile-list-item:active .mobile-list-arrow {
+    background: var(--mobile-primary-light);
+    color: var(--mobile-primary);
+    transform: translateX(4px);
+}
+
+/* ========================
+   按钮组件
+   ======================== */
+.mobile-btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: var(--mobile-radius-md);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--mobile-transition-fast);
+    color: white;
+}
+
+.mobile-btn:active {
+    transform: scale(0.98);
+}
+
+.mobile-btn-primary {
+    background: linear-gradient(135deg, var(--mobile-primary), #FF9500);
+    box-shadow: 0 4px 16px rgba(255,183,0,0.35);
+}
+
+.mobile-btn-primary:active {
+    box-shadow: 0 2px 8px rgba(255,183,0,0.25);
+}
+
+.mobile-btn-secondary {
+    background: linear-gradient(135deg, var(--mobile-success), #059669);
+    box-shadow: 0 4px 16px rgba(16,185,129,0.35);
+}
+
+.mobile-btn-outline {
+    background: transparent;
+    border: 2px solid var(--mobile-border-light);
+    color: var(--mobile-text-secondary);
+}
+
+/* ========================
+   表单组件
+   ======================== */
+.mobile-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1.5px solid var(--mobile-border-light);
+    border-radius: var(--mobile-radius-md);
+    font-size: 15px;
+    background: white;
+    color: var(--mobile-text-primary);
+    transition: all var(--mobile-transition-fast);
+}
+
+.mobile-input:focus {
+    outline: none;
+    border-color: var(--mobile-primary);
+    box-shadow: 0 0 0 3px rgba(255,183,0,0.15);
+}
+
+.mobile-input::placeholder {
+    color: var(--mobile-text-tertiary);
+}
+
+.mobile-textarea {
+    resize: none;
+    min-height: 100px;
+}
+
+.mobile-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mobile-text-secondary);
+    margin-bottom: 8px;
+}
+
+/* ========================
+   标签组件
+   ======================== */
+.mobile-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: var(--mobile-radius-full);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.mobile-tag-success {
+    background: var(--mobile-success-light);
+    color: var(--mobile-success);
+}
+
+.mobile-tag-warning {
+    background: var(--mobile-primary-light);
+    color: var(--mobile-primary-dark);
+}
+
+.mobile-tag-info {
+    background: var(--mobile-secondary-light);
+    color: var(--mobile-secondary-dark);
+}
+
+.mobile-tag-muted {
+    background: var(--mobile-bg-hover);
+    color: var(--mobile-text-tertiary);
+}
+
+/* ========================
+   状态指示器
+   ======================== */
+.mobile-status {
+    padding: 4px 10px;
+    border-radius: var(--mobile-radius-full);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.mobile-status-active {
+    background: var(--mobile-success-light);
+    color: var(--mobile-success);
+}
+
+.mobile-status-inactive {
+    background: var(--mobile-bg-hover);
+    color: var(--mobile-text-tertiary);
+}
+
+/* ========================
+   Toast 提示
+   ======================== */
+.mobile-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(17,24,39,0.9);
+    color: white;
+    padding: 14px 28px;
+    border-radius: var(--mobile-radius-md);
+    font-size: 15px;
+    font-weight: 500;
+    z-index: 1001;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--mobile-shadow-xl);
+}
+
+/* ========================
+   Loading 加载
+   ======================== */
+.mobile-loading {
+    text-align: center;
+    padding: 80px 20px;
+}
+
+.mobile-loading-spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid var(--mobile-border-light);
+    border-top-color: var(--mobile-primary);
+    border-radius: 50%;
+    animation: mobile-spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes mobile-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes mobile-slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mobile-loading-text {
+    color: var(--mobile-text-tertiary);
+    font-size: 14px;
+}
+
+/* ========================
+   返回按钮
+   ======================== */
+.mobile-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--mobile-secondary);
+    font-size: 15px;
+    font-weight: 500;
+    padding: 8px 0;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: color var(--mobile-transition-fast);
+}
+
+.mobile-back-btn:hover {
+    color: var(--mobile-secondary-dark);
+}
+
+/* ========================
+   分隔线
+   ======================== */
+.mobile-divider {
+    height: 1px;
+    background: var(--mobile-border-light);
+    margin: 0 20px;
+}
+
+/* ========================
+   空状态
+   ======================== */
+.mobile-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--mobile-text-tertiary);
+}
+
+.mobile-empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.mobile-empty-text {
+    font-size: 14px;
+}
+
+/* ========================
+   底部固定区域
+   ======================== */
+.mobile-footer-hint {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--mobile-text-tertiary);
+    font-size: 12px;
+}
+
+/* ========================
+   动画类
+   ======================== */
+:root {
+    --animate-duration: 0.6s;
+}
+
+.mobile-animate {
+    animation-duration: var(--mobile-animate-duration) !important;
+}
+
+.mobile-animate-slideInDown {
+    animation-name: mobile-slideInDown !important;
+}
+
+.mobile-animate-delay-1 {
+    animation-delay: 0.4s !important;
+}
+
+.mobile-animate-delay-2 {
+    animation-delay: 0.6s !important;
+}
+
+.mobile-animate-delay-3 {
+    animation-delay: 0.8s !important;
+}
+
+/* ========================
+   滚动条隐藏
+   ======================== */
+.mobile-no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.mobile-no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* ========================
+   抽屉卡片组
+   ======================== */
+.mobile-card-group {
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.mobile-card-group > .mobile-card {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0;
+    border-radius: var(--mobile-radius-xl) var(--mobile-radius-xl) 0 0;
+    box-shadow: var(--mobile-shadow-md);
+}
+
+.mobile-card-group > .mobile-card:last-child {
+    border-radius: 0 0 var(--mobile-radius-xl) var(--mobile-radius-xl);
+}
+
+.mobile-card-group > .mobile-drawer {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 0 0 var(--mobile-radius-xl) var(--mobile-radius-xl);
+    border-top: 1px dashed var(--mobile-border-medium);
+}
+
+/* 抽屉卡片 */
+.mobile-drawer {
+    position: relative;
+    background: var(--mobile-bg-hover);
+    padding: 16px 20px;
+    box-shadow: var(--mobile-shadow-sm);
+    margin: 0;
+}
+
+/* ========================
+   计数组件
+   ======================== */
+.mobile-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px 0;
+}
+
+.mobile-counter-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    font-size: 26px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--mobile-transition-fast);
+}
+
+.mobile-counter-btn:active {
+    transform: scale(0.92);
+}
+
+.mobile-counter-btn-minus {
+    background: var(--mobile-bg-hover);
+    color: var(--mobile-text-secondary);
+    box-shadow: var(--mobile-shadow-sm);
+}
+
+.mobile-counter-btn-minus:active {
+    background: var(--mobile-danger-light);
+    color: var(--mobile-danger);
+}
+
+.mobile-counter-btn-plus {
+    background: linear-gradient(135deg, var(--mobile-primary), #FF9500);
+    color: white;
+    box-shadow: 0 4px 16px rgba(255,183,0,0.4);
+}
+
+.mobile-counter-btn-plus:active {
+    box-shadow: 0 2px 8px rgba(255,183,0,0.3);
+}
+
+.mobile-counter-value {
+    font-size: 56px;
+    font-weight: 800;
+    color: var(--mobile-text-primary);
+    min-width: 80px;
+    text-align: center;
+    line-height: 1;
+}
+
+/* ========================
+   餐类选择器
+   ======================== */
+.mobile-type-switch {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.mobile-type-btn {
+    flex: 1;
+    padding: 14px 12px;
+    border: 2px solid var(--mobile-border-light);
+    border-radius: var(--mobile-radius-md);
+    background: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all var(--mobile-transition-fast);
+    color: var(--mobile-text-secondary);
+}
+
+.mobile-type-btn:active {
+    transform: scale(0.98);
+}
+
+.mobile-type-btn.active.lunch {
+    border-color: var(--mobile-primary);
+    background: var(--mobile-primary-light);
+    color: var(--mobile-primary-dark);
+}
+
+.mobile-type-btn.active.dinner {
+    border-color: var(--mobile-secondary);
+    background: var(--mobile-secondary-light);
+    color: var(--mobile-secondary-dark);
+}
+
+.mobile-type-icon {
+    font-size: 18px;
+}

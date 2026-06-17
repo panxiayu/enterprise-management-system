@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工详情 - 兴利汽车模具</title>
+    <link rel="stylesheet" href="css/theme.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, var(--bg) 0%, var(--bg) 50%, var(--bg) 100%); color: var(--text); min-height: 100vh; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px 24px; }
+
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .page-title { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+        .btn { padding: 8px 14px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); color: white; }
+        .btn-secondary { background: var(--white); color: var(--text); border: 1px solid var(--border); }
+
+        .loading { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+
+        .staff-header { background: var(--white); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; border: 1px solid rgba(255,255,255,0.6); }
+        .staff-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+        .staff-header-info { flex: 1; }
+        .staff-header-name { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+        .staff-header-meta { display: flex; gap: 12px; color: var(--text-secondary); font-size: 12px; flex-wrap: wrap; }
+        .staff-header-meta span { display: flex; align-items: center; gap: 4px; }
+
+        .card { background: var(--white); border-radius: var(--radius-lg); padding: 14px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.6); }
+        .card-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+        .card-title::before { content: ''; width: 3px; height: 12px; background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%); border-radius: 2px; }
+
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+        .info-item { display: flex; flex-direction: column; gap: 2px; }
+        .info-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-value { font-size: 13px; color: var(--text); padding: 6px 10px; background: var(--bg-input); border-radius: var(--radius); border: 1px solid var(--border); }
+
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-success { background: rgba(38, 166, 65, 0.15); color: var(--success); }
+        .badge-danger { background: rgba(235, 87, 87, 0.15); color: var(--danger); }
+
+        .section-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media (max-width: 768px) {
+            .section-row { grid-template-columns: 1fr; }
+            .container { padding: 12px 16px; }
+            .staff-header { flex-direction: column; text-align: center; }
+            .staff-header-meta { justify-content: center; }
+            .info-grid { grid-template-columns: 1fr; }
+            .card { padding: 12px; }
+            .toolbar { flex-direction: column; gap: 12px; align-items: stretch; }
+            .toolbar-right { justify-content: flex-end; }
+        }
+
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .exam-table, .meal-table { width: 100%; border-collapse: collapse; min-width: 500px; }
+        .exam-table th, .meal-table th { text-align: left; padding: 8px 10px; background: rgba(255,255,255,0.8); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .exam-table td, .meal-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .exam-table tr:last-child td, .meal-table tr:last-child td { border-bottom: none; }
+        .empty-state { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(30,58,138,0.4); backdrop-filter: blur(20px); align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-box { background: var(--white); border-radius: var(--radius-lg); padding: 20px; width: 90%; max-width: 440px; box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.5); animation: modalIn 0.25s ease; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+        .modal-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-secondary); font-size: 12px; }
+        .form-control { width: 100%; padding: 10px 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; color: var(--text); box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .edit-result { margin: 12px 0; padding: 12px; border-radius: var(--radius); background: var(--bg-hover); display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <span class="page-title">员工详情</span>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-secondary" onclick="goBack()">返回</button>
+                <button class="btn btn-primary" id="editBtn" onclick="showEditModal()">编辑</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">加载中...</div>
+
+        <div id="content" style="display: none;">
+            <!-- 员工头部信息 -->
+            <div class="staff-header">
+                <div class="staff-avatar" id="staffAvatar">-</div>
+                <div class="staff-header-info">
+                    <div class="staff-header-name" id="staffName">-</div>
+                    <div class="staff-header-meta">
+                        <span id="staffDepartment">-</span>
+                        <span id="staffTeam">-</span>
+                        <span id="staffPosition">-</span>
+                        <span><span class="badge badge-success" id="staffStatus">-</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 基本信息 -->
+            <div class="card">
+                <div class="card-title">基本信息</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">工号</span>
+                        <div class="info-value" id="staffEmployeeId">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">姓名</span>
+                        <div class="info-value" id="staffName2">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">部门</span>
+                        <div class="info-value" id="staffDepartment2">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">班组</span>
+                        <div class="info-value" id="staffTeam2">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">职位</span>
+                        <div class="info-value" id="staffPosition2">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">入职日期</span>
+                        <div class="info-value" id="staffHireDate">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">联系电话</span>
+                        <div class="info-value" id="staffPhone">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 个人信息 -->
+            <div class="card">
+                <div class="card-title">个人信息</div>
+                <div class="section-row">
+                    <div class="info-item">
+                        <span class="info-label">性别</span>
+                        <div class="info-value" id="staffGender">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">出生年月</span>
+                        <div class="info-value" id="staffBirthday">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">民族</span>
+                        <div class="info-value" id="staffNationality">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">身份证号码</span>
+                        <div class="info-value" id="staffIdCard">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">户口</span>
+                        <div class="info-value" id="staffHousehold">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">学历</span>
+                        <div class="info-value" id="staffEducation">-</div>
+                    </div>
+                    <div class="info-item" style="grid-column: span 2;">
+                        <span class="info-label">家庭住址</span>
+                        <div class="info-value" id="staffAddress">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 教育信息 -->
+            <div class="card">
+                <div class="card-title">教育信息</div>
+                <div class="section-row">
+                    <div class="info-item">
+                        <span class="info-label">专业</span>
+                        <div class="info-value" id="staffMajor">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">毕业院校</span>
+                        <div class="info-value" id="staffGraduateSchool">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 合同信息 -->
+            <div class="card">
+                <div class="card-title">合同信息</div>
+                <div class="section-row">
+                    <div class="info-item">
+                        <span class="info-label">是否已签合同</span>
+                        <div class="info-value" id="staffContractSigned">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">合同期限</span>
+                        <div class="info-value" id="staffContractPeriod">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">类别</span>
+                        <div class="info-value" id="staffCategory">-</div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">工资卡账号</span>
+                        <div class="info-value" id="staffBankAccount">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 考试记录 -->
+            <div class="card">
+                <div class="card-title">考试成绩</div>
+                <div id="examContent" class="table-scroll">
+                    <table class="exam-table">
+                        <thead>
+                            <tr>
+                                <th>考试名称</th>
+                                <th>成绩</th>
+                                <th>状态</th>
+                                <th>日期</th>
+                            </tr>
+                        </thead>
+                        <tbody id="examList"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 报餐记录 -->
+            <div class="card">
+                <div class="card-title">报餐记录</div>
+                <div id="mealContent" class="table-scroll">
+                    <table class="meal-table">
+                        <thead>
+                            <tr>
+                                <th>活动名称</th>
+                                <th>菜单</th>
+                                <th>数量</th>
+                                <th>日期</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mealList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑员工弹窗 -->
+    <div class="modal" id="editModal">
+        <div class="modal-box">
+            <div class="modal-title">编辑员工信息</div>
+            <div class="modal-desc">修改员工基本信息</div>
+            <div id="editResult" class="edit-result"></div>
+            <form onsubmit="handleSave(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>工号 *</label>
+                        <input type="text" id="editEmployeeId" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>姓名 *</label>
+                        <input type="text" id="editName" class="form-control" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>电话</label>
+                        <input type="text" id="editPhone" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>部门</label>
+                        <input type="text" id="editDepartment" class="form-control">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>班组</label>
+                        <input type="text" id="editTeam" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>职位</label>
+                        <input type="text" id="editPosition" class="form-control">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>入职日期</label>
+                        <input type="date" id="editHireDate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select id="editStatus" class="form-control">
+                            <option value="active">在职</option>
+                            <option value="inactive">离职</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="editCancelBtn" onclick="closeEditModal()">取消</button>
+                    <button type="submit" class="btn btn-primary" id="editSaveBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let token = '';
+        const staffId = new URLSearchParams(window.location.search).get('id');
+        let staffData = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            token = window.AdminSession && window.AdminSession.requireValid
+                ? window.AdminSession.requireValid()
+                : (localStorage.getItem('token') || localStorage.getItem('adminToken') || '');
+            if (!token || !staffId) {
+                window.location.href = 'staff-list.html';
+                return;
+            }
+            loadStaffDetail();
+        });
+
+        function loadStaffDetail() {
+            fetch(`${API_URL}/staff/${staffId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) {
+                    staffData = data.data;
+                    renderStaffDetail();
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                } else {
+                    alert(data.msg || '加载失败');
+                }
+            })
+            .catch(err => alert('加载失败'));
+        }
+
+        function renderStaffDetail() {
+            const s = staffData;
+            const firstChar = (s.name || '-').charAt(0).toUpperCase();
+
+            // 头部
+            document.getElementById('staffAvatar').textContent = firstChar;
+            document.getElementById('staffName').textContent = s.name || '-';
+            document.getElementById('staffDepartment').textContent = s.department || '-';
+            let teamVal = s.team || '';
+            if (teamVal.includes('/')) teamVal = teamVal.split('/').pop();
+            document.getElementById('staffTeam').textContent = teamVal ? `班组: ${teamVal}` : '';
+            document.getElementById('staffPosition').textContent = s.position ? `职位: ${s.position}` : '';
+            document.getElementById('staffStatus').textContent = s.status === 'active' ? '在职' : '离职';
+            document.getElementById('staffStatus').className = 'badge ' + (s.status === 'active' ? 'badge-success' : 'badge-danger');
+
+            // 基本信息
+            document.getElementById('staffEmployeeId').textContent = s.employee_id || '-';
+            document.getElementById('staffName2').textContent = s.name || '-';
+            document.getElementById('staffDepartment2').textContent = s.department || '-';
+            document.getElementById('staffTeam2').textContent = teamVal;
+            document.getElementById('staffPosition2').textContent = s.position || '-';
+            document.getElementById('staffHireDate').textContent = s.hire_date || '-';
+            document.getElementById('staffPhone').textContent = s.phone || '-';
+
+            // 个人信息
+            document.getElementById('staffGender').textContent = s.gender || '-';
+            document.getElementById('staffBirthday').textContent = s.birthday || '-';
+            document.getElementById('staffNationality').textContent = s.nationality || '-';
+            document.getElementById('staffIdCard').textContent = s.id_card || '-';
+            document.getElementById('staffHousehold').textContent = s.household || '-';
+            document.getElementById('staffEducation').textContent = s.education || '-';
+            document.getElementById('staffAddress').textContent = s.address || '-';
+
+            // 教育信息
+            document.getElementById('staffMajor').textContent = s.major || '-';
+            document.getElementById('staffGraduateSchool').textContent = s.graduate_school || '-';
+
+            // 合同信息
+            document.getElementById('staffContractSigned').textContent = s.contract_signed || '-';
+            document.getElementById('staffContractPeriod').textContent = s.contract_period || '-';
+            document.getElementById('staffCategory').textContent = s.category || '-';
+            document.getElementById('staffBankAccount').textContent = s.bank_account || '-';
+
+            // 考试记录
+            const examHtml = (s.examScores || []).map(e => `
+                <tr>
+                    <td>${e.title || '-'}</td>
+                    <td>${e.score != null ? e.score : '-'}</td>
+                    <td>${e.status || '-'}</td>
+                    <td>${e.created_at ? new Date(e.created_at).toLocaleDateString('zh-CN') : '-'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="empty-state">暂无数据</td></tr>';
+            document.getElementById('examList').innerHTML = examHtml;
+
+            // 报餐记录
+            const mealHtml = (s.mealOrders || []).map(m => `
+                <tr>
+                    <td>${m.title || '-'}</td>
+                    <td>${m.menu_name || '-'}</td>
+                    <td>${m.quantity || '-'}</td>
+                    <td>${m.ordered_at ? new Date(m.ordered_at).toLocaleDateString('zh-CN') : '-'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="empty-state">暂无数据</td></tr>';
+            document.getElementById('mealList').innerHTML = mealHtml;
+        }
+
+        function showEditModal() {
+            document.getElementById('editResult').style.display = 'none';
+            document.getElementById('editResult').innerHTML = '';
+            document.getElementById('editSaveBtn').style.display = '';
+            document.getElementById('editSaveBtn').textContent = '保存';
+            document.getElementById('editCancelBtn').textContent = '取消';
+            document.getElementById('editCancelBtn').disabled = false;
+
+            document.getElementById('editEmployeeId').value = staffData.employee_id || '';
+            document.getElementById('editName').value = staffData.name || '';
+            document.getElementById('editPhone').value = staffData.phone || '';
+            document.getElementById('editDepartment').value = staffData.department || '';
+            document.getElementById('editTeam').value = staffData.team || '';
+            document.getElementById('editPosition').value = staffData.position || '';
+            document.getElementById('editHireDate').value = staffData.hire_date || '';
+            document.getElementById('editStatus').value = staffData.status || 'active';
+
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        function handleSave(e) {
+            e.preventDefault();
+
+            const data = {
+                employee_id: document.getElementById('editEmployeeId').value,
+                name: document.getElementById('editName').value,
+                phone: document.getElementById('editPhone').value || undefined,
+                department: document.getElementById('editDepartment').value || undefined,
+                team: document.getElementById('editTeam').value || undefined,
+                position: document.getElementById('editPosition').value || undefined,
+                hire_date: document.getElementById('editHireDate').value || undefined,
+                status: document.getElementById('editStatus').value
+            };
+
+            if (!data.name || !data.employee_id) {
+                document.getElementById('editResult').innerHTML = '<div style="color: var(--danger);">工号和姓名不能为空</div>';
+                document.getElementById('editResult').style.display = 'block';
+                return;
+            }
+
+            const btn = document.getElementById('editSaveBtn');
+            const cancelBtn = document.getElementById('editCancelBtn');
+            btn.textContent = '保存中...';
+            btn.disabled = true;
+            cancelBtn.disabled = true;
+
+            fetch(`${API_URL}/staff/${staffId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.code === 0) {
+                    document.getElementById('editResult').innerHTML = '<div style="color: var(--success);">✓ 保存成功</div>';
+                    document.getElementById('editResult').style.display = 'block';
+                    document.getElementById('editResult').style.background = 'rgba(35,165,89,0.1)';
+                    btn.style.display = 'none';
+                    cancelBtn.textContent = '关闭';
+                    cancelBtn.disabled = false;
+                    loadStaffDetail();
+                } else {
+                    document.getElementById('editResult').innerHTML = `<div style="color: var(--danger);">✗ ${res.msg || '保存失败'}</div>`;
+                    document.getElementById('editResult').style.display = 'block';
+                    btn.textContent = '重试';
+                    btn.disabled = false;
+                    cancelBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                document.getElementById('editResult').innerHTML = '<div style="color: var(--danger);">✗ 网络错误</div>';
+                document.getElementById('editResult').style.display = 'block';
+                btn.textContent = '重试';
+                btn.disabled = false;
+                cancelBtn.disabled = false;
+            });
+        }
+
+        function goBack() {
+            window.location.href = 'staff-list.html';
+        }
+    </script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

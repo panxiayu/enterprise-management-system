@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>今日报餐</title>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+:root{
+
+  --bg:#f5f5f7;
+
+  --text:#111111;
+  --sub:#8b8b8f;
+
+  --red:#ff453a;
+  --red2:#ff6a5f;
+
+  --white:#ffffff;
+
+  --line:#ececec;
+
+  --orange:#ff9f38;
+  --blue:#4c7dff;
+
+}
+
+body{
+
+  min-height:100dvh;
+
+  background:var(--bg);
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "PingFang SC",
+    sans-serif;
+
+  color:var(--text);
+
+  padding:
+    max(20px, env(safe-area-inset-top))
+    18px
+    max(30px, env(safe-area-inset-bottom));
+
+}
+
+/* 顶部 */
+
+.hero{
+
+  position:relative;
+
+  overflow:hidden;
+
+  border-radius:38px;
+
+  background:
+    linear-gradient(
+      160deg,
+      #ff4a4a 0%,
+      #ff5e57 50%,
+      #ff7b6b 100%
+    );
+
+  padding:28px;
+
+  color:#fff;
+
+  box-shadow:
+    0 20px 50px rgba(255,80,80,.22);
+}
+
+.hero::before{
+
+  content:"";
+
+  position:absolute;
+
+  width:260px;
+  height:260px;
+
+  border-radius:50%;
+
+  background:
+    rgba(255,255,255,.08);
+
+  right:-100px;
+  top:-80px;
+}
+
+/* 标题 */
+
+.top{
+
+  position:relative;
+  z-index:2;
+}
+
+.label{
+
+  font-size:16px;
+
+  opacity:.92;
+}
+
+.title{
+
+  margin-top:10px;
+
+  font-size:clamp(34px,10vw,54px);
+
+  font-weight:800;
+
+  letter-spacing:-2px;
+}
+
+/* 日期 */
+
+.date{
+
+  margin-top:34px;
+
+  position:relative;
+  z-index:2;
+
+  text-align:center;
+}
+
+.day{
+
+  font-size:clamp(100px,28vw,170px);
+
+  line-height:.9;
+
+  font-weight:800;
+
+  letter-spacing:-8px;
+}
+
+.week{
+
+  margin-top:12px;
+
+  font-size:22px;
+
+  opacity:.95;
+}
+
+.lunar{
+
+  margin-top:8px;
+
+  font-size:15px;
+
+  opacity:.72;
+}
+
+/* 员工餐 */
+
+.staff{
+
+  margin-top:40px;
+
+  position:relative;
+  z-index:2;
+}
+
+.staff-label{
+
+  font-size:18px;
+
+  opacity:.92;
+}
+
+.staff-count{
+
+  margin-top:14px;
+
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  gap:10px;
+}
+
+.staff-count .num{
+
+  font-size:clamp(78px,20vw,130px);
+
+  line-height:.9;
+
+  font-weight:800;
+}
+
+.staff-count .unit{
+
+  font-size:28px;
+
+  margin-bottom:18px;
+}
+
+.staff-desc{
+
+  margin-top:14px;
+
+  text-align:center;
+
+  font-size:15px;
+
+  opacity:.75;
+}
+
+/* 内容 */
+
+.content{
+
+  margin-top:22px;
+}
+
+/* 客餐卡 */
+
+.meal-card{
+
+  background:#fff;
+
+  border-radius:30px;
+
+  padding:22px;
+
+  margin-bottom:18px;
+
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.05);
+}
+
+/* 顶部 */
+
+.meal-top{
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  margin-bottom:20px;
+}
+
+.meal-left{
+
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.icon{
+
+  width:52px;
+  height:52px;
+
+  border-radius:18px;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  color:#fff;
+
+  font-size:24px;
+}
+
+.orange{
+  background:linear-gradient(135deg,#ffb347,#ff9431);
+}
+
+.blue{
+  background:linear-gradient(135deg,#6d8dff,#4b74ff);
+}
+
+.meal-title{
+
+  font-size:28px;
+
+  font-weight:800;
+}
+
+.orange-text{
+  color:#ff9c38;
+}
+
+.blue-text{
+  color:#4d7cff;
+}
+
+.meal-count{
+
+  text-align:right;
+}
+
+.meal-count .n{
+
+  font-size:54px;
+
+  line-height:1;
+
+  font-weight:800;
+}
+
+.meal-count .u{
+
+  margin-top:4px;
+
+  font-size:14px;
+
+  color:#999;
+}
+
+/* 明细 */
+
+.list{
+
+  margin-top:10px;
+}
+
+.item{
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  padding:
+    16px
+    0;
+
+  border-top:1px solid var(--line);
+}
+
+.item:first-child{
+  border-top:none;
+}
+
+.user{
+
+  display:flex;
+  flex-direction:column;
+}
+
+.name{
+
+  font-size:18px;
+  font-weight:700;
+}
+
+.company{
+
+  margin-top:6px;
+
+  font-size:14px;
+
+  color:#999;
+}
+
+.time{
+
+  font-size:16px;
+
+  color:#666;
+}
+
+/* 更多 */
+
+.more{
+
+  margin-top:18px;
+
+  text-align:center;
+
+  font-size:16px;
+  font-weight:700;
+}
+
+/* 底部 */
+
+.footer{
+
+  text-align:center;
+
+  margin-top:34px;
+
+  color:#999;
+
+  font-size:14px;
+}
+
+/* 小屏 */
+
+@media (max-width:390px){
+
+  .hero{
+    padding:22px;
+  }
+
+  .meal-card{
+    padding:18px;
+  }
+
+  .meal-title{
+    font-size:24px;
+  }
+
+  .meal-count .n{
+    font-size:46px;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- 顶部 -->
+
+<div class="hero">
+
+  <div class="top">
+
+    <div class="label">
+      智慧食堂 · 实时统计
+    </div>
+
+    <div class="title">
+      今日报餐
+    </div>
+
+  </div>
+
+  <!-- 日期 -->
+
+  <div class="date">
+
+    <div class="day">
+      17
+    </div>
+
+    <div class="week">
+      星期五
+    </div>
+
+    <div class="lunar">
+      2024年5月 ｜ 农历四月初十
+    </div>
+
+  </div>
+
+  <!-- 员工餐 -->
+
+  <div class="staff">
+
+    <div class="staff-label">
+      员工晚餐报餐人数
+    </div>
+
+    <div class="staff-count">
+
+      <div class="num">
+        368
+      </div>
+
+      <div class="unit">
+        人
+      </div>
+
+    </div>
+
+    <div class="staff-desc">
+      数据实时更新
+    </div>
+
+  </div>
+
+</div>
+
+<!-- 内容 -->
+
+<div class="content">
+
+  <!-- 午餐 -->
+
+  <div class="meal-card">
+
+    <div class="meal-top">
+
+      <div class="meal-left">
+
+        <div class="icon orange">
+          ☀
+        </div>
+
+        <div class="meal-title orange-text">
+          客餐午餐
+        </div>
+
+      </div>
+
+      <div class="meal-count">
+
+        <div class="n orange-text">
+          89
+        </div>
+
+        <div class="u">
+          人
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="list">
+
+      <div class="item">
+
+        <div class="user">
+
+          <div class="name">
+            张三
+          </div>
+
+          <div class="company">
+            XX公司
+          </div>
+
+        </div>
+
+        <div class="time">
+          10:23
+        </div>
+
+      </div>
+
+      <div class="item">
+
+        <div class="user">
+
+          <div class="name">
+            李四
+          </div>
+
+          <div class="company">
+            XX公司
+          </div>
+
+        </div>
+
+        <div class="time">
+          10:21
+        </div>
+
+      </div>
+
+      <div class="item">
+
+        <div class="user">
+
+          <div class="name">
+            王五
+          </div>
+
+          <div class="company">
+            XX公司
+          </div>
+
+        </div>
+
+        <div class="time">
+          10:20
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="more orange-text">
+      查看更多
+    </div>
+
+  </div>
+
+  <!-- 晚餐 -->
+
+  <div class="meal-card">
+
+    <div class="meal-top">
+
+      <div class="meal-left">
+
+        <div class="icon blue">
+          ☾
+        </div>
+
+        <div class="meal-title blue-text">
+          客餐晚餐
+        </div>
+
+      </div>
+
+      <div class="meal-count">
+
+        <div class="n blue-text">
+          126
+        </div>
+
+        <div class="u">
+          人
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="list">
+
+      <div class="item">
+
+        <div class="user">
+
+          <div class="name">
+            赵六
+          </div>
+
+          <div class="company">
+            XX公司
+          </div>
+
+        </div>
+
+        <div class="time">
+          16:45
+        </div>
+
+      </div>
+
+      <div class="item">
+
+        <div class="user">
+
+          <div class="name">
+            钱七
+          </div>
+
+          <div class="company">
+            XX公司
+          </div>
+
+        </div>
+
+        <div class="time">
+          16:30
+        </div>
+
+      </div>
+
+      <div class="item">
+
+        <div class="user">
+
+          <div class="name">
+            孙八
+          </div>
+
+          <div class="company">
+            XX公司
+          </div>
+
+        </div>
+
+        <div class="time">
+          16:28
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="more blue-text">
+      查看更多
+    </div>
+
+  </div>
+
+</div>
+
+<div class="footer">
+  数据统计截止至今日 18:00
+</div>
+
+</body>
+</html>

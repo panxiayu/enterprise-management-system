@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>新增曝光 - 兴利汽车模具</title>
+<style>
+* {margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root {
+  --bg: #F0F7FF;
+  --card: #ffffff;
+  --border: #D6E9FF;
+  --primary: #4A90E2;
+  --secondary: #65B3FF;
+  --accent: #22C58D;
+  --text: #1D2B5A;
+  --text-soft: #5B72A9;
+  --radius: 22px;
+  --transition: all 0.3s ease;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 16px 100px;
+}
+body.photo-editor-open {overflow:hidden}
+.page-wrap {max-width: 480px; margin: 0 auto}
+@media (min-width: 768px) {.page-wrap {max-width: 680px}}
+@media (min-width: 1024px) {.page-wrap {max-width: 800px}}
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.form-group {margin-bottom: 18px}
+.form-group:last-child {margin-bottom: 0}
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+}
+.form-label .required {color: #ff3b30; margin-left: 2px}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 13px 14px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+input[type="date"] {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  padding: 13px 14px;
+}
+/* 自定义日期选择器：隐藏原生input，显示格式化的文本 */
+.date-picker-wrap {
+  position: relative;
+  width: 100%;
+  display: block;
+}
+.date-picker-display {
+  width: 100%;
+  padding: 13px 14px;
+  background: rgba(74,144,226,0.04);
+  border: 1px solid rgba(74,144,226,0.16);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text);
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 48px;
+}
+.date-picker-display:active {
+  transform: scale(0.99);
+  border-color: var(--primary);
+  background: rgba(74,144,226,0.08);
+}
+.date-picker-display .date-arrow {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--primary);
+  font-size: 0;
+}
+.date-picker-display .date-arrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+}
+.date-picker-wrap input[type="date"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  pointer-events: none;
+}
+.date-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 35, 78, 0.28);
+  display: none;
+  align-items: flex-end;
+  z-index: 9999;
+}
+.date-modal.show {display: flex}
+.date-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 22px 22px 0 0;
+  padding: 16px 18px max(18px, env(safe-area-inset-bottom));
+  box-shadow: 0 -16px 40px rgba(29,43,90,0.16);
+}
+.date-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.date-sheet-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.date-sheet-btn {
+  border: none;
+  background: rgba(74,144,226,0.1);
+  color: var(--primary);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.date-sheet-btn.cancel {
+  background: rgba(0,0,0,0.05);
+  color: var(--text-soft);
+}
+.date-columns {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 10px;
+}
+.date-field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+}
+.date-stepper {
+  width: 100%;
+  border: 1px solid rgba(74,144,226,0.18);
+  border-radius: 12px;
+  background: rgba(74,144,226,0.05);
+  display: grid;
+  grid-template-columns: 34px minmax(0,1fr) 34px;
+  align-items: center;
+  overflow: hidden;
+}
+.date-stepper button {
+  height: 46px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-size: 20px;
+  font-weight: 700;
+  font-family: inherit;
+}
+.date-stepper span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  border-left: 1px solid rgba(74,144,226,0.12);
+  border-right: 1px solid rgba(74,144,226,0.12);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(74,144,226,0.04);
+}
+#projectCode[readonly] {
+  color: #000;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+.form-textarea {
+  min-height: 90px;
+  resize: none;
+  line-height: 1.5;
+}
+.area-group {display: flex; gap: 10px}
+.area-group .form-select {flex: 1}
+.hint {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-top: 6px;
+}
+.hint.warning {color: #ff9500}
+.photo-stack {display:flex;flex-direction:column;gap:12px}
+.photo-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0,0,0,0);
+  clip-path: inset(50%);
+  opacity: 0;
+}
+.photo-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.photo-tile,.photo-add {position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1/1;background:#f7fbff;border:1px solid rgba(74,144,226,0.14)}
+.photo-tile img {width:100%;height:100%;object-fit:cover;display:block}
+.photo-edit-btn,.photo-delete-btn {position:absolute;top:6px;width:26px;height:26px;border-radius:50%;border:none;color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.photo-edit-btn {left:6px;background:rgba(74,144,226,0.78)}
+.photo-add {display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed rgba(74,144,226,0.28);background:rgba(74,144,226,0.05);color:var(--primary);cursor:pointer}
+.photo-add:active {transform:scale(0.98)}
+.photo-add-icon {font-size:26px;line-height:1;margin-bottom:6px}
+.photo-add-text {font-size:12px;font-weight:600}
+.photo-delete-btn {right:6px;background:rgba(0,0,0,0.6);font-size:14px}
+.photo-empty {border:2px dashed rgba(74,144,226,0.22);border-radius:16px;padding:18px 16px;background:rgba(74,144,226,0.04);text-align:center;color:var(--text-soft)}
+.photo-empty-title {font-size:14px;color:var(--text);font-weight:600;margin-bottom:4px}
+.photo-empty-subtitle {font-size:12px;line-height:1.5}
+.photo-editor-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10020;
+  background: rgba(9, 15, 32, 0.96);
+  display: none;
+  align-items: stretch;
+}
+.photo-editor-modal.show {display:flex}
+.photo-editor-sheet {
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  background: #000;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.photo-editor-title {font-size:16px;font-weight:700;color:#fff}
+.photo-editor-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.photo-editor-colors {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 14px;
+  min-height: 38px;
+  padding: 6px 16px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+}
+.photo-color-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 2px solid rgba(255,255,255,.56);
+  border-radius: 50%;
+  background-color: var(--photo-color);
+  box-shadow: 0 2px 7px rgba(0,0,0,.2);
+  transition: transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.photo-color-btn.active {
+  border-color: #fff;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px rgba(255,255,255,.72),0 3px 10px rgba(0,0,0,.3);
+  animation: photo-color-pop .22s ease;
+}
+@keyframes photo-color-pop {
+  0% { transform: scale(1); }
+  72% { transform: scale(1.32); }
+  100% { transform: scale(1.2); }
+}
+.photo-eraser-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 50%;
+  background: rgba(255,255,255,.09);
+  color: rgba(255,255,255,.9);
+  box-shadow: 0 2px 7px rgba(0,0,0,.2);
+  transition: transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease;
+}
+.photo-editor-colors.show-eraser .photo-eraser-btn {
+  display: inline-flex;
+}
+.photo-eraser-btn.active {
+  transform: scale(1.12);
+  border-color: #fff;
+  background: rgba(255,255,255,.2);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.42),0 3px 10px rgba(0,0,0,.28);
+}
+.photo-eraser-btn svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.photo-editor-close,.photo-editor-top-btn {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 8px 6px;
+}
+.photo-editor-top-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+}
+.photo-editor-top-btn:disabled {
+  opacity: .35;
+}
+.photo-editor-top-btn svg {
+  width: 34px;
+  height: 34px;
+  stroke: currentColor;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+.photo-editor-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+.photo-editor-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: max(14px, env(safe-area-inset-top)) 18px 22px;
+  background: linear-gradient(180deg,rgba(0,0,0,.48),transparent);
+}
+.photo-editor-foot {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 88px;
+  padding: 10px 16px max(10px, env(safe-area-inset-bottom));
+  background: #000;
+}
+.photo-editor-foot-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.photo-editor-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  font-size: 0;
+}
+.photo-editor-canvas {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border: 0;
+  outline: 0;
+  touch-action: none;
+  background: #000;
+  box-shadow: none;
+}
+.photo-editor-toolbar {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-around;
+  min-width: 0;
+  padding: 0;
+  background: #000;
+}
+.photo-tool-btn,.photo-editor-action {
+  border: none;
+  border-radius: 14px;
+  min-height: 50px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(9,15,32,0.18);
+}
+.photo-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  padding: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.92);
+  border: 1px solid transparent;
+  box-shadow: none;
+}
+.photo-tool-btn.active {
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: none;
+}
+.photo-tool-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.photo-tool-btn-icon svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.photo-tool-btn-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.photo-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.photo-editor-action {
+  min-width: 88px;
+  min-height: 52px;
+  padding: 0 18px;
+  background: rgba(0,0,0,0.56);
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(0,0,0,0.22);
+}
+.photo-editor-action.primary {
+  min-width: 94px;
+  background: linear-gradient(135deg, #18c05d, #14a94f);
+  color: #fff;
+  font-size: 16px;
+}
+.btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(74,144,226,0.35);
+  transition: var(--transition);
+  margin-top: 0;
+}
+.btn:active {transform: scale(0.98)}
+.btn:disabled {opacity: 0.5; cursor: not-allowed}
+.loading-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.loading-overlay.show {display: flex}
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {to {transform: rotate(360deg)}}
+.toast {
+  position: fixed;
+  top: 44%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15,23,42,0.7);
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 10001;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .2s ease;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.toast.show {opacity: 1}
+.autocomplete-wrap {position: relative}
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  max-height: 160px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+.autocomplete-list.show {display: block}
+.autocomplete-item {
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  transition: background 0.15s;
+}
+.autocomplete-item:last-child {border-bottom: none}
+.autocomplete-item:hover {background: rgba(74,144,226,0.08)}
+.autocomplete-item .name {font-weight: 600; font-size: 14px}
+.autocomplete-item .meta {font-size: 11px; color: #999}
+.autocomplete-item .emp-id {font-size: 12px; color: var(--primary)}
+/* 区域选择器 */
+.area-selector {
+  position: relative;
+  background: rgba(74,144,226,0.04);
+  border: 1px solid rgba(74,144,226,0.14);
+  border-radius: 14px;
+  padding: 10px;
+}
+.area-search-wrap {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid rgba(74,144,226,0.16);
+  border-radius: 12px;
+  padding: 0 10px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.area-search-wrap:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(74,144,226,0.1);
+}
+.area-search {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 12px 0;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  font-family: inherit;
+}
+.area-search::placeholder {color: #9aa8bd}
+.area-search-clear {
+  border: none;
+  background: rgba(74,144,226,0.12);
+  color: var(--primary);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: none;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+}
+.area-search-clear.show {display: flex}
+#areaSelector.has-selection .area-search-wrap {display: none}
+.area-list {
+  max-height: 330px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+}
+/* 分组头横向排列 */
+.area-groups-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(244,249,255,0.96);
+  padding-bottom: 8px;
+}
+.area-group-header {
+  min-width: 0;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 38px;
+  padding: 9px 4px; background: #fff; border: 1px solid rgba(74,144,226,0.12); border-radius: 11px;
+  font-size: 12px; font-weight: 600; color: var(--text-soft);
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.area-group-header:first-child {margin-top: 0}
+.area-group-header.clickable:hover {background: rgba(0,0,0,0.06)}
+.area-group-header.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  box-shadow: 0 6px 14px rgba(74,144,226,0.2);
+}
+.area-group-dot {width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0}
+.area-group-header.active .area-group-dot {background:#fff!important}
+.area-list-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 0 2px;
+}
+.area-item {
+  background: white; border: 1px solid rgba(74,144,226,0.16); border-radius: 12px;
+  padding: 10px 9px; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; text-align: left;
+  min-height: 52px; justify-content: flex-start;
+}
+.area-item:active {transform: scale(0.96); background: rgba(74,144,226,0.08)}
+.area-item.selected {background: rgba(74,144,226,0.1); border-color: var(--primary)}
+.area-item-left {display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0}
+.area-zone-badge {
+  width: 4px; height: 28px; border-radius: 3px; flex-shrink: 0;
+}
+.area-item-info {flex: 1; min-width: 0}
+.area-item-name {font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.35; word-break: break-word}
+.area-item-meta {font-size: 10px; color: #999; margin-top: 3px}
+.area-item-check {
+  position: absolute; top: 4px; right: 4px;
+  width: 16px; height: 16px; border-radius: 50%; background: var(--primary); color: white;
+  display: none; align-items: center; justify-content: center; font-size: 10px;
+}
+.area-item {position: relative}
+.area-item.selected .area-item-check {display: flex}
+.area-empty {text-align: center; padding: 32px 14px; color: #bbb; font-size: 14px}
+/* 已选显示 */
+.area-selected-wrap {
+  display: none; margin-bottom: 10px;
+}
+.area-selected-wrap.show {display: block}
+.area-selected-card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: rgba(74,144,226,0.08); border: 1px solid rgba(74,144,226,0.2);
+  border-radius: 10px;
+}
+.area-selected-left {display: flex; align-items: center; gap: 8px}
+.area-selected-badge {width: 4px; height: 28px; border-radius: 2px}
+.area-selected-text {font-size: 14px; color: var(--primary); font-weight: 500}
+.area-selected-meta {font-size: 11px; color: var(--text-soft); margin-top: 2px}
+.area-selected-clear {
+  background: rgba(74,144,226,0.15); color: var(--primary); border: none;
+  padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+<div class="card">
+  <div class="card-title">基本信息</div>
+
+  <div class="form-group">
+    <label class="form-label">项目编号<span class="required">*</span></label>
+    <input type="text" class="form-input" id="projectCode" placeholder="自动生成" readonly>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">检查日期<span class="required">*</span></label>
+    <div class="date-picker-wrap">
+      <input type="date" id="checkDate">
+      <div class="date-picker-display" id="checkDateDisplay">
+        <span>请选择日期</span>
+        <span class="date-arrow">⌄</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">区域划分<span class="required">*</span></label>
+    <div class="area-selector" id="areaSelector">
+      <div class="area-search-wrap">
+        <input type="text" class="area-search" id="areaSearch" placeholder="输入区域名称/编号/责任人..." autocomplete="off">
+        <button type="button" class="area-search-clear" id="areaSearchClear">×</button>
+      </div>
+      <div class="area-selected-wrap" id="areaSelectedWrap">
+        <div class="area-selected-card">
+          <div class="area-selected-left">
+            <div class="area-selected-badge" id="areaSelBadge"></div>
+            <div>
+              <div class="area-selected-text" id="areaSelText">-</div>
+              <div class="area-selected-meta" id="areaSelMeta">-</div>
+            </div>
+          </div>
+          <button class="area-selected-clear" id="areaSelClear">清除</button>
+        </div>
+      </div>
+      <div class="area-list" id="areaList"></div>
+    </div>
+    <input type="hidden" id="area">
+    <input type="hidden" id="areaId">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">责任人</label>
+    <div class="autocomplete-wrap">
+      <input type="text" class="form-input" id="personCharge" placeholder="输入姓名/工号/拼音搜索" autocomplete="off">
+      <div class="autocomplete-list" id="autocompleteList"></div>
+    </div>
+    <input type="hidden" id="assignedTo">
+    <div class="hint">选择区域后自动带出</div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">问题描述<span class="required">*</span></label>
+    <textarea class="form-textarea" id="description" placeholder="请详细描述问题..."></textarea>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">整改截止日期</label>
+    <div class="date-picker-wrap">
+      <input type="date" id="deadline">
+      <div class="date-picker-display" id="deadlineDisplay">
+        <span>请选择日期</span>
+        <span class="date-arrow">⌄</span>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">展示照片</div>
+  <div class="photo-stack">
+    <div id="beforePhotoCount" style="display:none">0/9</div>
+    <input type="file" accept="image/*" capture="environment" id="beforeImage" class="photo-file-input" onchange="handleBeforeImageSelect(this)">
+    <div class="photo-grid" id="beforePhotoGrid"></div>
+  </div>
+</div>
+
+<button class="btn" id="submitBtn" onclick="submitForm()">提交曝光</button>
+</div>
+
+<div class="date-modal" id="dateModal">
+  <div class="date-sheet">
+    <div class="date-sheet-head">
+      <button type="button" class="date-sheet-btn cancel" onclick="closeDatePicker()">取消</button>
+      <div class="date-sheet-title" id="dateSheetTitle">选择日期</div>
+      <button type="button" class="date-sheet-btn" onclick="confirmDatePicker()">确定</button>
+    </div>
+    <div class="date-columns">
+      <div class="date-field">
+        <label>年份</label>
+        <div class="date-stepper">
+          <button type="button" onclick="adjustDatePart('year',-1)">−</button>
+          <span id="dateYearText">2026</span>
+          <button type="button" onclick="adjustDatePart('year',1)">+</button>
+        </div>
+      </div>
+      <div class="date-field">
+        <label>月份</label>
+        <div class="date-stepper">
+          <button type="button" onclick="adjustDatePart('month',-1)">−</button>
+          <span id="dateMonthText">5</span>
+          <button type="button" onclick="adjustDatePart('month',1)">+</button>
+        </div>
+      </div>
+      <div class="date-field">
+        <label>日期</label>
+        <div class="date-stepper">
+          <button type="button" onclick="adjustDatePart('day',-1)">−</button>
+          <span id="dateDayText">26</span>
+          <button type="button" onclick="adjustDatePart('day',1)">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div></div>
+<div id="toast" class="toast"></div>
+<div class="photo-editor-modal" id="photoEditorModal">
+  <div class="photo-editor-sheet">
+    <div class="photo-editor-stage">
+      <div class="photo-editor-head">
+        <button type="button" class="photo-editor-close" onclick="closePhotoEditor()">取消</button>
+        <div class="photo-editor-top-actions">
+          <button type="button" class="photo-editor-top-btn" id="photoUndoBtn" onclick="undoPhotoEdit()" aria-label="退一步">
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M13 9 7 15l6 6"></path>
+              <path d="M8 15h11c4.2 0 7 2.7 7 6.8 0 1.2-.3 2.4-.8 3.4"></path>
+            </svg>
+          </button>
+          <button type="button" class="photo-editor-top-btn" id="photoRedoBtn" onclick="redoPhotoEdit()" aria-label="进一步">
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path d="m19 9 6 6-6 6"></path>
+              <path d="M24 15H13c-4.2 0-7 2.7-7 6.8 0 1.2.3 2.4.8 3.4"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="photo-editor-canvas-wrap" id="photoEditorCanvasWrap">
+        <canvas class="photo-editor-canvas" id="photoEditorCanvas"></canvas>
+      </div>
+    </div>
+    <div class="photo-editor-foot">
+      <div class="photo-editor-colors" aria-label="标注颜色">
+        <button type="button" class="photo-eraser-btn" id="photoEraserBtn" onclick="setPhotoTool('eraser')" aria-label="橡皮擦">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m7.3 16.8 8.9-8.9a2 2 0 0 1 2.8 0l1.1 1.1a2 2 0 0 1 0 2.8l-7.4 7.4H9.1l-1.8-1.8a.9.9 0 0 1 0-1.3Z"></path>
+            <path d="m12.1 12 4 4"></path>
+            <path d="M12.7 19.2H21"></path>
+          </svg>
+        </button>
+        <button type="button" class="photo-color-btn" style="--photo-color:#ffffff" onclick="setPhotoColor('#ffffff',this)" aria-label="白色"></button>
+        <button type="button" class="photo-color-btn" style="--photo-color:#000000" onclick="setPhotoColor('#000000',this)" aria-label="黑色"></button>
+        <button type="button" class="photo-color-btn active" style="--photo-color:#ff3b30" onclick="setPhotoColor('#ff3b30',this)" aria-label="红色"></button>
+        <button type="button" class="photo-color-btn" style="--photo-color:#ffcc00" onclick="setPhotoColor('#ffcc00',this)" aria-label="黄色"></button>
+        <button type="button" class="photo-color-btn" style="--photo-color:#22c58d" onclick="setPhotoColor('#22c58d',this)" aria-label="绿色"></button>
+        <button type="button" class="photo-color-btn" style="--photo-color:#4a90e2" onclick="setPhotoColor('#4a90e2',this)" aria-label="蓝色"></button>
+      </div>
+      <div class="photo-editor-foot-row">
+        <div class="photo-editor-toolbar">
+          <button type="button" class="photo-tool-btn" id="toolPenBtn" onclick="setPhotoTool('pen')">
+            <span class="photo-tool-btn-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                <path d="m15 5 3 3"></path>
+              </svg>
+            </span>
+            <span class="photo-tool-btn-text">画笔</span>
+          </button>
+          <button type="button" class="photo-tool-btn active" id="toolRectBtn" onclick="setPhotoTool('rect')">
+            <span class="photo-tool-btn-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="4" width="16" height="16" rx="1.8"></rect>
+              </svg>
+            </span>
+            <span class="photo-tool-btn-text">框选</span>
+          </button>
+          <button type="button" class="photo-tool-btn" id="photoEditorSkipBtn" onclick="skipPhotoEdit()">
+              <span class="photo-tool-btn-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"></path>
+                  <circle cx="12" cy="13" r="3"></circle>
+                </svg>
+              </span>
+            <span class="photo-tool-btn-text" id="photoEditorSkipText">重拍</span>
+          </button>
+        </div>
+        <div class="photo-editor-actions">
+          <button type="button" class="photo-editor-action primary" onclick="savePhotoEdit()">完成</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/employee-session.js"></script>
+<script src="/js/auth-guard.js"></script>
+<script src="/js/module-access.js"></script>
+<script>
+var API=window.location.origin+"/api";
+var hasEmployeeSession=window.EmployeeSession.ensureValid();
+var needsModuleAuth=hasEmployeeSession&&!window.ModuleAccess.has("admin-linked");
+if(needsModuleAuth){window.ModuleAccess.redirectToAuth("mobile-6s-add.html","admin-linked","6S管理")}
+var token=hasEmployeeSession&&!needsModuleAuth?localStorage.getItem("employee_token"):"";
+if(!hasEmployeeSession){window.EmployeeSession.redirectToLogin()}
+
+var beforeImageFiles=[];
+var pendingBeforeImages=[];
+var areaTree=[], staffList=[];
+var photoEditorState={
+  mode:"pen",
+  color:"#ff3b30",
+  pendingIndex:-1,
+  editIndex:-1,
+  originalFile:null,
+  originalUrl:"",
+  image:null,
+  actions:[],
+  redoActions:[],
+  currentAction:null,
+  pointerId:null,
+  redrawRaf:0,
+  dirty:false
+};
+var photoEditorCanvas=document.getElementById("photoEditorCanvas");
+var photoEditorCanvasWrap=document.getElementById("photoEditorCanvasWrap");
+var photoEditorCtx=photoEditorCanvas.getContext("2d");
+var photoAnnotationCanvas=document.createElement("canvas");
+var photoAnnotationCtx=photoAnnotationCanvas.getContext("2d");
+var photoPreviewAnnotationCanvas=document.createElement("canvas");
+var photoPreviewAnnotationCtx=photoPreviewAnnotationCanvas.getContext("2d");
+var PHOTO_EDITOR_MAX_SIDE=1600;
+
+function openBeforeImagePicker(){
+  var input=document.getElementById("beforeImage");
+  if(!input)return;
+  if(typeof input.showPicker==="function"){
+    input.showPicker();
+    return;
+  }
+  input.click();
+}
+
+function handleBeforeImageSelect(input){
+  var files=Array.prototype.slice.call(input.files||[]);
+  input.value="";
+  if(!files.length)return;
+  var available=Math.max(0,9-beforeImageFiles.length);
+  pendingBeforeImages=files.slice(0,available);
+  if(!pendingBeforeImages.length){
+    showToast("最多上传9张照片");
+    return;
+  }
+  openNextBeforeImageEditor();
+}
+
+function removeBeforeImage(index,event){
+  if(event){event.stopPropagation();event.preventDefault()}
+  beforeImageFiles.splice(index,1);
+  renderBeforePhotoGrid();
+}
+
+function editBeforeImage(index,event){
+  if(event){event.stopPropagation();event.preventDefault()}
+  if(index<0||index>=beforeImageFiles.length)return;
+  openPhotoEditor(beforeImageFiles[index], index);
+}
+
+function openNextBeforeImageEditor(){
+  if(!pendingBeforeImages.length){
+    renderBeforePhotoGrid();
+    return;
+  }
+  openPhotoEditor(pendingBeforeImages.shift(), -1);
+}
+
+function openPhotoEditor(file, editIndex){
+  if(!file)return;
+  closePhotoEditor(true);
+  photoEditorState.originalFile=file;
+  photoEditorState.editIndex=typeof editIndex==="number"?editIndex:-1;
+  photoEditorState.actions=[];
+  photoEditorState.redoActions=[];
+  photoEditorState.currentAction=null;
+  photoEditorState.pointerId=null;
+  photoEditorState.dirty=false;
+  photoEditorState.color="#ff3b30";
+  var defaultColorBtn=document.querySelector(".photo-color-btn[aria-label='红色']");
+  if(defaultColorBtn)setPhotoColor("#ff3b30",defaultColorBtn);
+  photoEditorState.originalUrl=URL.createObjectURL(file);
+  document.getElementById("photoEditorSkipText").textContent=photoEditorState.editIndex>=0?"不修改":"重拍";
+  var img=new Image();
+  img.onload=function(){
+    photoEditorState.image=img;
+    var editorScale=Math.min(1,PHOTO_EDITOR_MAX_SIDE/Math.max(img.naturalWidth,img.naturalHeight));
+    var editorWidth=Math.max(1,Math.round(img.naturalWidth*editorScale));
+    var editorHeight=Math.max(1,Math.round(img.naturalHeight*editorScale));
+    photoEditorCanvas.width=editorWidth;
+    photoEditorCanvas.height=editorHeight;
+    photoAnnotationCanvas.width=editorWidth;
+    photoAnnotationCanvas.height=editorHeight;
+    photoPreviewAnnotationCanvas.width=editorWidth;
+    photoPreviewAnnotationCanvas.height=editorHeight;
+    rebuildPhotoAnnotationLayer();
+    setPhotoTool("rect");
+    document.body.classList.add("photo-editor-open");
+    document.getElementById("photoEditorModal").classList.add("show");
+    requestAnimationFrame(function(){
+      fitPhotoEditorCanvas();
+      redrawPhotoEditor();
+    });
+  };
+  img.onerror=function(){
+    var wasEditingExisting=photoEditorState.editIndex>=0;
+    closePhotoEditor(true);
+    showToast("照片读取失败");
+    if(!wasEditingExisting){openNextBeforeImageEditor()}
+  };
+  img.src=photoEditorState.originalUrl;
+}
+
+function closePhotoEditor(silent){
+  document.getElementById("photoEditorModal").classList.remove("show");
+  document.body.classList.remove("photo-editor-open");
+  if(photoEditorState.originalUrl){
+    URL.revokeObjectURL(photoEditorState.originalUrl);
+  }
+  photoEditorState.originalUrl="";
+  photoEditorState.originalFile=null;
+  photoEditorState.image=null;
+  photoEditorState.actions=[];
+  photoEditorState.redoActions=[];
+  photoEditorState.currentAction=null;
+  photoEditorState.pointerId=null;
+  if(photoEditorState.redrawRaf){
+    cancelAnimationFrame(photoEditorState.redrawRaf);
+    photoEditorState.redrawRaf=0;
+  }
+  photoEditorState.editIndex=-1;
+  photoEditorState.dirty=false;
+  if(!silent){
+    pendingBeforeImages=[];
+  }
+}
+
+function fitPhotoEditorCanvas(){
+  if(!photoEditorState.image||!photoEditorCanvasWrap)return;
+  var availableWidth=Math.max(1, photoEditorCanvasWrap.clientWidth);
+  var availableHeight=Math.max(1, photoEditorCanvasWrap.clientHeight);
+  var scale=Math.min(availableWidth/photoEditorCanvas.width, availableHeight/photoEditorCanvas.height);
+  if(scale>1)scale=1;
+  var width=Math.max(1, Math.round(photoEditorCanvas.width*scale));
+  var height=Math.max(1, Math.round(photoEditorCanvas.height*scale));
+  photoEditorCanvas.style.width=width+"px";
+  photoEditorCanvas.style.height=height+"px";
+}
+
+function setPhotoTool(mode){
+  photoEditorState.mode=mode==="rect"||mode==="eraser"?mode:"pen";
+  document.getElementById("toolPenBtn").classList.toggle("active", photoEditorState.mode==="pen");
+  document.getElementById("toolRectBtn").classList.toggle("active", photoEditorState.mode==="rect");
+  document.querySelector(".photo-editor-colors").classList.toggle("show-eraser", photoEditorState.mode==="pen"||photoEditorState.mode==="eraser");
+  document.getElementById("photoEraserBtn").classList.toggle("active", photoEditorState.mode==="eraser");
+}
+
+function setPhotoColor(color,button){
+  photoEditorState.color=color||"#ff3b30";
+  document.querySelectorAll(".photo-color-btn").forEach(function(item){
+    item.classList.remove("active");
+  });
+  if(button){
+    void button.offsetWidth;
+    button.classList.add("active");
+  }
+  if(photoEditorState.mode==="eraser")setPhotoTool("pen");
+}
+
+function redrawPhotoEditor(){
+  if(!photoEditorState.image)return;
+  photoEditorState.redrawRaf=0;
+  photoEditorCtx.clearRect(0,0,photoEditorCanvas.width,photoEditorCanvas.height);
+  photoEditorCtx.drawImage(photoEditorState.image,0,0,photoEditorCanvas.width,photoEditorCanvas.height);
+  if(photoEditorState.currentAction){
+    photoPreviewAnnotationCtx.clearRect(0,0,photoPreviewAnnotationCanvas.width,photoPreviewAnnotationCanvas.height);
+    photoPreviewAnnotationCtx.drawImage(photoAnnotationCanvas,0,0);
+    drawPhotoAction(photoPreviewAnnotationCtx,photoEditorState.currentAction);
+    photoEditorCtx.drawImage(photoPreviewAnnotationCanvas,0,0);
+  }else{
+    photoEditorCtx.drawImage(photoAnnotationCanvas,0,0);
+  }
+  updatePhotoHistoryButtons();
+}
+
+function requestPhotoEditorRedraw(){
+  if(photoEditorState.redrawRaf)return;
+  photoEditorState.redrawRaf=requestAnimationFrame(redrawPhotoEditor);
+}
+
+function rebuildPhotoAnnotationLayer(){
+  photoAnnotationCtx.clearRect(0,0,photoAnnotationCanvas.width,photoAnnotationCanvas.height);
+  photoEditorState.actions.forEach(function(action){drawPhotoAction(photoAnnotationCtx,action)});
+}
+
+function updatePhotoHistoryButtons(){
+  var undoBtn=document.getElementById("photoUndoBtn");
+  var redoBtn=document.getElementById("photoRedoBtn");
+  if(undoBtn)undoBtn.disabled=!photoEditorState.actions.length;
+  if(redoBtn)redoBtn.disabled=!photoEditorState.redoActions.length;
+}
+
+function drawPhotoAction(ctx,action){
+  if(!action)return;
+  ctx.save();
+  ctx.lineCap="round";
+  ctx.lineJoin="round";
+  ctx.strokeStyle=action.color||"#ff3b30";
+  ctx.lineWidth=action.width||12;
+  if(action.type==="pen"||action.type==="eraser"){
+    if(!action.points||!action.points.length){ctx.restore();return}
+    if(action.type==="eraser")ctx.globalCompositeOperation="destination-out";
+    ctx.beginPath();
+    ctx.moveTo(action.points[0].x,action.points[0].y);
+    for(var i=1;i<action.points.length;i++){
+      ctx.lineTo(action.points[i].x,action.points[i].y);
+    }
+    ctx.stroke();
+  }else if(action.type==="rect"){
+    ctx.strokeRect(action.x,action.y,action.w,action.h);
+  }
+  ctx.restore();
+}
+
+function getCanvasPoint(event){
+  var rect=photoEditorCanvas.getBoundingClientRect();
+  var scaleX=photoEditorCanvas.width/rect.width;
+  var scaleY=photoEditorCanvas.height/rect.height;
+  return {
+    x:(event.clientX-rect.left)*scaleX,
+    y:(event.clientY-rect.top)*scaleY
+  };
+}
+
+function onPhotoPointerDown(event){
+  if(!photoEditorState.image)return;
+  event.preventDefault();
+  var point=getCanvasPoint(event);
+  photoEditorState.pointerId=event.pointerId;
+  if(photoEditorCanvas.setPointerCapture){
+    photoEditorCanvas.setPointerCapture(event.pointerId);
+  }
+  if(photoEditorState.mode==="rect"){
+    photoEditorState.currentAction={type:"rect",x:point.x,y:point.y,w:0,h:0,color:photoEditorState.color,width:14};
+  }else if(photoEditorState.mode==="eraser"){
+    photoEditorState.currentAction={type:"eraser",points:[point],width:Math.max(42,Math.round(Math.min(photoEditorCanvas.width,photoEditorCanvas.height)*.035))};
+  }else{
+    photoEditorState.currentAction={type:"pen",points:[point],color:photoEditorState.color,width:16};
+  }
+  redrawPhotoEditor();
+}
+
+function onPhotoPointerMove(event){
+  if(photoEditorState.pointerId===null||event.pointerId!==photoEditorState.pointerId||!photoEditorState.currentAction)return;
+  event.preventDefault();
+  var point=getCanvasPoint(event);
+  if(photoEditorState.currentAction.type==="rect"){
+    photoEditorState.currentAction.w=point.x-photoEditorState.currentAction.x;
+    photoEditorState.currentAction.h=point.y-photoEditorState.currentAction.y;
+  }else{
+    photoEditorState.currentAction.points.push(point);
+  }
+  requestPhotoEditorRedraw();
+}
+
+function finishPhotoPointer(event){
+  if(photoEditorState.pointerId===null||event.pointerId!==photoEditorState.pointerId||!photoEditorState.currentAction)return;
+  event.preventDefault();
+  if(photoEditorCanvas.releasePointerCapture){
+    try{photoEditorCanvas.releasePointerCapture(event.pointerId)}catch(e){}
+  }
+  var action=photoEditorState.currentAction;
+  photoEditorState.currentAction=null;
+  photoEditorState.pointerId=null;
+  if(action.type==="rect"){
+    if(Math.abs(action.w)<6||Math.abs(action.h)<6){redrawPhotoEditor();return}
+  }else if(!action.points||action.points.length<2){
+    redrawPhotoEditor();
+    return;
+  }
+  photoEditorState.actions.push(action);
+  photoEditorState.redoActions=[];
+  photoEditorState.dirty=true;
+  rebuildPhotoAnnotationLayer();
+  redrawPhotoEditor();
+}
+
+function undoPhotoEdit(){
+  if(!photoEditorState.actions.length)return;
+  photoEditorState.redoActions.push(photoEditorState.actions.pop());
+  photoEditorState.dirty=photoEditorState.actions.length>0;
+  rebuildPhotoAnnotationLayer();
+  redrawPhotoEditor();
+}
+
+function redoPhotoEdit(){
+  if(!photoEditorState.redoActions.length)return;
+  photoEditorState.actions.push(photoEditorState.redoActions.pop());
+  photoEditorState.dirty=true;
+  rebuildPhotoAnnotationLayer();
+  redrawPhotoEditor();
+}
+
+function fileNameWithSuffix(file,suffix){
+  var name=file&&file.name?file.name:"photo.jpg";
+  var dot=name.lastIndexOf(".");
+  if(dot===-1)return name+suffix+".jpg";
+  return name.slice(0,dot)+suffix+name.slice(dot);
+}
+
+function applyEditedFile(file){
+  if(photoEditorState.editIndex>=0){
+    beforeImageFiles[photoEditorState.editIndex]=file;
+  }else{
+    beforeImageFiles.push(file);
+  }
+  renderBeforePhotoGrid();
+}
+
+function skipPhotoEdit(){
+  if(photoEditorState.originalFile){
+    var wasEditingExisting=photoEditorState.editIndex>=0;
+    closePhotoEditor(true);
+    if(!wasEditingExisting){
+      pendingBeforeImages=[];
+      openBeforeImagePicker();
+    }else{
+      renderBeforePhotoGrid();
+    }
+  }
+}
+
+function acceptOriginalPhoto(){
+  if(!photoEditorState.originalFile)return;
+  var wasEditingExisting=photoEditorState.editIndex>=0;
+  if(!wasEditingExisting){
+    beforeImageFiles.push(photoEditorState.originalFile);
+  }
+  closePhotoEditor(true);
+  if(!wasEditingExisting){
+    openNextBeforeImageEditor();
+  }else{
+    renderBeforePhotoGrid();
+  }
+}
+
+function savePhotoEdit(){
+  if(!photoEditorState.image||!photoEditorState.originalFile)return;
+  if(!photoEditorState.actions.length){
+    acceptOriginalPhoto();
+    return;
+  }
+  photoEditorCanvas.toBlob(function(blob){
+    if(!blob){
+      showToast("保存标注失败");
+      return;
+    }
+    var editedFile=new File([blob], fileNameWithSuffix(photoEditorState.originalFile,"-mark"), {type:"image/jpeg"});
+    var wasEditingExisting=photoEditorState.editIndex>=0;
+    applyEditedFile(editedFile);
+    closePhotoEditor(true);
+    if(!wasEditingExisting){
+      openNextBeforeImageEditor();
+    }
+  },"image/jpeg",0.92);
+}
+
+function renderBeforePhotoGrid(){
+  var grid=document.getElementById("beforePhotoGrid");
+  var count=document.getElementById("beforePhotoCount");
+  if(!grid||!count)return;
+  count.textContent=beforeImageFiles.length+"/9";
+  if(!beforeImageFiles.length){
+    grid.innerHTML="<div class='photo-empty' style='grid-column:1/-1'><div class='photo-empty-title'>开始拍照</div><div class='photo-empty-subtitle'>单张拍摄，可连续补拍。</div></div>"
+      +"<label for='beforeImage' class='photo-add'><div class='photo-add-icon'>+</div><div class='photo-add-text'>第一张</div></label>"
+      +"<label for='beforeImage' class='photo-add'><div class='photo-add-icon'>+</div><div class='photo-add-text'>第二张</div></label>"
+      +"<label for='beforeImage' class='photo-add'><div class='photo-add-icon'>+</div><div class='photo-add-text'>第三张</div></label>";
+    return;
+  }
+  var html="";
+  for(var i=0;i<beforeImageFiles.length;i++){
+    var url=URL.createObjectURL(beforeImageFiles[i]);
+    html+="<div class='photo-tile'><img src='"+url+"' alt='整改前照片'><button class='photo-edit-btn' onclick='editBeforeImage("+i+",event)'>✎</button><button class='photo-delete-btn' onclick='removeBeforeImage("+i+",event)'>×</button></div>";
+  }
+  if(beforeImageFiles.length<9){
+    html+="<label for='beforeImage' class='photo-add'><div class='photo-add-icon'>+</div><div class='photo-add-text'>继续拍照</div></label>";
+  }
+  grid.innerHTML=html;
+}
+
+function showToast(msg){
+  var t=document.getElementById("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  setTimeout(function(){t.classList.remove("show")},2000);
+}
+function showLoading(){document.getElementById("loadingOverlay").classList.add("show")}
+function hideLoading(){document.getElementById("loadingOverlay").classList.remove("show")}
+
+function validateForm(){
+  if(!document.getElementById("checkDate").value){showToast("请选择检查日期");return false}
+  if(!document.getElementById("area").value){showToast("请选择区域");return false}
+  if(!document.getElementById("description").value.trim()){showToast("请输入问题描述");return false}
+  if(!beforeImageFiles.length){showToast("请上传整改前照片");return false}
+  if(!document.getElementById("projectCode").value.trim()){showToast("项目编号生成失败，请稍后重试");return false}
+  return true;
+}
+
+async function submitForm(){
+  if(!validateForm())return;
+  var btn=document.getElementById("submitBtn");
+  btn.disabled=true;
+  showLoading();
+  try{
+    var formData=new FormData();
+    formData.append("area",document.getElementById("area").value);
+    formData.append("area_id",document.getElementById("areaId").value);
+    formData.append("description",document.getElementById("description").value.trim());
+    formData.append("check_date",document.getElementById("checkDate").value);
+    var deadline=document.getElementById("deadline").value;
+    if(deadline)formData.append("deadline",deadline);
+    var chargeName=document.getElementById("personCharge").value.trim();
+    formData.append("person_charge",chargeName);
+    var assignedId=document.getElementById("assignedTo").value;
+    if(!assignedId&&chargeName){
+      var found=staffList.find(function(s){return s.name===chargeName});
+      if(found)assignedId=found.id;
+    }
+    if(assignedId)formData.append("assigned_to",assignedId);
+    for(var i=0;i<beforeImageFiles.length;i++){formData.append("before_image",beforeImageFiles[i])}
+    var res=await fetch(API+"/6s",{method:"POST",headers:{"Authorization":"Bearer "+token},body:formData});
+    var data=await res.json();
+    hideLoading();
+    btn.disabled=false;
+    if(data.code===0){showToast("提交成功");setTimeout(function(){window.location.href="mobile-6s-list.html"},1500)}
+    else{showToast(data.msg||"提交失败")}
+  }catch(err){hideLoading();btn.disabled=false;showToast("提交失败")}
+}
+
+async function refreshProjectCode() {
+  var checkDate = document.getElementById("checkDate").value;
+  var projectInput = document.getElementById("projectCode");
+  if (!checkDate) {
+    projectInput.value = "";
+    return;
+  }
+  projectInput.value = "生成中...";
+  try {
+    var res = await fetch(API + "/6s/next-project-code?check_date=" + encodeURIComponent(checkDate), {
+      headers: {"Authorization": "Bearer " + token}
+    });
+    var data = await res.json();
+    if (data.code === 0 && data.data && data.data.project_code) {
+      projectInput.value = data.data.project_code;
+    } else {
+      projectInput.value = "";
+      showToast(data.msg || "项目编号生成失败");
+    }
+  } catch (err) {
+    projectInput.value = "";
+    showToast("项目编号生成失败");
+  }
+}
+
+// 同步日期显示文本
+function formatDateText(value) {
+  if (!value) return "请选择日期";
+  var parts = value.split("-");
+  if (parts.length !== 3) return value;
+  return parts[0] + "年" + Number(parts[1]) + "月" + Number(parts[2]) + "日";
+}
+
+function syncDateDisplay(inputId, displayId) {
+  var input = document.getElementById(inputId);
+  var display = document.getElementById(displayId);
+  if (input && display) {
+    display.querySelector('span').textContent = formatDateText(input.value);
+  }
+}
+
+var activeDateInputId = "";
+var activeDateDisplayId = "";
+var pickerDate = {year: 2026, month: 1, day: 1};
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+function renderPickerDate() {
+  pickerDate.day = Math.min(pickerDate.day, daysInMonth(pickerDate.year, pickerDate.month));
+  document.getElementById("dateYearText").textContent = pickerDate.year;
+  document.getElementById("dateMonthText").textContent = pickerDate.month;
+  document.getElementById("dateDayText").textContent = pickerDate.day;
+}
+
+function adjustDatePart(part, delta) {
+  if (part === "year") {
+    pickerDate.year += delta;
+  } else if (part === "month") {
+    pickerDate.month += delta;
+    if (pickerDate.month < 1) {
+      pickerDate.month = 12;
+      pickerDate.year -= 1;
+    } else if (pickerDate.month > 12) {
+      pickerDate.month = 1;
+      pickerDate.year += 1;
+    }
+  } else if (part === "day") {
+    pickerDate.day += delta;
+    var maxDay = daysInMonth(pickerDate.year, pickerDate.month);
+    if (pickerDate.day < 1) pickerDate.day = maxDay;
+    if (pickerDate.day > maxDay) pickerDate.day = 1;
+  }
+  renderPickerDate();
+}
+
+function openDatePicker(inputId, displayId, title) {
+  activeDateInputId = inputId;
+  activeDateDisplayId = displayId;
+  document.getElementById("dateSheetTitle").textContent = title || "选择日期";
+  var value = document.getElementById(inputId).value;
+  var now = value ? new Date(value + "T00:00:00") : new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth() + 1;
+  var day = now.getDate();
+  pickerDate = {year: year, month: month, day: day};
+  renderPickerDate();
+  document.getElementById("dateModal").classList.add("show");
+}
+
+function closeDatePicker() {
+  document.getElementById("dateModal").classList.remove("show");
+}
+
+function confirmDatePicker() {
+  var y = pickerDate.year;
+  var m = pad2(pickerDate.month);
+  var d = pad2(pickerDate.day);
+  var input = document.getElementById(activeDateInputId);
+  input.value = y + "-" + m + "-" + d;
+  syncDateDisplay(activeDateInputId, activeDateDisplayId);
+  closeDatePicker();
+  input.dispatchEvent(new Event("change"));
+}
+
+document.getElementById("dateModal").addEventListener("click", function(e) {
+  if (e.target.id === "dateModal") closeDatePicker();
+});
+
+document.getElementById("checkDateDisplay").addEventListener("click", function() {
+  openDatePicker("checkDate", "checkDateDisplay", "选择检查日期");
+});
+document.getElementById("deadlineDisplay").addEventListener("click", function() {
+  openDatePicker("deadline", "deadlineDisplay", "选择整改截止日期");
+});
+
+var today=new Date();
+document.getElementById("checkDate").value=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+var deadlineDate=new Date(today);
+deadlineDate.setDate(deadlineDate.getDate()+3);
+document.getElementById("deadline").value=deadlineDate.getFullYear()+"-"+String(deadlineDate.getMonth()+1).padStart(2,"0")+"-"+String(deadlineDate.getDate()).padStart(2,"0");
+syncDateDisplay("checkDate", "checkDateDisplay");
+syncDateDisplay("deadline", "deadlineDisplay");
+renderBeforePhotoGrid();
+photoEditorCanvas.addEventListener("pointerdown", onPhotoPointerDown);
+photoEditorCanvas.addEventListener("pointermove", onPhotoPointerMove);
+photoEditorCanvas.addEventListener("pointerup", finishPhotoPointer);
+photoEditorCanvas.addEventListener("pointercancel", finishPhotoPointer);
+document.getElementById("photoEditorModal").addEventListener("click", function(e){
+  if(e.target.id==="photoEditorModal") closePhotoEditor();
+});
+window.addEventListener("resize", function(){
+  if(document.getElementById("photoEditorModal").classList.contains("show")){
+    fitPhotoEditorCanvas();
+    redrawPhotoEditor();
+  }
+});
+
+document.getElementById("checkDate").addEventListener("change",function(){
+  var d=this.value;
+  syncDateDisplay("checkDate", "checkDateDisplay");
+  if(d){
+    var dl=new Date(d);
+    dl.setDate(dl.getDate()+3);
+    document.getElementById("deadline").value=dl.getFullYear()+"-"+String(dl.getMonth()+1).padStart(2,"0")+"-"+String(dl.getDate()).padStart(2,"0");
+    syncDateDisplay("deadline", "deadlineDisplay");
+  }
+  refreshProjectCode();
+});
+refreshProjectCode();
+
+// ========== 区域选择器（扁平列表，搜索优先）==========
+var s6Zones = {"生产区":{"color":"#C55A11","subs":{"钳工":[{"id":6,"name":"钳工一组","floor":"一楼","person":"金玉梁","py":"qgyz","py_person":"jyl"},{"id":7,"name":"钳工二组","floor":"一楼","person":"王能军","py":"qgez","py_person":"wnj"},{"id":8,"name":"钳工三组","floor":"一楼","person":"梁辉","py":"qgsz","py_person":"lh"},{"id":9,"name":"钳工四组","floor":"一楼","person":"吴小林","py":"qgsz","py_person":"wxl"},{"id":10,"name":"管路试验区","floor":"一楼","person":"郑尚杰","py":"glsyq","py_person":"zsj"},{"id":11,"name":"模具合模区","floor":"一楼","person":"唐斌","py":"mjhmq","py_person":"tb"},{"id":23,"name":"合模区","floor":"一楼","person":"叶秀建","py":"hmq","py_person":"yxj"},{"id":101,"name":"铁削放置区","floor":"一楼","person":"陈兵","py":"txfzq","py_person":"cb"},{"id":102,"name":"锯床","floor":"一楼","person":"董修进","py":"jc","py_person":"dxj"},{"id":103,"name":"钳工","floor":"一楼","person":"俞利江","py":"qg","py_person":"ylj"}],"CNC加工":[{"id":1,"name":"中走丝","floor":"一楼","person":"朱涛涛","py":"zzs","py_person":"ztt"},{"id":2,"name":"快走丝","floor":"一楼","person":"冯益锋","py":"kzs","py_person":"fy"},{"id":3,"name":"洗模组","floor":"一楼","person":"冯益锋","py":"xmz","py_person":"fy"},{"id":44,"name":"EDM加工区","floor":"一楼","person":"董修进","py":"edmjgq","py_person":"dxj"},{"id":51,"name":"精雕加工区","floor":"一楼","person":"王建军","py":"jdjgq","py_person":"wjj"},{"id":52,"name":"高速铣加工区","floor":"一楼","person":"俞晓剑","py":"gsxjgq","py_person":"yxj"},{"id":61,"name":"龙门加工区","floor":"一楼","person":"蔡建槐","py":"lmjgq","py_person":"cjh"},{"id":63,"name":"中高速加工区","floor":"一楼","person":"曾飞明","py":"zgsjgq","py_person":"zfm"},{"id":64,"name":"CNC加工区","floor":"一楼","person":"潘夏煜","py":"cncjgq","py_person":"pxy"}],"精密加工":[{"id":55,"name":"深孔钻待料区","floor":"一楼","person":"蔡建槐","py":"skzdlq","py_person":"cjh"},{"id":56,"name":"老五轴深孔钻加工区","floor":"一楼","person":"王武先","py":"lwzskzjgq","py_person":"wwx"},{"id":57,"name":"新五轴深孔钻加工区","floor":"一楼","person":"王能港","py":"xwzskzjgq","py_person":"wng"},{"id":60,"name":"三轴深孔钻加工区","floor":"一楼","person":"蔡建槐","py":"szskzjgq","py_person":"cjh"}],"装配调试":[{"id":75,"name":"检验区","floor":"一楼","person":"杨军","py":"jyq","py_person":"yj"},{"id":77,"name":"待试模区","floor":"一楼","person":"戴虎","py":"dsmq","py_person":"dh"},{"id":78,"name":"试模样件摆放","floor":"一楼","person":"葛良进","py":"smyjbf","py_person":"glj"},{"id":80,"name":"试模1区","floor":"一楼","person":"寇延明","py":"sm1q","py_person":"kym"},{"id":81,"name":"试模2区","floor":"一楼","person":"杨军","py":"sm2q","py_person":"yj"},{"id":82,"name":"试模3区","floor":"一楼","person":"寇延明","py":"sm3q","py_person":"kym"},{"id":94,"name":"试模4区","floor":"一楼","person":"杨军","py":"sm4q","py_person":"yj"},{"id":76,"name":"模具摆放加工区","floor":"一楼","person":"戴虎","py":"mjbfjgq","py_person":"dh"},{"id":86,"name":"注塑加工区","floor":"一楼","person":"戴虎","py":"zsjgq","py_person":"dh"},{"id":97,"name":"注塑","floor":"一楼","person":"胡爱玲","py":"zs","py_person":"hal"},{"id":98,"name":"空压机/储油区","floor":"一楼","person":"胡爱玲","py":"kyjcyq","py_person":"hal"},{"id":99,"name":"沉淀区","floor":"一楼","person":"陈兵","py":"cdq","py_person":"cb"},{"id":100,"name":"废油区","floor":"一楼","person":"钟海雁","py":"fyq","py_person":"zhy"},{"id":313,"name":"检验区","floor":"五楼","person":"周满生","py":"jyq","py_person":"zms"},{"id":314,"name":"样板区","floor":"五楼","person":"夏丽梅","py":"ybq","py_person":"xlm"},{"id":316,"name":"制品检验区","floor":"五楼","person":"周满生","py":"zpjyq","py_person":"zms"},{"id":318,"name":"制品装配区","floor":"五楼","person":"夏丽梅","py":"zpzpq","py_person":"xlm"}]}},"仓库区":{"color":"#BF8F00","subs":{"原材料":[{"id":311,"name":"原材料仓库","floor":"五楼","person":"夏丽梅","py":"yclck","py_person":"xlm"},{"id":47,"name":"五金仓库","floor":"一楼","person":"葛晓绒","py":"wjck","py_person":"gxr"},{"id":33,"name":"电极仓库","floor":"一楼","person":"李林","py":"djck","py_person":"ll"},{"id":41,"name":"热流道摆放区","floor":"一楼","person":"钟海雁","py":"rldbfq","py_person":"zhy"}],"成品仓库":[{"id":17,"name":"成品出货区","floor":"一楼","person":"唐斌","py":"cpchq","py_person":"tb"},{"id":74,"name":"出货区","floor":"一楼","person":"李亚鹏","py":"chq","py_person":"lyp"},{"id":83,"name":"出货区","floor":"一楼","person":"戴虎","py":"chq","py_person":"dh"}],"工装仓储":[{"id":13,"name":"摆放区","floor":"一楼","person":"金玉梁","py":"bfq","py_person":"jyl"},{"id":14,"name":"摆放区","floor":"一楼","person":"王能军","py":"bfq","py_person":"wnj"},{"id":15,"name":"摆放区","floor":"一楼","person":"梁辉","py":"bfq","py_person":"lh"},{"id":16,"name":"摆放区","floor":"一楼","person":"吴小林","py":"bfq","py_person":"wxl"},{"id":19,"name":"摆放区","floor":"一楼","person":"陈坚照","py":"bfq","py_person":"cjz"},{"id":20,"name":"摆放区","floor":"一楼","person":"钟海雁","py":"bfq","py_person":"zhy"},{"id":21,"name":"摆放区","floor":"一楼","person":"章守荣","py":"bfq","py_person":"zsr"},{"id":24,"name":"摆放区","floor":"一楼","person":"顾方明","py":"bfq","py_person":"gfm"},{"id":25,"name":"摆放区","floor":"一楼","person":"华宁","py":"bfq","py_person":"hn"},{"id":26,"name":"摆放区","floor":"一楼","person":"陈开增","py":"bfq","py_person":"ckz"},{"id":34,"name":"摆放区","floor":"一楼","person":"叶秀建","py":"bfq","py_person":"yxj"},{"id":35,"name":"摆放区","floor":"一楼","person":"顾方明","py":"bfq","py_person":"gfm"},{"id":36,"name":"摆放区","floor":"一楼","person":"华宁","py":"bfq","py_person":"hn"},{"id":37,"name":"摆放区","floor":"一楼","person":"陈开增","py":"bfq","py_person":"ckz"},{"id":39,"name":"摆放区","floor":"一楼","person":"林建能","py":"bfq","py_person":"ljn"},{"id":42,"name":"摆放区","floor":"一楼","person":"尹兰董","py":"bfq","py_person":"yld"},{"id":43,"name":"摆放区","floor":"一楼","person":"尹兰董","py":"bfq","py_person":"yld"},{"id":59,"name":"摆放区","floor":"一楼","person":"谭春辉","py":"bfq","py_person":"tch"},{"id":66,"name":"来料待检区","floor":"一楼","person":"谭春辉","py":"lldjq","py_person":"tch"},{"id":68,"name":"叉车/辅料","floor":"一楼","person":"钟海雁","py":"ccfl","py_person":"zhy"},{"id":69,"name":"外协放置区","floor":"一楼","person":"李亚鹏","py":"wxfzq","py_person":"lyp"},{"id":70,"name":"临时放置区","floor":"一楼","person":"钟海雁","py":"lsfzq","py_person":"zhy"},{"id":73,"name":"摆放区","floor":"一楼","person":"苏欣","py":"bfq","py_person":"sx"},{"id":84,"name":"摆放区","floor":"一楼","person":"胡爱玲","py":"bfq","py_person":"hal"},{"id":87,"name":"模具摆放区","floor":"一楼","person":"杨军","py":"mjbfq","py_person":"yj"},{"id":88,"name":"检具摆放区","floor":"一楼","person":"董平河","py":"jjbfq","py_person":"dph"},{"id":89,"name":"摆放区","floor":"一楼","person":"葛良进","py":"bfq","py_person":"glj"},{"id":93,"name":"废品区","floor":"一楼","person":"李春蓝","py":"fpq","py_person":"lcl"},{"id":320,"name":"仓库","floor":"五楼","person":"王佳怡","py":"ck","py_person":"wjy"},{"id":406,"name":"仓库","floor":"四楼","person":"王佳怡","py":"ck","py_person":"wjy"}],"暂存区":[{"id":312,"name":"暂存区","floor":"五楼","person":"王玉聪","py":"zcq","py_person":"wyc"},{"id":315,"name":"报废区","floor":"五楼","person":"王玉聪","py":"bfq","py_person":"wyc"},{"id":319,"name":"暂存区","floor":"五楼","person":"王佳怡","py":"zcq","py_person":"wjy"}]}},"公共区":{"color":"#7F7F7F","subs":{"通道":[{"id":18,"name":"轨道","floor":"一楼","person":"章晓永","py":"gd","py_person":"zxy"},{"id":22,"name":"通道","floor":"一楼","person":"李林","py":"td","py_person":"ll"},{"id":27,"name":"通道","floor":"一楼","person":"胡云雷","py":"td","py_person":"hyl"},{"id":28,"name":"通道","floor":"一楼","person":"金海峰","py":"td","py_person":"jhf"},{"id":29,"name":"通道","floor":"一楼","person":"金海峰","py":"td","py_person":"jhf"},{"id":30,"name":"通道","floor":"一楼","person":"金海峰","py":"td","py_person":"jhf"},{"id":38,"name":"通道","floor":"一楼","person":"胡云雷","py":"td","py_person":"hyl"},{"id":45,"name":"通道","floor":"一楼","person":"董修进","py":"td","py_person":"dxj"},{"id":48,"name":"通道","floor":"一楼","person":"尹兰董 / 王建军","py":"td","py_person":"yldwjj"},{"id":49,"name":"通道","floor":"一楼","person":"尹兰董 / 俞晓剑","py":"td","py_person":"yldyxj"},{"id":53,"name":"通道","floor":"一楼","person":"董修进","py":"td","py_person":"dxj"},{"id":54,"name":"通道","floor":"一楼","person":"董修进","py":"td","py_person":"dxj"},{"id":58,"name":"通道","floor":"一楼","person":"王能港","py":"td","py_person":"wng"},{"id":62,"name":"通道","floor":"一楼","person":"王武先","py":"td","py_person":"wwx"},{"id":65,"name":"通道","floor":"一楼","person":"林建能","py":"td","py_person":"ljn"},{"id":79,"name":"通道","floor":"一楼","person":"葛良进","py":"td","py_person":"glj"},{"id":218,"name":"通道","floor":"二楼","person":"刘杰","py":"td","py_person":"lj"}],"卫生间":[{"id":67,"name":"卫生间","floor":"一楼","person":"陈红兴","py":"wsj","py_person":"chx"},{"id":107,"name":"卫生间/前厅","floor":"一楼","person":"潘夏煜","py":"wsjqt","py_person":"pxy"},{"id":201,"name":"卫生间","floor":"二楼","person":"王莲芬","py":"wsj","py_person":"wlf"}],"其他公共":[{"id":46,"name":"休息室","floor":"一楼","person":"胡爱玲","py":"xxs","py_person":"hal"},{"id":85,"name":"公共区域","floor":"一楼","person":"葛良进","py":"ggqy","py_person":"glj"},{"id":92,"name":"公共区域","floor":"一楼","person":"董平河","py":"ggqy","py_person":"dph"},{"id":106,"name":"公共区域","floor":"一楼","person":"王莲芬","py":"ggqy","py_person":"wlf"},{"id":310,"name":"休息室","floor":"三楼","person":"行政部/保洁员","py":"xxs","py_person":"xzbbjy"},{"id":401,"name":"男浴室","floor":"四楼","person":"刘妮妮","py":"nys","py_person":"lnn"},{"id":402,"name":"女浴室","floor":"四楼","person":"冯海参","py":"nys","py_person":"fhc"},{"id":407,"name":"公共区域","floor":"四楼","person":"王佳怡","py":"ggqy","py_person":"wjy"}]}},"办公区":{"color":"#595959","subs":{"会议服务":[{"id":202,"name":"三号会议室","floor":"二楼","person":"刘妮妮","py":"shhys","py_person":"lnn"},{"id":203,"name":"二号会议室","floor":"二楼","person":"刘妮妮","py":"ehhys","py_person":"lnn"},{"id":205,"name":"一号会议室","floor":"二楼","person":"刘妮妮","py":"yhhys","py_person":"lnn"},{"id":217,"name":"会议室","floor":"二楼","person":"金书贤","py":"hys","py_person":"jsx"},{"id":301,"name":"小会议室","floor":"三楼","person":"李春蓝","py":"xhys","py_person":"lcl"},{"id":302,"name":"小会议室","floor":"三楼","person":"金总","py":"xhys","py_person":"jz"},{"id":309,"name":"大会议室","floor":"三楼","person":"李春蓝","py":"dhys","py_person":"lcl"},{"id":108,"name":"工会/接待室","floor":"一楼","person":"黄苏斌","py":"ghjds","py_person":"hsb"}],"办公室":[{"id":12,"name":"设备办公室","floor":"一楼","person":"陈兵","py":"sbbgs","py_person":"cb"},{"id":72,"name":"办公室","floor":"一楼","person":"李亚鹏","py":"bgs","py_person":"lyp"},{"id":206,"name":"综合办公室","floor":"二楼","person":"黄苏斌","py":"zhbgs","py_person":"hsb"},{"id":208,"name":"中空","floor":"二楼","person":"葛荣兵","py":"zk","py_person":"grb"},{"id":307,"name":"总助办公区","floor":"三楼","person":"李春蓝","py":"zzbgq","py_person":"lcl"},{"id":308,"name":"办公室","floor":"三楼","person":"行政部/保洁员","py":"bgs","py_person":"xzbbjy"},{"id":403,"name":"培训室","floor":"四楼","person":"李春蓝","py":"pxs","py_person":"lcl"},{"id":404,"name":"培训室","floor":"四楼","person":"李春蓝","py":"pxs","py_person":"lcl"},{"id":317,"name":"办公室","floor":"五楼","person":"周满生","py":"bgs","py_person":"zms"},{"id":204,"name":"电梯厅","floor":"二楼","person":"王莲芬","py":"dtt","py_person":"wlf"}],"业务部门":[{"id":209,"name":"市场部办公室","floor":"二楼","person":"葛荣兵","py":"scbbgs","py_person":"grb"},{"id":212,"name":"项目部","floor":"二楼","person":"文滔","py":"xmb","py_person":"wt"},{"id":213,"name":"样件室","floor":"二楼","person":"戴虎","py":"yjs","py_person":"dh"},{"id":214,"name":"采购办公室","floor":"二楼","person":"张铁军","py":"cgbgs","py_person":"ztj"},{"id":215,"name":"国际组办公室","floor":"二楼","person":"张格莉","py":"gjzbgs","py_person":"zgl"},{"id":216,"name":"样件室","floor":"二楼","person":"蒋静波","py":"yjs","py_person":"jjb"},{"id":303,"name":"服务窗口","floor":"三楼","person":"李丽丽","py":"fwck","py_person":"lll"}],"高管层":[{"id":210,"name":"副总办公室/VIP1","floor":"二楼","person":"葛荣兵","py":"fzbgsvip1","py_person":"grb"},{"id":211,"name":"VIP2","floor":"二楼","person":"王莲芬","py":"vip2","py_person":"wlf"},{"id":304,"name":"财务室","floor":"三楼","person":"总经理","py":"cws","py_person":"zjl"},{"id":305,"name":"董事长办公室","floor":"三楼","person":"总经理","py":"dscbgs","py_person":"zjl"},{"id":306,"name":"副总办公室","floor":"三楼","person":"金总","py":"fzbgs","py_person":"jz"}],"培训区":[{"id":405,"name":"音控室","floor":"四楼","person":"葛荣兵","py":"yks","py_person":"grb"},{"id":109,"name":"研学室/茶柜","floor":"一楼","person":"刘妮妮","py":"yxscg","py_person":"lnn"}],"技术部门":[{"id":4,"name":"标准件","floor":"一楼","person":"朱涛涛","py":"bzj","py_person":"ztt"},{"id":5,"name":"市场/项目","floor":"一楼","person":"朱涛涛","py":"scxm","py_person":"ztt"},{"id":31,"name":"摇臂钻","floor":"一楼","person":"钟海雁","py":"ybz","py_person":"zhy"},{"id":32,"name":"大磨床","floor":"一楼","person":"章守荣","py":"dmc","py_person":"zsr"},{"id":40,"name":"三坐标室","floor":"一楼","person":"林建能","py":"szbs","py_person":"ljn"},{"id":50,"name":"实训道场","floor":"一楼","person":"刘妮妮","py":"sxdc","py_person":"lnn"},{"id":71,"name":"模具拆检","floor":"一楼","person":"林建能","py":"mjcj","py_person":"ljn"},{"id":90,"name":"品质","floor":"一楼","person":"董平河","py":"pz","py_person":"dph"},{"id":91,"name":"电单车/行政部","floor":"一楼","person":"董平河","py":"ddcxzb","py_person":"dph"},{"id":95,"name":"粉碎区","floor":"一楼","person":"金叔","py":"fsq","py_person":"js"},{"id":96,"name":"发电房","floor":"一楼","person":"陈兵","py":"fdf","py_person":"cb"},{"id":104,"name":"配电房","floor":"一楼","person":"胡维杰","py":"pdf","py_person":"hwj"},{"id":105,"name":"评审室","floor":"一楼","person":"胡维杰","py":"pss","py_person":"hwj"},{"id":110,"name":"数字化中心","floor":"一楼","person":"刘妮妮","py":"szhzx","py_person":"lnn"}]}}};
+var selectedArea = null;
+var currentGroup = null; // 当前展开的分组
+
+function buildS6ZonesFromApiLeaves(leaves) {
+  var zoneOrder = ['生产区', '仓库区', '公共区', '办公区'];
+  var result = {};
+  zoneOrder.forEach(function(zoneKey) {
+    result[zoneKey] = {color: {'生产区':'#C55A11','仓库区':'#BF8F00','公共区':'#7F7F7F','办公区':'#595959'}[zoneKey], subs: {}};
+  });
+  (leaves || []).forEach(function(area) {
+    var zoneKey = area.zone_name || '生产区';
+    var subKey = area.category || '未分类';
+    if (!result[zoneKey]) result[zoneKey] = {color: '#4A90E2', subs: {}};
+    if (!result[zoneKey].subs[subKey]) result[zoneKey].subs[subKey] = [];
+    result[zoneKey].subs[subKey].push({
+      id: area.area_code || area.id,
+      db_id: area.id,
+      name: area.name,
+      floor: area.floor || '',
+      person: area.responsible || '',
+      py: area.py || '',
+      py_person: area.py_person || ''
+    });
+  });
+  return result;
+}
+
+function loadSharedAreaData() {
+  fetch('/api/6s/areas', {headers: {"Authorization":"Bearer "+token}})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if (d.code === 0 && d.data && Array.isArray(d.data.leaves) && d.data.leaves.length) {
+        s6Zones = buildS6ZonesFromApiLeaves(d.data.leaves);
+      }
+      renderAreaList();
+    })
+    .catch(function(){
+      renderAreaList();
+    });
+}
+
+// 扁平化所有区域
+function getAllAreas() {
+  var result = [];
+  Object.keys(s6Zones).forEach(function(zoneKey) {
+    var zone = s6Zones[zoneKey];
+    Object.keys(zone.subs).forEach(function(subKey) {
+      zone.subs[subKey].forEach(function(a) {
+        result.push({zoneKey: zoneKey, zoneColor: zone.color, subKey: subKey, id: a.id, db_id: a.db_id || null, name: a.name, py: a.py, py_person: a.py_person, floor: a.floor, person: a.person});
+      });
+    });
+  });
+  return result;
+}
+
+// 分组点击：展开/折叠该分组
+function toggleGroup(zoneKey) {
+  if (currentGroup === zoneKey) {
+    currentGroup = null; // 再次点击同一个分组，展开全部
+  } else {
+    currentGroup = zoneKey;
+  }
+  renderAreaList();
+}
+
+// 渲染列表（三列卡片布局，支持分组点击展开）
+function renderAreaList() {
+  var listEl = document.getElementById('areaList');
+  var searchVal = document.getElementById('areaSearch').value.trim().toLowerCase();
+  document.getElementById('areaSearchClear').classList.toggle('show', searchVal.length > 0);
+
+  var allAreas = getAllAreas();
+  var filtered = searchVal ? allAreas.filter(function(a) {
+    if (/^\d+$/.test(searchVal)) {
+      if (String(a.id).startsWith(searchVal)) return true;
+      if (searchVal.length >= 4 && staffList.length) {
+        for (var i = 0; i < staffList.length; i++) {
+          var s = staffList[i];
+          if (String(s.employee_id || '').includes(searchVal) && s.name === a.person) return true;
+        }
+      }
+      return false;
+    }
+    if (a.name.toLowerCase().includes(searchVal)) return true;
+    if (a.py && a.py.includes(searchVal)) return true;
+    if (a.py_person && a.py_person.includes(searchVal)) return true;
+    if (a.person.toLowerCase().includes(searchVal)) return true;
+    return false;
+  }) : allAreas;
+
+  // 有选中区域：隐藏列表
+  if (selectedArea) {
+    listEl.innerHTML = '';
+    listEl.style.display = 'none';
+    return;
+  }
+
+  // 无搜索且无选中：显示列表
+  listEl.style.display = 'block';
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="area-empty">无匹配区域，试试其他关键词</div>';
+    return;
+  }
+
+  // 有搜索时显示所有区域
+  if (searchVal) {
+    var html = '<div class="area-groups-row">';
+    var zoneOrder = ['生产区', '仓库区', '公共区', '办公区'];
+    zoneOrder.forEach(function(zoneKey) {
+      if (!s6Zones[zoneKey]) return;
+      var zone = s6Zones[zoneKey];
+      var zoneAreas = filtered.filter(function(a){ return a.zoneKey === zoneKey; });
+      if (zoneAreas.length === 0) return;
+      html += '<div class="area-group-header" onclick="toggleGroup(\'' + zoneKey + '\')"><div class="area-group-dot" style="background:' + zone.color + '"></div>' + zoneKey + '</div>';
+    });
+    html += '</div>';
+    zoneOrder.forEach(function(zoneKey) {
+      if (!s6Zones[zoneKey]) return;
+      var zoneAreas = filtered.filter(function(a){ return a.zoneKey === zoneKey; });
+      if (zoneAreas.length === 0) return;
+      html += '<div class="area-list-grid">';
+      zoneAreas.forEach(function(a) {
+        html += '<div class="area-item' + (selectedArea && selectedArea.id === a.id ? ' selected' : '') + '" onclick="selectAreaById(' + a.id + ')">' +
+          '<div class="area-item-left"><div class="area-zone-badge" style="background:' + a.zoneColor + '"></div>' +
+          '<div class="area-item-info"><div class="area-item-name">' + a.id + ' ' + a.name + '</div></div></div>' +
+          '<div class="area-item-check">✓</div></div>';
+      });
+      html += '</div>';
+    });
+    listEl.innerHTML = html;
+    return;
+  }
+
+  // 默认显示：4个分组头，点击展开
+  var html = '<div class="area-groups-row">';
+  var zoneOrder = ['生产区', '仓库区', '公共区', '办公区'];
+  var expandedAreas = [];
+  zoneOrder.forEach(function(zoneKey) {
+    if (!s6Zones[zoneKey]) return;
+    var zone = s6Zones[zoneKey];
+    var zoneAreas = filtered.filter(function(a){ return a.zoneKey === zoneKey; });
+    if (zoneAreas.length === 0) return;
+    html += '<div class="area-group-header' + (currentGroup === zoneKey ? ' active' : '') + '" onclick="toggleGroup(\'' + zoneKey + '\')"><div class="area-group-dot" style="background:' + zone.color + '"></div>' + zoneKey + '</div>';
+    if (currentGroup === zoneKey) {
+      expandedAreas = zoneAreas;
+    }
+  });
+  html += '</div>';
+  if (expandedAreas.length) {
+    html += '<div class="area-list-grid">';
+    expandedAreas.forEach(function(a) {
+      html += '<div class="area-item' + (selectedArea && selectedArea.id === a.id ? ' selected' : '') + '" onclick="selectAreaById(' + a.id + ')">' +
+        '<div class="area-item-left"><div class="area-zone-badge" style="background:' + a.zoneColor + '"></div>' +
+        '<div class="area-item-info"><div class="area-item-name">' + a.id + ' ' + a.name + '</div></div></div>' +
+        '<div class="area-item-check">✓</div></div>';
+    });
+    html += '</div>';
+  }
+  listEl.innerHTML = html;
+}
+
+async function selectAreaById(id) {
+  var allAreas = getAllAreas();
+  var found = allAreas.find(function(a){ return a.id === id; });
+  if (!found) return;
+  selectedArea = {id: found.id, dbId: found.db_id || found.id, name: found.name, floor: found.floor, person: found.person, zoneKey: found.zoneKey, zoneColor: found.zoneColor};
+  document.getElementById('area').value = found.name;
+  document.getElementById('areaId').value = found.db_id || found.id;
+  document.getElementById('areaSelText').textContent = found.id + ' ' + found.name;
+  document.getElementById('areaSelMeta').textContent = found.floor + ' · ' + found.person;
+  document.getElementById('areaSelBadge').style.background = found.zoneColor;
+  document.getElementById('areaSelector').classList.add('has-selection');
+  document.getElementById('areaSelectedWrap').classList.add('show');
+  document.getElementById('assignedTo').value = '';
+  try {
+    var res = await fetch('/api/6s/area-responsibles?area_id=' + encodeURIComponent(found.db_id || found.id), {headers: {"Authorization":"Bearer "+token}});
+    var d = await res.json();
+    var first = (d.data || [])[0];
+    document.getElementById('personCharge').value = first ? first.name : found.person.split('/')[0].trim();
+    document.getElementById('assignedTo').value = first ? (first.id || '') : '';
+  } catch (e) {
+    document.getElementById('personCharge').value = found.person.split('/')[0].trim();
+  }
+  renderAreaList();
+}
+
+function clearAreaSelection() {
+  selectedArea = null;
+  document.getElementById('area').value = '';
+  document.getElementById('areaId').value = '';
+  document.getElementById('areaSelector').classList.remove('has-selection');
+  document.getElementById('areaSelectedWrap').classList.remove('show');
+  document.getElementById('areaList').style.display = 'block';
+  document.getElementById('personCharge').value = '';
+  document.getElementById('assignedTo').value = '';
+  renderAreaList();
+}
+
+loadSharedAreaData();
+
+// 清除按钮事件
+document.getElementById('areaSelClear').addEventListener('click', function() {
+  currentGroup = null;
+  clearAreaSelection();
+});
+
+document.getElementById('areaSearch').addEventListener('input', function() {
+  renderAreaList();
+});
+
+document.getElementById('areaSearchClear').addEventListener('click', function() {
+  document.getElementById('areaSearch').value = '';
+  currentGroup = null;
+  renderAreaList();
+  document.getElementById('areaSearch').focus();
+});
+
+fetch("/api/staff?status=active",{headers:{"Authorization":"Bearer "+token}})
+.then(function(r){return r.json()})
+.then(function(d){if(d.code===0&&d.data){staffList=d.data.staff||d.data||[]}}).catch(function(){});
+
+var personChargeInput=document.getElementById("personCharge");
+var autocompleteList=document.getElementById("autocompleteList");
+
+personChargeInput.addEventListener("input",function(){
+  var val=this.value.trim().toLowerCase();
+  if(!val||!staffList.length){autocompleteList.classList.remove("show");return}
+  var matches=staffList.filter(function(s){
+    var name=(s.name||"").toLowerCase();
+    var empId=(s.employee_id||"").toLowerCase();
+    var pinyin=(s.name_pinyin||"").toLowerCase();
+    return name.includes(val)||empId.includes(val)||pinyin.includes(val);
+  }).slice(0,10);
+  if(matches.length===0){autocompleteList.classList.remove("show");return}
+  autocompleteList.innerHTML=matches.map(function(s){
+    return "<div class='autocomplete-item' onclick='selectStaff(\""+(s.name||"")+"\",\""+(s.id||"")+"\")'><div><div class='name'>"+(s.name||"-")+"</div><div class='meta'>"+(s.department||"")+"</div></div><div class='emp-id'>"+(s.employee_id||"")+"</div></div>";
+  }).join("");
+  autocompleteList.classList.add("show");
+});
+
+document.addEventListener("click",function(e){if(!e.target.closest(".autocomplete-wrap")){autocompleteList.classList.remove("show")}});
+
+function selectStaff(name,id){
+  personChargeInput.value=name;
+  document.getElementById("assignedTo").value=id||"";
+  autocompleteList.classList.remove("show");
+}
+</script>
+</body>
+</html>

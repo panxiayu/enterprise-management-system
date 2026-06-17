@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/theme.css">
+    <title>系统设置 - 兴利汽车模具</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; background: linear-gradient(135deg, var(--bg) 0%, var(--bg) 50%, var(--bg) 100%); }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .card-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--text); }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
+        .form-input, .form-select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 14px; background: var(--bg-primary); color: var(--text); }
+        .form-input:focus, .form-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(94,106,210,0.2); }
+        .form-checkbox { margin-right: 8px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        .success-msg { color: var(--success); padding: 10px; background: rgba(38,166,65,0.15); border-radius: var(--radius-md); margin-bottom: 10px; display: none; }
+        .error-msg { color: var(--danger); padding: 10px; background: rgba(235,87,87,0.15); border-radius: var(--radius-md); margin-bottom: 10px; display: none; }
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ 系统设置</h1>
+            <button class="btn btn-secondary" onclick="goBack()">← 返回</button>
+        </div>
+
+        <div id="successMsg" class="success-msg">设置保存成功</div>
+        <div id="errorMsg" class="error-msg"></div>
+
+        <!-- 考试系统设置 -->
+        <div class="card">
+            <div class="card-title">📝 考试系统设置</div>
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" class="form-checkbox" id="examEnabled" onchange="updateSettings()">
+                    启用考试系统
+                </label>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">最大考试时长（分钟）</label>
+                    <input type="number" class="form-input" id="examMaxDuration" value="120" onchange="updateSettings()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">及格分数</label>
+                    <input type="number" class="form-input" id="examPassScore" value="60" min="0" max="100" onchange="updateSettings()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" class="form-checkbox" id="examShowAnswers" onchange="updateSettings()">
+                    考试结束后显示答案
+                </label>
+            </div>
+        </div>
+
+        <!-- 报餐系统设置 -->
+        <div class="card">
+            <div class="card-title">🍽️ 报餐系统设置</div>
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" class="form-checkbox" id="mealEnabled" onchange="updateSettings()">
+                    启用报餐系统
+                </label>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">单次最大报餐数量</label>
+                    <input type="number" class="form-input" id="mealMaxQuantity" value="5" min="1" onchange="updateSettings()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" class="form-checkbox" id="mealAllowRemarks" onchange="updateSettings()">
+                    允许添加备注
+                </label>
+            </div>
+        </div>
+
+        <!-- 投票系统设置 -->
+        <div class="card">
+            <div class="card-title">🗳️ 投票系统设置</div>
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" class="form-checkbox" id="votingEnabled" onchange="updateSettings()">
+                    启用投票系统
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="form-label">
+                    <input type="checkbox" class="form-checkbox" id="votingAllowMultiple" onchange="updateSettings()">
+                    允许多选投票
+                </label>
+            </div>
+        </div>
+
+        <!-- 公司信息设置 -->
+        <div class="card">
+            <div class="card-title">🏭 公司信息</div>
+            <div class="form-group">
+                <label class="form-label">公司名称</label>
+                <input type="text" class="form-input" id="companyName" value="兴利汽车模具" onchange="updateSettings()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">公司描述</label>
+                <textarea class="form-input" id="companyDescription" style="resize: vertical; min-height: 100px;" onchange="updateSettings()"></textarea>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="saveSettings()">💾 保存所有设置</button>
+            <button class="btn btn-secondary" onclick="resetSettings()">↻ 重置为默认值</button>
+        </div>
+    </div>
+
+    <script src="/js/admin-session.js"></script>
+    <script>
+        const API_URL = window.location.origin + '/api';
+        let token = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            token = window.AdminSession && window.AdminSession.requireValid
+                ? window.AdminSession.requireValid()
+                : (localStorage.getItem('token') || localStorage.getItem('adminToken') || '');
+            if (!token) {
+                return;
+            }
+            loadSettings();
+        });
+
+        function loadSettings() {
+            fetch(`${API_URL}/settings`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) {
+                    const settings = data.data;
+                    document.getElementById('examEnabled').checked = settings.exam_enabled;
+                    document.getElementById('examMaxDuration').value = settings.exam_max_duration;
+                    document.getElementById('examPassScore').value = settings.exam_pass_score;
+                    document.getElementById('examShowAnswers').checked = settings.exam_show_answers;
+                    
+                    document.getElementById('mealEnabled').checked = settings.meal_enabled;
+                    document.getElementById('mealMaxQuantity').value = settings.meal_max_quantity;
+                    document.getElementById('mealAllowRemarks').checked = settings.meal_allow_remarks;
+                    
+                    document.getElementById('votingEnabled').checked = settings.voting_enabled;
+                    document.getElementById('votingAllowMultiple').checked = settings.voting_allow_multiple;
+                    
+                    document.getElementById('companyName').value = settings.company_name;
+                    document.getElementById('companyDescription').value = settings.company_description;
+                } else {
+                    showError(data.msg);
+                }
+            })
+            .catch(err => showError('加载设置失败: ' + err.message));
+        }
+
+        function updateSettings() {
+            // 实时更新（可选）
+        }
+
+        function saveSettings() {
+            const data = {
+                exam_enabled: document.getElementById('examEnabled').checked,
+                exam_max_duration: document.getElementById('examMaxDuration').value,
+                exam_pass_score: document.getElementById('examPassScore').value,
+                exam_show_answers: document.getElementById('examShowAnswers').checked,
+                
+                meal_enabled: document.getElementById('mealEnabled').checked,
+                meal_max_quantity: document.getElementById('mealMaxQuantity').value,
+                meal_allow_remarks: document.getElementById('mealAllowRemarks').checked,
+                
+                voting_enabled: document.getElementById('votingEnabled').checked,
+                voting_allow_multiple: document.getElementById('votingAllowMultiple').checked,
+                
+                company_name: document.getElementById('companyName').value,
+                company_description: document.getElementById('companyDescription').value
+            };
+
+            fetch(`${API_URL}/settings`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 0) {
+                    showSuccess('设置保存成功');
+                } else {
+                    showError(data.msg);
+                }
+            })
+            .catch(err => showError('保存失败: ' + err.message));
+        }
+
+        function resetSettings() {
+            if (confirm('确定要重置为默认值吗？')) {
+                loadSettings();
+            }
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 3000);
+        }
+
+        function goBack() {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+    <script src="/js/projector-mode.js"></script>
+</body>
+</html>

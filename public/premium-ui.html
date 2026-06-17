@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Premium UI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: rgba(255,255,255,0.03);
+      --bg-card-hover: rgba(255,255,255,0.06);
+      --bg-glass: rgba(255,255,255,0.05);
+      --border-subtle: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.15);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255,255,255,0.6);
+      --text-tertiary: rgba(255,255,255,0.4);
+      --accent-violet: #8B5CF6;
+      --accent-cyan: #06B6D4;
+      --accent-pink: #EC4899;
+      --accent-green: #10B981;
+      --accent-orange: #F59E0B;
+      --accent-blue: #3B82F6;
+      --gradient-1: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+      --gradient-2: linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%);
+      --gradient-3: linear-gradient(135deg, #10B981 0%, #06B6D4 100%);
+      --shadow-glow: 0 0 60px rgba(139, 92, 246, 0.3);
+      --shadow-card: 0 8px 32px rgba(0,0,0,0.4);
+      --blur: blur(20px);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated Background */
+    .bg-animation {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.5;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 600px;
+      height: 600px;
+      background: var(--accent-violet);
+      top: -200px;
+      right: -100px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 400px;
+      height: 400px;
+      background: var(--accent-cyan);
+      bottom: -100px;
+      left: -100px;
+      animation-delay: -5s;
+    }
+
+    .orb-3 {
+      width: 300px;
+      height: 300px;
+      background: var(--accent-pink);
+      top: 50%;
+      left: 50%;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -30px) scale(1.1); }
+      50% { transform: translate(-20px, 20px) scale(0.95); }
+      75% { transform: translate(20px, 30px) scale(1.05); }
+    }
+
+    /* Grid Pattern */
+    .grid-pattern {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: -1;
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: var(--blur);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+
+    .nav-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.3s;
+      position: relative;
+    }
+
+    .nav-link:hover { color: var(--text-primary); }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--gradient-1);
+      transition: width 0.3s;
+    }
+
+    .nav-link:hover::after { width: 100%; }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--gradient-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 120px 40px 80px;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      backdrop-filter: var(--blur);
+    }
+
+    .hero-badge-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(48px, 8vw, 80px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      letter-spacing: -2px;
+    }
+
+    .hero h1 span {
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 14px 28px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--gradient-1);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+    }
+
+    .btn-secondary {
+      background: var(--bg-glass);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      backdrop-filter: var(--blur);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .material-symbols-rounded { font-size: 20px; }
+
+    /* Stats Row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 80px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 28px;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-4px);
+    }
+
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .stat-value.violet { background: var(--gradient-1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-value.cyan { background: var(--gradient-2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stat-value.green { background: var(--gradient-3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 80px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 32px;
+      font-weight: 600;
+    }
+
+    .section-subtitle {
+      color: var(--text-secondary);
+      font-size: 15px;
+      margin-top: 8px;
+    }
+
+    .section-link {
+      color: var(--accent-violet);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-link:hover { color: var(--accent-pink); }
+
+    /* Feature Cards */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 32px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gradient-1);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .feature-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-4px);
+    }
+
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .feature-icon.violet { background: rgba(139, 92, 246, 0.15); color: var(--accent-violet); }
+    .feature-icon.cyan { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+    .feature-icon.pink { background: rgba(236, 72, 153, 0.15); color: var(--accent-pink); }
+    .feature-icon.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+    .feature-icon.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+    .feature-icon.blue { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+
+    .feature-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .feature-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Product Card */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .product-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 32px;
+      display: flex;
+      gap: 24px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .product-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-4px);
+    }
+
+    .product-card.large {
+      grid-column: span 2;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+      border-color: rgba(139, 92, 246, 0.2);
+    }
+
+    .product-image {
+      width: 200px;
+      height: 140px;
+      border-radius: 16px;
+      background: var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .product-card.large .product-image {
+      width: 280px;
+      height: 180px;
+    }
+
+    .product-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-pink));
+      opacity: 0.3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .product-info { flex: 1; }
+
+    .product-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--accent-violet);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .product-tag.cyan { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+
+    .product-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .product-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .product-meta {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    .product-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Testimonials */
+    .testimonial-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .testimonial-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 28px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .testimonial-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-4px);
+    }
+
+    .testimonial-stars {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-stars .material-symbols-rounded {
+      font-size: 18px;
+      color: var(--accent-orange);
+    }
+
+    .testimonial-text {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .testimonial-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--gradient-2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+
+    .testimonial-name {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .testimonial-role {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    /* Pricing Cards */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .pricing-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 24px;
+      padding: 32px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .pricing-card.featured {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 16px;
+      background: var(--gradient-1);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pricing-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .pricing-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .pricing-price {
+      margin-bottom: 24px;
+    }
+
+    .pricing-amount {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+    }
+
+    .pricing-period {
+      font-size: 14px;
+      color: var(--text-tertiary);
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 32px;
+    }
+
+    .pricing-features li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .pricing-features li:last-child { border-bottom: none; }
+
+    .pricing-features .material-symbols-rounded {
+      font-size: 18px;
+      color: var(--accent-green);
+    }
+
+    .pricing-card .btn { width: 100%; justify-content: center; }
+
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 32px;
+      padding: 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: var(--accent-violet);
+      border-radius: 50%;
+      filter: blur(150px);
+      opacity: 0.3;
+      top: -100px;
+      right: -100px;
+    }
+
+    .cta-section h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 40px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .cta-section p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 60px 40px;
+      margin-top: 80px;
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr repeat(3, 1fr);
+      gap: 60px;
+    }
+
+    .footer-brand p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 16px;
+      line-height: 1.7;
+      max-width: 300px;
+    }
+
+    .footer-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+      color: var(--text-tertiary);
+    }
+
+    .footer-links {
+      list-style: none;
+    }
+
+    .footer-links li { margin-bottom: 12px; }
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.3s;
+    }
+    .footer-links a:hover { color: var(--text-primary); }
+
+    /* Scroll Animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .testimonial-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .footer-content { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .header { padding: 16px 20px; }
+      .nav-links { display: none; }
+      .container { padding: 100px 20px 60px; }
+      .feature-grid,
+      .testimonial-grid,
+      .pricing-grid { grid-template-columns: 1fr; }
+      .product-grid { grid-template-columns: 1fr; }
+      .product-card.large { grid-column: span 1; }
+      .product-image { width: 100%; height: 160px; }
+      .product-card.large .product-image { width: 100%; }
+      .product-card { flex-direction: column; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .cta-section { padding: 40px 24px; }
+      .cta-section h2 { font-size: 28px; }
+      .footer-content { grid-template-columns: 1fr; gap: 40px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Effects -->
+  <div class="bg-animation">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-pattern"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">Premium UI</div>
+    <nav class="nav-links">
+      <a href="#" class="nav-link">首页</a>
+      <a href="#" class="nav-link">功能</a>
+      <a href="#" class="nav-link">定价</a>
+      <a href="#" class="nav-link">关于</a>
+    </nav>
+    <div class="header-actions">
+      <button class="btn btn-secondary" style="padding: 10px 20px; font-size: 13px;">
+        <span class="material-symbols-rounded">login</span>
+        登录
+      </button>
+      <div class="avatar">S</div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="container">
+    <!-- Hero -->
+    <section class="hero reveal">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        新版本 v2.0 现已发布
+      </div>
+      <h1>打造<span>极致</span>的<br>用户体验</h1>
+      <p>采用最先进的设计语言和交互理念，为您的产品注入灵魂。我们专注于每一个细节，从微交互到视觉动效。</p>
+      <div class="hero-buttons">
+        <button class="btn btn-primary">
+          <span class="material-symbols-rounded">rocket_launch</span>
+          立即开始
+        </button>
+        <button class="btn btn-secondary">
+          <span class="material-symbols-rounded">play_circle</span>
+          观看演示
+        </button>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <div class="stats-row reveal">
+      <div class="stat-card">
+        <div class="stat-value violet">50K+</div>
+        <div class="stat-label">活跃用户</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value cyan">99.9%</div>
+        <div class="stat-label">运行时间</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">4.9</div>
+        <div class="stat-label">用户评分</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value green">24/7</div>
+        <div class="stat-label">客户支持</div>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <section class="section reveal">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">核心功能</h2>
+          <p class="section-subtitle">为现代企业量身打造的强大功能</p>
+        </div>
+        <a href="#" class="section-link">
+          查看全部
+          <span class="material-symbols-rounded">arrow_forward</span>
+        </a>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon violet">
+            <span class="material-symbols-rounded">psychology</span>
+          </div>
+          <h3 class="feature-title">AI 智能分析</h3>
+          <p class="feature-desc">基于深度学习算法，自动分析用户行为，提供精准洞察和预测。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon cyan">
+            <span class="material-symbols-rounded">shield</span>
+          </div>
+          <h3 class="feature-title">企业级安全</h3>
+          <p class="feature-desc">端到端加密，多重认证机制，确保您的数据安全无忧。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon pink">
+            <span class="material-symbols-rounded">bolt</span>
+          </div>
+          <h3 class="feature-title">毫秒响应</h3>
+          <p class="feature-desc">全球边缘节点部署，99.9% 运行时间保证，毫秒级响应体验。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon green">
+            <span class="material-symbols-rounded">hub</span>
+          </div>
+          <h3 class="feature-title">无缝集成</h3>
+          <p class="feature-desc">支持 200+ 第三方服务集成，开箱即用的 API 接口。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon orange">
+            <span class="material-symbols-rounded">analytics</span>
+          </div>
+          <h3 class="feature-title">实时分析</h3>
+          <p class="feature-desc">实时监控业务指标，动态仪表盘，数据驱动决策。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon blue">
+            <span class="material-symbols-rounded">support_agent</span>
+          </div>
+          <h3 class="feature-title">专属支持</h3>
+          <p class="feature-desc">7×24 小时专业团队，多渠道响应，问题秒级解决。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Products -->
+    <section class="section reveal">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">产品展示</h2>
+          <p class="section-subtitle">多元化产品矩阵，满足不同场景需求</p>
+        </div>
+        <a href="#" class="section-link">
+          浏览全部
+          <span class="material-symbols-rounded">arrow_forward</span>
+        </a>
+      </div>
+      <div class="product-grid">
+        <div class="product-card large">
+          <div class="product-image">
+            <div class="product-placeholder">
+              <span class="material-symbols-rounded" style="font-size: 64px; opacity: 1;">dashboard</span>
+            </div>
+          </div>
+          <div class="product-info">
+            <span class="product-tag">旗舰版</span>
+            <h3 class="product-title">智能工作台 Pro</h3>
+            <p class="product-desc">一站式工作平台，整合任务管理、文档协作、数据分析，提升团队效能 300%。</p>
+            <div class="product-meta">
+              <span><span class="material-symbols-rounded">groups</span> 团队协作</span>
+              <span><span class="material-symbols-rounded">cloud</span> 云端同步</span>
+              <span><span class="material-symbols-rounded">workspace_premium</span> 企业版</span>
+            </div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-image">
+            <div class="product-placeholder" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));">
+              <span class="material-symbols-rounded" style="font-size: 48px;">mobile_friendly</span>
+            </div>
+          </div>
+          <div class="product-info">
+            <span class="product-tag cyan">移动端</span>
+            <h3 class="product-title">手机客户端</h3>
+            <p class="product-desc">跨平台支持，随时随地处理工作事务。</p>
+            <div class="product-meta">
+              <span><span class="material-symbols-rounded">ios</span> iOS</span>
+              <span><span class="material-symbols-rounded">android</span> Android</span>
+            </div>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-image">
+            <div class="product-placeholder" style="background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));">
+              <span class="material-symbols-rounded" style="font-size: 48px;">developer_mode</span>
+            </div>
+          </div>
+          <div class="product-info">
+            <span class="product-tag cyan">开发者</span>
+            <h3 class="product-title">开放 API</h3>
+            <p class="product-desc">完整的 RESTful API，快速集成您的系统。</p>
+            <div class="product-meta">
+              <span><span class="material-symbols-rounded">code</span> REST API</span>
+              <span><span class="material-symbols-rounded">webhook</span> Webhooks</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="section reveal">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">用户评价</h2>
+          <p class="section-subtitle">来自真实用户的反馈</p>
+        </div>
+      </div>
+      <div class="testimonial-grid">
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+          </div>
+          <p class="testimonial-text">"使用了三个月，团队效率提升了近一倍。界面设计非常精美，交互流畅，是用过最好的企业软件。"</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">陈</div>
+            <div>
+              <div class="testimonial-name">陈明</div>
+              <div class="testimonial-role">CEO · 创想科技</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+          </div>
+          <p class="testimonial-text">"技术团队对接非常顺畅，API 文档详尽。客服响应速度快，问题能在第一时间解决。"</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar" style="background: var(--gradient-3);">林</div>
+            <div>
+              <div class="testimonial-name">林芳</div>
+              <div class="testimonial-role">CTO · 云端数据</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+            <span class="material-symbols-rounded">star</span>
+          </div>
+          <p class="testimonial-text">"设计风格很有品味，用起来赏心悦目。深色模式特别舒服，长时间使用也不累眼睛。"</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar" style="background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));">王</div>
+            <div>
+              <div class="testimonial-name">王强</div>
+              <div class="testimonial-role">设计师 · 像素工作室</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="section reveal">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">价格方案</h2>
+          <p class="section-subtitle">灵活的定价，满足不同规模团队</p>
+        </div>
+      </div>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3 class="pricing-name">入门版</h3>
+          <p class="pricing-desc">适合个人用户和小团队</p>
+          <div class="pricing-price">
+            <span class="pricing-amount">¥0</span>
+            <span class="pricing-period">/永久</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="material-symbols-rounded">check_circle</span> 最多 5 名成员</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 10GB 存储空间</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 基础数据分析</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 邮件支持</li>
+          </ul>
+          <button class="btn btn-secondary">立即试用</button>
+        </div>
+        <div class="pricing-card featured">
+          <span class="pricing-badge">最受欢迎</span>
+          <h3 class="pricing-name">专业版</h3>
+          <p class="pricing-desc">适合成长中的团队</p>
+          <div class="pricing-price">
+            <span class="pricing-amount">¥199</span>
+            <span class="pricing-period">/月</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="material-symbols-rounded">check_circle</span> 无限团队成员</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 100GB 存储空间</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 高级数据分析</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 优先客户支持</li>
+            <li><span class="material-symbols-rounded">check_circle</span> API 访问权限</li>
+          </ul>
+          <button class="btn btn-primary">立即开通</button>
+        </div>
+        <div class="pricing-card">
+          <h3 class="pricing-name">企业版</h3>
+          <p class="pricing-desc">适合大型企业组织</p>
+          <div class="pricing-price">
+            <span class="pricing-amount">¥699</span>
+            <span class="pricing-period">/月</span>
+          </div>
+          <ul class="pricing-features">
+            <li><span class="material-symbols-rounded">check_circle</span> 专业版全部功能</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 无限存储空间</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 专属客户经理</li>
+            <li><span class="material-symbols-rounded">check_circle</span> SLA 服务保障</li>
+            <li><span class="material-symbols-rounded">check_circle</span> 私有化部署</li>
+          </ul>
+          <button class="btn btn-secondary">联系销售</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section reveal">
+      <h2>准备好开始了吗？</h2>
+      <p>14 天免费试用，无需信用卡，随时取消</p>
+      <div class="hero-buttons">
+        <button class="btn btn-primary">
+          <span class="material-symbols-rounded">arrow_forward</span>
+          立即开始
+        </button>
+        <button class="btn btn-secondary">
+          <span class="material-symbols-rounded">chat</span>
+          联系我们
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <div class="logo">Premium UI</div>
+        <p>重新定义企业软件体验，用设计驱动业务增长。</p>
+      </div>
+      <div>
+        <h4 class="footer-title">产品</h4>
+        <ul class="footer-links">
+          <li><a href="#">功能介绍</a></li>
+          <li><a href="#">价格方案</a></li>
+          <li><a href="#">客户案例</a></li>
+          <li><a href="#">更新日志</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="footer-title">资源</h4>
+        <ul class="footer-links">
+          <li><a href="#">帮助中心</a></li>
+          <li><a href="#">开发者文档</a></li>
+          <li><a href="#">API 文档</a></li>
+          <li><a href="#">社区论坛</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="footer-title">公司</h4>
+        <ul class="footer-links">
+          <li><a href="#">关于我们</a></li>
+          <li><a href="#">联系方式</a></li>
+          <li><a href="#">隐私政策</a></li>
+          <li><a href="#">服务条款</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal animation
+    const reveals = document.querySelectorAll('.reveal');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    reveals.forEach(el => revealObserver.observe(el));
+  </script>
+</body>
+</html>
