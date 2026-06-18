@@ -1,0 +1,115 @@
+.page {
+  min-height: 100vh;
+  padding: 20rpx 20rpx 36rpx;
+  background: #f5f7fb;
+  box-sizing: border-box;
+}
+
+.state {
+  padding: 120rpx 0;
+  text-align: center;
+  color: #75879a;
+}
+
+.hero {
+  padding: 28rpx;
+  border-radius: 30rpx;
+  background: linear-gradient(160deg, #ff4a4a 0%, #ff665c 55%, #ff8770 100%);
+  color: #fff;
+  box-shadow: 0 18rpx 42rpx rgba(255, 86, 86, 0.22);
+}
+
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.title {
+  font-size: 38rpx;
+  font-weight: 800;
+}
+
+.date {
+  font-size: 24rpx;
+  text-align: right;
+  line-height: 1.6;
+}
+
+.summary {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+
+.summary-label,
+.summary-sub {
+  font-size: 24rpx;
+}
+
+.summary-num {
+  margin-top: 10rpx;
+  font-size: 72rpx;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.card {
+  margin-top: 20rpx;
+  padding: 24rpx;
+  border-radius: 26rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 28rpx rgba(0, 0, 0, 0.05);
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.card-title.orange {
+  color: #ff9f38;
+}
+
+.card-title.blue {
+  color: #4c7dff;
+}
+
+.count {
+  font-size: 26rpx;
+  color: #6c7d90;
+}
+
+.item {
+  padding: 16rpx 0;
+  border-top: 1rpx solid #edf1f6;
+}
+
+.item-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #213b58;
+}
+
+.item-reason,
+.item-count {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #7f90a2;
+}
+
+.footer {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #8897a8;
+}

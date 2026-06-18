@@ -52,6 +52,7 @@ function initDatabase() {
       initSixSRecords();
       initTaskWorkbench();
       initNotificationCenter();
+      initMiniAppIntegration();
       migrateTimestampsToLocaltime();
       return;
     }
@@ -74,6 +75,7 @@ function initDatabase() {
       initSixSRecords();
       initTaskWorkbench();
       initNotificationCenter();
+      initMiniAppIntegration();
       migrateTimestampsToLocaltime();
     } else {
       console.error('❌ 未找到 init.sql');
@@ -880,6 +882,81 @@ function initNotificationCenter() {
     console.log('✅ 通知中心数据结构已初始化');
   } catch (err) {
     console.error('❌ initNotificationCenter 失败:', err.message);
+    throw err;
+  }
+}
+
+function initMiniAppIntegration() {
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS miniapp_user_bindings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        recipient_type TEXT NOT NULL,
+        recipient_id INTEGER NOT NULL,
+        app_id TEXT NOT NULL DEFAULT '',
+        openid TEXT NOT NULL,
+        unionid TEXT,
+        nickname TEXT,
+        avatar_url TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        last_seen_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        UNIQUE(recipient_type, recipient_id, app_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_miniapp_bindings_openid
+      ON miniapp_user_bindings(openid, status);
+
+      CREATE TABLE IF NOT EXISTS miniapp_template_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        recipient_type TEXT NOT NULL,
+        recipient_id INTEGER NOT NULL,
+        app_id TEXT NOT NULL DEFAULT '',
+        template_key TEXT NOT NULL,
+        template_id TEXT,
+        page_path TEXT,
+        scene TEXT NOT NULL DEFAULT '',
+        subscribed INTEGER NOT NULL DEFAULT 1,
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        last_subscribed_at DATETIME,
+        UNIQUE(recipient_type, recipient_id, app_id, template_key)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_miniapp_subscriptions_lookup
+      ON miniapp_template_subscriptions(recipient_type, recipient_id, app_id, subscribed);
+
+      CREATE TABLE IF NOT EXISTS miniapp_push_queue (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        notification_id INTEGER,
+        recipient_type TEXT NOT NULL,
+        recipient_id INTEGER NOT NULL,
+        app_id TEXT NOT NULL DEFAULT '',
+        openid TEXT NOT NULL,
+        template_key TEXT NOT NULL,
+        template_id TEXT,
+        page_path TEXT,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL DEFAULT '',
+        payload_json TEXT NOT NULL DEFAULT '{}',
+        status TEXT NOT NULL DEFAULT 'pending',
+        source_module TEXT NOT NULL DEFAULT 'system',
+        source_category TEXT NOT NULL DEFAULT 'notice',
+        source_id INTEGER,
+        error_message TEXT,
+        sent_at DATETIME,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_miniapp_push_queue_status
+      ON miniapp_push_queue(status, created_at DESC);
+
+      CREATE INDEX IF NOT EXISTS idx_miniapp_push_queue_recipient
+      ON miniapp_push_queue(recipient_type, recipient_id, created_at DESC);
+    `);
+    console.log('✅ 小程序混合接入数据结构已初始化');
+  } catch (err) {
+    console.error('❌ initMiniAppIntegration 失败:', err.message);
     throw err;
   }
 }

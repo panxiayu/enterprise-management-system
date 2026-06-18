@@ -1,0 +1,322 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(115, 186, 239, 0.28), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(245, 150, 75, 0.22), transparent 28%),
+    linear-gradient(180deg, #edf6fc 0%, #f7fbfe 54%, #eef5fb 100%);
+  box-sizing: border-box;
+}
+
+.ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.curve {
+  position: absolute;
+  border-radius: 999rpx;
+  filter: blur(24rpx);
+}
+
+.curve-blue {
+  top: -180rpx;
+  left: -130rpx;
+  width: 560rpx;
+  height: 560rpx;
+  background: radial-gradient(circle, rgba(94, 167, 230, 0.42) 0%, rgba(94, 167, 230, 0) 72%);
+}
+
+.curve-warm {
+  right: -180rpx;
+  bottom: 100rpx;
+  width: 560rpx;
+  height: 560rpx;
+  background: radial-gradient(circle, rgba(243, 165, 94, 0.28) 0%, rgba(243, 165, 94, 0) 74%);
+}
+
+.curve-violet {
+  top: 340rpx;
+  right: -130rpx;
+  width: 420rpx;
+  height: 420rpx;
+  background: radial-gradient(circle, rgba(153, 168, 224, 0.2) 0%, rgba(153, 168, 224, 0) 74%);
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.26;
+  background-image:
+    linear-gradient(rgba(107, 146, 181, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(107, 146, 181, 0.08) 1px, transparent 1px);
+  background-size: 44rpx 44rpx;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 90%);
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: 52rpx 28rpx 36rpx;
+  box-sizing: border-box;
+}
+
+.hero {
+  margin-bottom: 28rpx;
+}
+
+.hero-topline {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 18rpx;
+}
+
+.hero-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #2b8be3;
+  box-shadow: 0 0 0 10rpx rgba(43, 139, 227, 0.14);
+}
+
+.hero-chip {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.56);
+  color: #5a7794;
+  font-size: 20rpx;
+  letter-spacing: 3rpx;
+  font-weight: 700;
+}
+
+.logo {
+  width: 204rpx;
+  height: 204rpx;
+  margin-bottom: 8rpx;
+}
+
+.hero-title {
+  font-size: 68rpx;
+  line-height: 1.06;
+  font-weight: 800;
+  color: #163754;
+}
+
+.hero-brand {
+  margin-top: 12rpx;
+  font-size: 34rpx;
+  line-height: 1.25;
+  color: #2f597c;
+  font-weight: 700;
+}
+
+.hero-subtitle {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  color: #7f96ab;
+}
+
+.hero-note {
+  margin-top: 24rpx;
+  padding: 26rpx 28rpx;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.46);
+  border: 2rpx solid rgba(207, 224, 239, 0.72);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.84);
+}
+
+.hero-note-label {
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+  color: #4e8dca;
+  font-weight: 800;
+}
+
+.hero-note-text {
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  line-height: 1.65;
+  color: #5d7590;
+}
+
+.login-box {
+  padding: 30rpx 28rpx 28rpx;
+  border-radius: 34rpx;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2rpx solid rgba(198, 216, 232, 0.84);
+  box-shadow:
+    0 28rpx 70rpx rgba(83, 118, 151, 0.14),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20rpx);
+  box-sizing: border-box;
+}
+
+.box-head {
+  margin-bottom: 20rpx;
+}
+
+.box-title {
+  font-size: 34rpx;
+  color: #234866;
+  font-weight: 800;
+}
+
+.box-caption {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #87a0b7;
+}
+
+.field-card {
+  padding: 20rpx 20rpx 18rpx;
+  border-radius: 24rpx;
+  background: rgba(247, 251, 255, 0.9);
+  border: 2rpx solid rgba(220, 234, 247, 0.88);
+}
+
+.field-card + .field-card {
+  margin-top: 16rpx;
+}
+
+.field-card-readonly {
+  background: rgba(242, 248, 253, 0.92);
+}
+
+.field-label {
+  margin-bottom: 12rpx;
+  font-size: 24rpx;
+  color: #62809d;
+  font-weight: 700;
+}
+
+.input {
+  width: 100%;
+  height: 92rpx;
+  padding: 0 24rpx;
+  border-radius: 20rpx;
+  border: 3rpx solid rgba(129, 163, 194, 0.34);
+  background: rgba(255, 255, 255, 0.96);
+  color: #234866;
+  font-size: 30rpx;
+  font-weight: 600;
+  box-shadow: inset 0 2rpx 8rpx rgba(134, 161, 186, 0.1);
+  box-sizing: border-box;
+}
+
+.input-readonly {
+  background: rgba(243, 249, 254, 0.98);
+  color: #31597c;
+}
+
+.input-placeholder {
+  color: #9aaebe;
+  font-weight: 400;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 20rpx;
+  background: rgba(240, 247, 255, 0.9);
+}
+
+.status-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #89a2ba;
+}
+
+.status-text {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #64819e;
+}
+
+.status-row-idle {
+  background: rgba(240, 247, 255, 0.9);
+}
+
+.status-row-idle .status-dot {
+  background: #89a2ba;
+}
+
+.status-row-searching {
+  background: rgba(232, 244, 255, 0.94);
+}
+
+.status-row-searching .status-dot {
+  background: #2993ee;
+}
+
+.status-row-found {
+  background: rgba(235, 250, 241, 0.95);
+}
+
+.status-row-found .status-dot {
+  background: #22a86a;
+}
+
+.status-row-missing {
+  background: rgba(255, 244, 238, 0.96);
+}
+
+.status-row-missing .status-dot {
+  background: #ea7a38;
+}
+
+.submit {
+  margin-top: 22rpx;
+  height: 98rpx;
+  line-height: 98rpx;
+  border: none;
+  border-radius: 24rpx;
+  background: linear-gradient(90deg, #1f7ed5 0%, #2f94e6 52%, #49abeb 100%);
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+  box-shadow: 0 18rpx 34rpx rgba(47, 135, 214, 0.28);
+}
+
+.submit::after {
+  border: none;
+}
+
+.submit[disabled] {
+  background: linear-gradient(90deg, #a8c8e3 0%, #bad6ea 100%);
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: none;
+}
+
+.secure-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 22rpx;
+}
+
+.secure-pill {
+  padding: 10rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(242, 248, 253, 0.96);
+  border: 2rpx solid rgba(217, 231, 243, 0.9);
+  color: #7290ab;
+  font-size: 21rpx;
+}
+
+.beian {
+  margin-top: 22rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #8da2b5;
+}

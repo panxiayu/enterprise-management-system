@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/webview/webview",
+    "pages/login/index",
+    "pages/home/index",
+    "pages/meal/index",
+    "pages/canteen/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "兴利汽车模具",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f8fa"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,91 @@
+/* 小程序专版样式底座
+ * 规则：
+ * 1. 仅在 body.env-miniapp 下生效
+ * 2. 每个页面自动带 page-xxx 类，可单独扩展
+ * 3. 普通浏览器不受影响
+ */
+
+html.env-miniapp,
+body.env-miniapp {
+  --miniapp-safe-top: env(safe-area-inset-top, 0px);
+  --miniapp-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --miniapp-page-padding-x: 14px;
+  --miniapp-page-gap: 14px;
+  --miniapp-card-radius: 24px;
+  --miniapp-shadow: 0 12px 32px rgba(74, 144, 226, 0.10);
+}
+
+body.env-miniapp {
+  overscroll-behavior-y: contain;
+}
+
+body.env-miniapp a,
+body.env-miniapp button,
+body.env-miniapp input,
+body.env-miniapp textarea,
+body.env-miniapp select {
+  touch-action: manipulation;
+}
+
+body.env-miniapp .page-wrap,
+body.env-miniapp .container,
+body.env-miniapp .wrap {
+  max-width: 100% !important;
+}
+
+body.env-miniapp .card,
+body.env-miniapp .module-card,
+body.env-miniapp .welcome-card,
+body.env-miniapp .record-card,
+body.env-miniapp .img-section {
+  border-radius: var(--miniapp-card-radius);
+}
+
+body.env-miniapp .fab,
+body.env-miniapp .tabbar,
+body.env-miniapp .bottom-bar,
+body.env-miniapp .footer-bar {
+  padding-bottom: max(12px, var(--miniapp-safe-bottom));
+}
+
+/* 登录与入口 */
+body.env-miniapp.page-index {}
+body.env-miniapp.page-miniapp-entry {}
+
+/* 员工首页 */
+body.env-miniapp.page-employee {}
+
+/* 6S */
+body.env-miniapp.page-mobile-6s-list {}
+body.env-miniapp.page-mobile-6s-detail {}
+body.env-miniapp.page-mobile-6s-add {}
+body.env-miniapp.page-mobile-6s-tasks {}
+
+/* 报餐 */
+body.env-miniapp.page-mobile-meal-list {}
+body.env-miniapp.page-mobile-meal-view {}
+
+/* 培训/考试 */
+body.env-miniapp.page-mobile-training-list {}
+body.env-miniapp.page-mobile-exam-list {}
+body.env-miniapp.page-mobile-exam-detail {}
+body.env-miniapp.page-mobile-exam-doing {}
+body.env-miniapp.page-mobile-result {}
+
+/* 投票 */
+body.env-miniapp.page-mobile-voting-list {}
+body.env-miniapp.page-mobile-voting {}
+body.env-miniapp.page-mobile-voting-result {}
+
+/* 通知/待办/反馈/资料 */
+body.env-miniapp.page-mobile-notifications {}
+body.env-miniapp.page-mobile-my-tasks {}
+body.env-miniapp.page-mobile-feedback-list {}
+body.env-miniapp.page-mobile-learning-materials-list {}
+body.env-miniapp.page-mobile-learning-materials-detail {}
+body.env-miniapp.page-mobile-homework-timer {}
+
+/* 你后面可以直接在这里继续单页扩展，例如：
+body.env-miniapp.page-mobile-6s-list .header { ... }
+body.env-browser.page-mobile-6s-list .header { ... }
+*/

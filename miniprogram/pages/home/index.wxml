@@ -1,0 +1,38 @@
+<view class="page">
+  <view class="hero">
+    <view class="hello">你好，{{staff.name}}</view>
+    <view class="meta">{{staff.employee_id}} · {{staff.position || '员工'}}</view>
+    <view class="meta" wx:if="{{staff.department}}">{{staff.department}}</view>
+    <view class="sync-pill sync-pill-{{syncState}}">{{syncText}}</view>
+  </view>
+
+  <view class="section">
+    <view class="title">常用功能</view>
+    <view class="grid">
+      <view
+        wx:for="{{quickCards}}"
+        wx:key="key"
+        class="card {{item.tone}}"
+        data-key="{{item.key}}"
+        bindtap="onCardTap"
+      >
+        <view class="card-title">{{item.title}}</view>
+        <view class="card-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="title">消息订阅</view>
+    <view class="sub-grid">
+      <button class="sub-card" bindtap="subscribe6S">
+        <view class="sub-title">6S消息</view>
+        <view class="sub-desc">整改任务、审核结果、待审核提醒</view>
+      </button>
+      <button class="sub-card" bindtap="subscribeTask">
+        <view class="sub-title">任务消息</view>
+        <view class="sub-desc">任务分派和进度更新提醒</view>
+      </button>
+    </view>
+  </view>
+</view>
