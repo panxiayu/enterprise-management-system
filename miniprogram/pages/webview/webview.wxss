@@ -1,0 +1,17 @@
+page {
+  background: #f4f8ff;
+}
+
+.loading {
+  position: fixed;
+  top: 24rpx;
+  left: 24rpx;
+  right: 24rpx;
+  z-index: 9;
+  padding: 18rpx 22rpx;
+  border-radius: 20rpx;
+  background: rgba(20, 36, 90, 0.78);
+  color: #fff;
+  font-size: 24rpx;
+  text-align: center;
+}

@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工服管理 - 兴利汽车模具</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --panel: #ffffff;
+            --panel-soft: #f8fbff;
+            --line: #e3eaf3;
+            --line-soft: #edf2f8;
+            --text: #26364d;
+            --text-soft: #6d7f95;
+            --text-faint: #94a3b8;
+            --primary: #1d6fe8;
+            --primary-deep: #1357bc;
+            --primary-soft: #eaf2ff;
+            --green: #23a06b;
+            --orange: #ef8a1d;
+            --red: #e34b4b;
+            --purple: #7c57ee;
+            --shadow: 0 1px 2px rgba(17, 24, 39, 0.03), 0 12px 24px rgba(15, 23, 42, 0.04);
+            --radius: 10px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { min-height: 100%; }
+        body {
+            min-height: 100vh;
+            font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+        }
+        button, input, select, textarea { font: inherit; }
+        button { cursor: pointer; }
+
+        .shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 230px minmax(0, 1fr);
+            background: var(--bg);
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            border-right: 1px solid var(--line);
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .brand {
+            min-height: 82px;
+            padding: 16px 18px 14px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .brand img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            flex: 0 0 auto;
+        }
+        .brand-text {
+            min-width: 0;
+        }
+        .brand-title {
+            font-size: 17px;
+            line-height: 1.2;
+            font-weight: 800;
+            color: #22364f;
+            white-space: nowrap;
+        }
+        .brand-subtitle {
+            margin-top: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #6f86a3;
+            letter-spacing: 0.18em;
+            white-space: nowrap;
+        }
+
+        .sidebar-nav {
+            padding: 10px 0;
+            flex: 1;
+            overflow: auto;
+        }
+        .nav-group {
+            padding: 0 8px;
+        }
+        .nav-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #41556f;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: left;
+            transition: background .18s ease, color .18s ease;
+        }
+        .nav-item img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+            opacity: .84;
+        }
+        .nav-item:hover { background: #f4f8fd; }
+        .nav-item.active {
+            color: #fff;
+            background: linear-gradient(135deg, #2b78f0 0%, #1160e4 100%);
+            box-shadow: 0 8px 18px rgba(17, 96, 228, .16);
+        }
+        .nav-item.active img { filter: brightness(0) invert(1); opacity: 1; }
+        .nav-item .caret {
+            margin-left: auto;
+            font-size: 12px;
+            opacity: .8;
+        }
+        .nav-sub {
+            list-style: none;
+            padding: 6px 0 6px 24px;
+            display: grid;
+            gap: 6px;
+        }
+        .nav-sub button {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: #596f88;
+            font-size: 13px;
+            padding: 8px 12px 8px 10px;
+            border-radius: 8px;
+            text-align: left;
+            position: relative;
+        }
+        .nav-sub button::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #c6d1df;
+            position: absolute;
+            left: -13px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .nav-sub button.active {
+            color: var(--primary);
+            background: #eff5ff;
+            font-weight: 700;
+        }
+        .nav-sub button.active::before { background: var(--primary); }
+
+        .sidebar-bottom {
+            border-top: 1px solid var(--line);
+            padding: 14px 16px;
+            color: #6f86a3;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-bottom span {
+            width: 18px;
+            height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+        }
+
+        .workspace {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            height: 78px;
+            background: #fff;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px 0 18px;
+            gap: 16px;
+        }
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+        .menu-btn {
+            width: 36px;
+            height: 36px;
+            border: 0;
+            background: transparent;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 3px;
+            padding: 0;
+        }
+        .menu-btn span {
+            width: 18px;
+            height: 2px;
+            border-radius: 999px;
+            background: #4a5568;
+            transition: transform .18s ease, opacity .18s ease;
+        }
+        .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #26364d;
+            white-space: nowrap;
+        }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-shrink: 0;
+        }
+        .bell {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            color: #2f3f55;
+            font-size: 22px;
+        }
+        .bell .badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform: translate(35%, -10%);
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 999px;
+            background: #ea4d3d;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d8e7ff 0%, #f5f9ff 100%);
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+        }
+        .user-avatar img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+        }
+        .user-meta {
+            line-height: 1.2;
+        }
+        .user-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #334155;
+        }
+        .user-role {
+            margin-top: 4px;
+            font-size: 11px;
+            color: #8b9bb0;
+        }
+        .user-arrow {
+            color: #8da0b5;
+            font-size: 18px;
+            margin-left: 2px;
+        }
+
+        .content {
+            padding: 16px 18px 18px;
+            min-width: 0;
+            flex: 1;
+            overflow: auto;
+        }
+        .content-inner {
+            display: grid;
+            gap: 16px;
+        }
+
+        .crumb-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .crumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #63758b;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .crumb .crumb-mark {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            background: #eaf2ff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .crumb span.sep {
+            color: #aab4c1;
+        }
+        .action-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            height: 38px;
+            padding: 0 16px;
+            border-radius: 8px;
+            border: 1px solid #d9e4f1;
+            background: #fff;
+            color: #38506c;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 0 rgba(255,255,255,.6);
+        }
+        .action-btn.primary {
+            background: linear-gradient(135deg, #2f84f0 0%, #1061e4 100%);
+            border-color: #1c6fe9;
+            color: #fff;
+        }
+        .action-btn .mini-icon {
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .stat-card {
+            background: #fff;
+            border: 1px solid #d8e2ee;
+            border-radius: 10px;
+            min-height: 126px;
+            padding: 18px 18px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 0 rgba(255,255,255,.7);
+        }
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            background: #eef4ff;
+        }
+        .stat-icon.green { background: #e9f8f2; }
+        .stat-icon.orange { background: #fff3de; }
+        .stat-icon.purple { background: #f0eaff; }
+        .stat-icon img {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+        }
+        .stat-copy {
+            min-width: 0;
+            flex: 1;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #4a5b70;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .stat-number {
+            font-size: 34px;
+            font-weight: 700;
+            line-height: 1;
+            color: #243750;
+            letter-spacing: -0.02em;
+        }
+        .stat-unit {
+            font-size: 16px;
+            color: #243750;
+            font-weight: 600;
+        }
+        .stat-delta {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #65748b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .delta-up { color: #ef4444; }
+        .delta-down { color: #22a06b; }
+
+        .work-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 360px;
+            gap: 14px;
+            align-items: start;
+        }
+        .panel {
+            background: #fff;
+            border: 1px solid #d8e2ee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .panel-header {
+            padding: 16px 16px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #27384f;
+        }
+        .panel-link {
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .panel-subtitle {
+            color: #7b8ca0;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .filter-bar {
+            padding: 0 16px 12px;
+            display: grid;
+            grid-template-columns: minmax(160px, 1.15fr) 150px 150px 132px 104px 86px;
+            gap: 10px;
+            align-items: center;
+        }
+        .field {
+            position: relative;
+        }
+        .field input,
+        .field select {
+            width: 100%;
+            height: 34px;
+            border-radius: 6px;
+            border: 1px solid #d7e1ec;
+            background: #fff;
+            color: #364b63;
+            font-size: 13px;
+            padding: 0 12px;
+            outline: none;
+        }
+        .search-field input { padding-right: 34px; }
+        .search-field::after {
+            content: "⌕";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7c8ca1;
+            font-size: 16px;
+            pointer-events: none;
+        }
+        .btn-query,
+        .btn-reset {
+            height: 34px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            padding: 0 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .btn-query {
+            background: linear-gradient(135deg, #2f84f0 0%, #1061e4 100%);
+            color: #fff;
+        }
+        .btn-reset {
+            background: #fff;
+            border-color: #d7e1ec;
+            color: #66758a;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .table-wrap {
+            padding: 0 16px 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            background: #fff;
+            border: 1px solid #dce5f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        thead th {
+            background: #f4f8fd;
+            border-bottom: 1px solid #dce5f0;
+            border-right: 1px solid #dce5f0;
+            padding: 12px 10px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #32465d;
+        }
+        thead th:last-child,
+        tbody td:last-child { border-right: 0; }
+        tbody td {
+            border-bottom: 1px solid #e7edf5;
+            border-right: 1px solid #e7edf5;
+            padding: 11px 10px;
+            text-align: center;
+            font-size: 13px;
+            color: #31455c;
+            line-height: 1.35;
+            vertical-align: middle;
+            word-break: break-word;
+        }
+        tbody tr:last-child td { border-bottom: 0; }
+        tbody tr:hover td { background: #fbfdff; }
+        .table-person { font-weight: 600; }
+        .table-muted { display: block; color: #8797ab; font-size: 11px; margin-top: 4px; }
+        .table-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 24px;
+            padding: 0 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .table-badge.blue { background: #eaf2ff; color: #1d6fe8; }
+        .table-badge.green { background: #e9f8f2; color: #1e9e6a; }
+        .table-badge.orange { background: #fff3de; color: #d67b1d; }
+        .table-badge.red { background: #ffecec; color: #e34646; }
+        .table-number { font-variant-numeric: tabular-nums; }
+
+        .table-footer {
+            padding: 12px 16px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            color: #66788e;
+            font-size: 13px;
+        }
+        .pager {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .pager .page-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 6px;
+            border: 1px solid #d7e1ec;
+            background: #fff;
+            color: #4a5d72;
+            font-size: 13px;
+        }
+        .pager .page-btn.active {
+            background: linear-gradient(135deg, #2f84f0 0%, #1061e4 100%);
+            color: #fff;
+            border-color: transparent;
+        }
+        .pager .page-select,
+        .pager .page-input {
+            height: 34px;
+            border-radius: 6px;
+            border: 1px solid #d7e1ec;
+            background: #fff;
+            padding: 0 10px;
+            color: #385065;
+            font-size: 13px;
+        }
+        .pager .page-input { width: 56px; text-align: center; }
+
+        .side-stack {
+            display: grid;
+            gap: 14px;
+        }
+        .form-panel,
+        .alert-panel {
+            background: #fff;
+            border: 1px solid #d8e2ee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .form-body,
+        .alert-body {
+            padding: 14px 16px 16px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 88px minmax(0, 1fr);
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .form-label {
+            color: #4a5b70;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .form-label .required {
+            color: #ea4d3d;
+            margin-right: 2px;
+        }
+        .form-input,
+        .form-select {
+            width: 100%;
+            height: 34px;
+            border-radius: 6px;
+            border: 1px solid #d7e1ec;
+            background: #fff;
+            color: #364b63;
+            padding: 0 12px;
+            font-size: 13px;
+            outline: none;
+        }
+        .form-input.searchable { padding-right: 34px; }
+        .input-wrap {
+            position: relative;
+        }
+        .input-wrap::after {
+            content: "⌕";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7c8ca1;
+            font-size: 16px;
+            pointer-events: none;
+        }
+
+        .stepper {
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr) 34px;
+            border: 1px solid #d7e1ec;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #fff;
+            height: 34px;
+        }
+        .stepper button {
+            border: 0;
+            background: #f8fbff;
+            color: #4a5b70;
+            font-size: 18px;
+        }
+        .stepper input {
+            width: 100%;
+            border: 0;
+            outline: 0;
+            text-align: center;
+            color: #26364d;
+            font-weight: 600;
+            background: #fff;
+        }
+        .ratio-input {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 42px;
+            border: 1px solid #d7e1ec;
+            border-radius: 6px;
+            overflow: hidden;
+            height: 34px;
+        }
+        .ratio-input input {
+            border: 0;
+            outline: 0;
+            text-align: center;
+            font-weight: 600;
+            color: #26364d;
+        }
+        .ratio-input span {
+            background: #f8fbff;
+            border-left: 1px solid #d7e1ec;
+            color: #6e8095;
+            display: grid;
+            place-items: center;
+            font-size: 13px;
+        }
+        .submit-btn {
+            width: 100%;
+            height: 42px;
+            border: 0;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #2f84f0 0%, #1061e4 100%);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 4px;
+            box-shadow: 0 8px 20px rgba(17, 96, 228, .16);
+        }
+
+        .alert-head {
+            padding: 14px 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .alert-list {
+            list-style: none;
+            margin-top: 8px;
+        }
+        .alert-list li {
+            padding: 10px 16px;
+            border-top: 1px solid #edf2f8;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .alert-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ef7c1a;
+            margin-top: 8px;
+            flex: 0 0 auto;
+        }
+        .alert-main {
+            flex: 1;
+            min-width: 0;
+        }
+        .alert-main strong {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #26364d;
+            margin-bottom: 5px;
+        }
+        .alert-main small {
+            display: block;
+            color: #8392a8;
+            font-size: 12px;
+            line-height: 1.3;
+        }
+        .alert-value {
+            flex: 0 0 auto;
+            color: #ea4d3d;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            padding-top: 1px;
+        }
+
+        .drawer {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .18);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 20;
+        }
+        .drawer.show { display: flex; }
+        .drawer-panel {
+            width: min(520px, 100%);
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, .16);
+            border: 1px solid #d8e2ee;
+            overflow: hidden;
+        }
+        .drawer-header {
+            padding: 16px 18px 14px;
+            border-bottom: 1px solid #edf2f8;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .drawer-header strong {
+            display: block;
+            font-size: 18px;
+            font-weight: 700;
+            color: #25364d;
+        }
+        .drawer-header p {
+            margin-top: 6px;
+            color: #74879c;
+            font-size: 12px;
+        }
+        .drawer-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid #d7e1ec;
+            background: #fff;
+            color: #55718b;
+            font-size: 20px;
+            line-height: 1;
+        }
+        .drawer-body {
+            padding: 16px 18px 18px;
+        }
+
+        .collapsed .sidebar {
+            width: 84px;
+        }
+        .collapsed .brand-text,
+        .collapsed .nav-label-text,
+        .collapsed .nav-text,
+        .collapsed .nav-sub,
+        .collapsed .sidebar-bottom span:last-child {
+            display: none;
+        }
+        .collapsed .sidebar .brand {
+            justify-content: center;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        .collapsed .nav-item {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .collapsed .nav-item .caret {
+            display: none;
+        }
+        .collapsed {
+            grid-template-columns: 84px minmax(0, 1fr);
+        }
+
+        @media (max-width: 1280px) {
+            .shell { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .work-grid { grid-template-columns: 1fr; }
+            .filter-bar { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        }
+        @media (max-width: 768px) {
+            .content { padding: 14px 12px 12px; }
+            .topbar { padding-left: 12px; padding-right: 12px; }
+            .page-title { font-size: 18px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .filter-bar { grid-template-columns: 1fr; }
+            .table-wrap { overflow: auto; }
+            table { min-width: 1080px; }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell" id="shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <img src="icons/兴利logo.svg" alt="兴利汽车模具">
+                <div class="brand-text">
+                    <div class="brand-title">宁波兴立汽车模具</div>
+                    <div class="brand-subtitle">数字化管理中心</div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <button class="nav-item" type="button">
+                        <img src="icons/icon-home.svg" alt="">
+                        <span class="nav-text">首页看板</span>
+                    </button>
+                    <button class="nav-item" type="button">
+                        <img src="icons/icon-employee.svg" alt="">
+                        <span class="nav-text">人员管理</span>
+                    </button>
+                    <button class="nav-item active" type="button" id="workwearNav">
+                        <img src="icons/icon-workwear.svg" alt="">
+                        <span class="nav-text">工服管理</span>
+                        <span class="caret">^</span>
+                    </button>
+                    <ul class="nav-sub" id="workwearSub">
+                        <li><button class="active" type="button">领用管理</button></li>
+                        <li><button type="button">库存管理</button></li>
+                        <li><button type="button">采购管理</button></li>
+                        <li><button type="button">扣款管理</button></li>
+                        <li><button type="button">统计报表</button></li>
+                    </ul>
+                    <button class="nav-item" type="button">
+                        <img src="icons/icon-meal-log.svg" alt="">
+                        <span class="nav-text">考勤管理</span>
+                    </button>
+                    <button class="nav-item" type="button">
+                        <img src="icons/icon-file.svg" alt="">
+                        <span class="nav-text">设备管理</span>
+                    </button>
+                    <button class="nav-item" type="button">
+                        <img src="icons/icon-permission.svg" alt="">
+                        <span class="nav-text">质量管理</span>
+                    </button>
+                    <button class="nav-item" type="button">
+                        <img src="icons/icon-6s.svg" alt="">
+                        <span class="nav-text">系统管理</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="sidebar-bottom" id="collapseBtn">
+                <span>≪</span>
+                <span class="nav-label-text">收起菜单</span>
+            </div>
+        </aside>
+
+        <section class="workspace">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="menu-btn" id="menuBtn" type="button" aria-label="菜单切换">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <div class="page-title">工服管理</div>
+                </div>
+                <div class="topbar-right">
+                    <div class="bell" aria-label="通知">
+                        🔔
+                        <span class="badge">8</span>
+                    </div>
+                    <div class="user">
+                        <div class="user-avatar">
+                            <img src="icons/icon-employee.svg" alt="">
+                        </div>
+                        <div class="user-meta">
+                            <div class="user-name">张伟</div>
+                            <div class="user-role">管理员</div>
+                        </div>
+                        <div class="user-arrow">⌄</div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="content">
+                <div class="content-inner">
+                    <div class="crumb-row">
+                        <div class="crumb">
+                            <span class="crumb-mark">▣</span>
+                            <span>首页</span>
+                            <span class="sep">/</span>
+                            <span>工服管理</span>
+                            <span class="sep">/</span>
+                            <span>领用管理</span>
+                        </div>
+                        <div class="action-row">
+                            <button class="action-btn primary" type="button" data-open-drawer="issue">
+                                <span class="mini-icon">＋</span>新增领用
+                            </button>
+                            <button class="action-btn" type="button" data-open-drawer="purchase">
+                                <span class="mini-icon">↓</span>采购入库
+                            </button>
+                            <button class="action-btn" type="button" id="exportBtn">
+                                <span class="mini-icon">⤴</span>导出
+                            </button>
+                        </div>
+                    </div>
+
+                    <section class="stats-grid">
+                        <article class="stat-card">
+                            <div class="stat-icon">
+                                <img src="icons/icon-employee.svg" alt="">
+                            </div>
+                            <div class="stat-copy">
+                                <div class="stat-label">本月领用人数</div>
+                                <div class="stat-value">
+                                    <div class="stat-number">246</div>
+                                    <div class="stat-unit">人</div>
+                                </div>
+                                <div class="stat-delta">
+                                    <span>较上月</span>
+                                    <span class="delta-up">↑ 18.6%</span>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="stat-card">
+                            <div class="stat-icon green">
+                                <img src="icons/icon-workwear.svg" alt="">
+                            </div>
+                            <div class="stat-copy">
+                                <div class="stat-label">本月领用件数</div>
+                                <div class="stat-value">
+                                    <div class="stat-number">1,352</div>
+                                    <div class="stat-unit">件</div>
+                                </div>
+                                <div class="stat-delta">
+                                    <span>较上月</span>
+                                    <span class="delta-up">↑ 12.4%</span>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="stat-card">
+                            <div class="stat-icon orange">
+                                <img src="icons/icon-permission.svg" alt="">
+                            </div>
+                            <div class="stat-copy">
+                                <div class="stat-label">库存预警</div>
+                                <div class="stat-value">
+                                    <div class="stat-number">18</div>
+                                    <div class="stat-unit">项</div>
+                                </div>
+                                <div class="stat-delta">
+                                    <span>较上月</span>
+                                    <span class="delta-down">↓ 5 项</span>
+                                </div>
+                            </div>
+                        </article>
+
+                        <article class="stat-card">
+                            <div class="stat-icon purple">
+                                <span style="font-size: 22px; font-weight: 700; color: var(--purple); line-height: 1;">¥</span>
+                            </div>
+                            <div class="stat-copy">
+                                <div class="stat-label">待扣款</div>
+                                <div class="stat-value">
+                                    <div class="stat-number">12,680.00</div>
+                                    <div class="stat-unit">元</div>
+                                </div>
+                                <div class="stat-delta">
+                                    <span>较上月</span>
+                                    <span class="delta-up">↑ 2,350.00 元</span>
+                                </div>
+                            </div>
+                        </article>
+                    </section>
+
+                    <section class="work-grid">
+                        <article class="panel">
+                            <div class="panel-header">
+                                <div>
+                                    <div class="panel-title">领用明细</div>
+                                </div>
+                            </div>
+
+                            <div class="filter-bar">
+                                <div class="field search-field">
+                                    <input id="globalSearch" type="search" placeholder="人员/物品搜索">
+                                </div>
+                                <div class="field">
+                                    <select id="deptFilter">
+                                        <option>部门</option>
+                                        <option>全部</option>
+                                        <option>模具设计部</option>
+                                        <option>模具制造部</option>
+                                        <option>品质部</option>
+                                        <option>装配车间</option>
+                                        <option>财务部</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <select id="monthFilter">
+                                        <option>月份</option>
+                                        <option selected>2025-05</option>
+                                        <option>2025-06</option>
+                                        <option>2026-06</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <select id="typeFilter">
+                                        <option>类型</option>
+                                        <option>全部</option>
+                                        <option>工服</option>
+                                        <option>工鞋</option>
+                                        <option>自购</option>
+                                    </select>
+                                </div>
+                                <button class="btn-query" type="button" id="queryBtn">查询</button>
+                                <button class="btn-reset" type="button" id="resetBtn">↻ 重置</button>
+                            </div>
+
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 10%;">领用人</th>
+                                            <th style="width: 14%;">部门/岗位</th>
+                                            <th style="width: 11%;">领用日期</th>
+                                            <th style="width: 11%;">物品</th>
+                                            <th style="width: 7%;">型号</th>
+                                            <th style="width: 7%;">数量</th>
+                                            <th style="width: 10%;">单价(元)</th>
+                                            <th style="width: 10%;">扣款(元)</th>
+                                            <th style="width: 10%;">自购(元)</th>
+                                            <th style="width: 10%;">备注</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="issueRows">
+                                        <tr data-keywords="潘夏煜 行政部 新款冬m">
+                                            <td class="table-person">潘夏煜</td>
+                                            <td>模具设计部<span class="table-muted">设计工程师</span></td>
+                                            <td>2025-05-20</td>
+                                            <td>春秋工服上衣</td>
+                                            <td>XL</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">65.00</td>
+                                            <td class="table-number">32.50</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>-</td>
+                                        </tr>
+                                        <tr data-keywords="潘夏煜 模具设计部 春秋工服裤子">
+                                            <td class="table-person">潘夏煜</td>
+                                            <td>模具设计部<span class="table-muted">设计工程师</span></td>
+                                            <td>2025-05-20</td>
+                                            <td>春秋工服裤子</td>
+                                            <td>XL</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">55.00</td>
+                                            <td class="table-number">27.50</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>-</td>
+                                        </tr>
+                                        <tr data-keywords="董涛涛 模具制造部 安全鞋">
+                                            <td class="table-person">董涛涛</td>
+                                            <td>模具制造部<span class="table-muted">CNC编程</span></td>
+                                            <td>2025-05-19</td>
+                                            <td>安全鞋</td>
+                                            <td>42</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">120.00</td>
+                                            <td class="table-number">60.00</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>-</td>
+                                        </tr>
+                                        <tr data-keywords="董涛涛 模具制造部 夏季工服上衣">
+                                            <td class="table-person">董涛涛</td>
+                                            <td>模具制造部<span class="table-muted">CNC编程</span></td>
+                                            <td>2025-05-19</td>
+                                            <td>夏季工服上衣</td>
+                                            <td>L</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">60.00</td>
+                                            <td class="table-number">30.00</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>-</td>
+                                        </tr>
+                                        <tr data-keywords="金晶晶 品质部 检验员 夏季工服上衣">
+                                            <td class="table-person">金晶晶</td>
+                                            <td>品质部<span class="table-muted">检验员</span></td>
+                                            <td>2025-05-19</td>
+                                            <td>夏季工服上衣</td>
+                                            <td>M</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">60.00</td>
+                                            <td class="table-number">30.00</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>-</td>
+                                        </tr>
+                                        <tr data-keywords="金晶晶 品质部 检验员 夏季工服裤子">
+                                            <td class="table-person">金晶晶</td>
+                                            <td>品质部<span class="table-muted">检验员</span></td>
+                                            <td>2025-05-19</td>
+                                            <td>夏季工服裤子</td>
+                                            <td>M</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">50.00</td>
+                                            <td class="table-number">25.00</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>-</td>
+                                        </tr>
+                                        <tr data-keywords="李明宇 装配车间 装配工 安全鞋">
+                                            <td class="table-person">李明宇</td>
+                                            <td>装配车间<span class="table-muted">装配工</span></td>
+                                            <td>2025-05-18</td>
+                                            <td>安全鞋</td>
+                                            <td>43</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">120.00</td>
+                                            <td class="table-number">60.00</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>脚码偏大</td>
+                                        </tr>
+                                        <tr data-keywords="王建国 模具制造部 钳工 春秋工服上衣">
+                                            <td class="table-person">王建国</td>
+                                            <td>模具制造部<span class="table-muted">钳工</span></td>
+                                            <td>2025-05-18</td>
+                                            <td>春秋工服上衣</td>
+                                            <td>L</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">65.00</td>
+                                            <td class="table-number">32.50</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>-</td>
+                                        </tr>
+                                        <tr data-keywords="陈思雨 财务部 会计 夏季工服上衣">
+                                            <td class="table-person">陈思雨</td>
+                                            <td>财务部<span class="table-muted">会计</span></td>
+                                            <td>2025-05-17</td>
+                                            <td>夏季工服上衣</td>
+                                            <td>S</td>
+                                            <td class="table-number">1</td>
+                                            <td class="table-number">60.00</td>
+                                            <td class="table-number">30.00</td>
+                                            <td class="table-number">0.00</td>
+                                            <td>-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="table-footer">
+                                <div>共 <strong id="totalCount">185</strong> 条</div>
+                                <div class="pager">
+                                    <select class="page-select" id="pageSize">
+                                        <option>10条/页</option>
+                                        <option>20条/页</option>
+                                        <option>50条/页</option>
+                                    </select>
+                                    <button class="page-btn" type="button">‹</button>
+                                    <button class="page-btn active" type="button">1</button>
+                                    <button class="page-btn" type="button">2</button>
+                                    <button class="page-btn" type="button">3</button>
+                                    <button class="page-btn" type="button">4</button>
+                                    <button class="page-btn" type="button">5</button>
+                                    <button class="page-btn" type="button">…</button>
+                                    <button class="page-btn" type="button">19</button>
+                                    <button class="page-btn" type="button">›</button>
+                                    <span>前往</span>
+                                    <input class="page-input" type="text" value="1">
+                                    <span>页</span>
+                                </div>
+                            </div>
+                        </article>
+
+                        <div class="side-stack">
+                            <article class="form-panel">
+                                <div class="panel-header">
+                                    <div>
+                                        <div class="panel-title">快速录入</div>
+                                    </div>
+                                </div>
+                                <div class="form-body">
+                                    <div class="form-row">
+                                        <div class="form-label"><span class="required">*</span>领用人</div>
+                                        <div class="input-wrap">
+                                            <input class="form-input searchable" type="search" placeholder="请选择领用人">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-label"><span class="required">*</span>工服/工鞋</div>
+                                        <select class="form-select">
+                                            <option>请选择物品</option>
+                                            <option>春秋工服上衣</option>
+                                            <option>春秋工服裤子</option>
+                                            <option>夏季工服上衣</option>
+                                            <option>夏季工服裤子</option>
+                                            <option>安全鞋</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-label"><span class="required">*</span>型号</div>
+                                        <select class="form-select">
+                                            <option>请选择型号</option>
+                                            <option>XL</option>
+                                            <option>L</option>
+                                            <option>M</option>
+                                            <option>S</option>
+                                            <option>42</option>
+                                            <option>43</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-label"><span class="required">*</span>数量</div>
+                                        <div class="stepper">
+                                            <button type="button" data-step="minus">−</button>
+                                            <input id="issueQty" type="text" value="1">
+                                            <button type="button" data-step="plus">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-label"><span class="required">*</span>扣款比例</div>
+                                        <div class="ratio-input">
+                                            <input id="deductRatio" type="text" value="50">
+                                            <span>%</span>
+                                        </div>
+                                    </div>
+                                    <button class="submit-btn" type="button" data-open-drawer="issue">提交领用</button>
+                                </div>
+                            </article>
+
+                            <article class="alert-panel">
+                                <div class="alert-head">
+                                    <div class="panel-title">库存预警</div>
+                                    <div class="panel-link">更多 <span>›</span></div>
+                                </div>
+                                <ul class="alert-list">
+                                    <li>
+                                        <span class="alert-dot"></span>
+                                        <div class="alert-main">
+                                            <strong>安全鞋 42码</strong>
+                                            <small>最低库存：10 双</small>
+                                        </div>
+                                        <div class="alert-value">库存：3 双</div>
+                                    </li>
+                                    <li>
+                                        <span class="alert-dot"></span>
+                                        <div class="alert-main">
+                                            <strong>安全鞋 43码</strong>
+                                            <small>最低库存：10 双</small>
+                                        </div>
+                                        <div class="alert-value">库存：4 双</div>
+                                    </li>
+                                    <li>
+                                        <span class="alert-dot"></span>
+                                        <div class="alert-main">
+                                            <strong>春秋工服上衣 XL</strong>
+                                            <small>最低库存：15 件</small>
+                                        </div>
+                                        <div class="alert-value">库存：6 件</div>
+                                    </li>
+                                    <li>
+                                        <span class="alert-dot"></span>
+                                        <div class="alert-main">
+                                            <strong>夏季工服裤子 M</strong>
+                                            <small>最低库存：15 件</small>
+                                        </div>
+                                        <div class="alert-value">库存：5 件</div>
+                                    </li>
+                                    <li>
+                                        <span class="alert-dot"></span>
+                                        <div class="alert-main">
+                                            <strong>春秋工服裤子 L</strong>
+                                            <small>最低库存：15 件</small>
+                                        </div>
+                                        <div class="alert-value">库存：7 件</div>
+                                    </li>
+                                </ul>
+                            </article>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </section>
+    </div>
+
+    <div class="drawer" id="drawer" aria-hidden="true">
+        <section class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+            <div class="drawer-header">
+                <div>
+                    <strong id="drawerTitle">新增领用</strong>
+                    <p id="drawerDesc">按截图风格保留为弹层录入，后续可接正式接口。</p>
+                </div>
+                <button class="drawer-close" type="button" id="drawerClose">×</button>
+            </div>
+            <div class="drawer-body">
+                <div class="form-row" style="grid-template-columns: 84px minmax(0,1fr);">
+                    <div class="form-label"><span class="required">*</span>领用人</div>
+                    <div class="input-wrap">
+                        <input class="form-input searchable" type="search" value="潘夏煜">
+                    </div>
+                </div>
+                <div class="form-row" style="grid-template-columns: 84px minmax(0,1fr);">
+                    <div class="form-label"><span class="required">*</span>物品</div>
+                    <select class="form-select">
+                        <option>春秋工服上衣</option>
+                        <option>春秋工服裤子</option>
+                        <option>夏季工服上衣</option>
+                        <option>夏季工服裤子</option>
+                        <option>安全鞋</option>
+                    </select>
+                </div>
+                <div class="form-row" style="grid-template-columns: 84px minmax(0,1fr);">
+                    <div class="form-label"><span class="required">*</span>数量</div>
+                    <div class="stepper">
+                        <button type="button" data-step="minus">−</button>
+                        <input class="drawer-qty" type="text" value="1">
+                        <button type="button" data-step="plus">+</button>
+                    </div>
+                </div>
+                <button class="submit-btn" type="button" id="drawerSubmit">保存预览</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const shell = document.getElementById('shell');
+        const workwearNav = document.getElementById('workwearNav');
+        const workwearSub = document.getElementById('workwearSub');
+        const menuBtn = document.getElementById('menuBtn');
+        const collapseBtn = document.getElementById('collapseBtn');
+        const drawer = document.getElementById('drawer');
+        const drawerTitle = document.getElementById('drawerTitle');
+        const drawerDesc = document.getElementById('drawerDesc');
+        const issueRows = document.getElementById('issueRows');
+
+        function setDrawer(type) {
+            const isPurchase = type === 'purchase';
+            drawerTitle.textContent = isPurchase ? '采购入库' : '新增领用';
+            drawerDesc.textContent = isPurchase ? '记录采购日期、采购人、物品和数量，后续回写库存。' : '选择领用人和物品，生成领用明细和扣款记录。';
+            drawer.classList.add('show');
+            drawer.setAttribute('aria-hidden', 'false');
+        }
+        function closeDrawer() {
+            drawer.classList.remove('show');
+            drawer.setAttribute('aria-hidden', 'true');
+        }
+
+        document.querySelectorAll('[data-open-drawer]').forEach((button) => {
+            button.addEventListener('click', () => setDrawer(button.dataset.openDrawer || 'issue'));
+        });
+        document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+        document.getElementById('drawerSubmit').addEventListener('click', closeDrawer);
+        drawer.addEventListener('click', (event) => {
+            if (event.target === drawer) closeDrawer();
+        });
+
+        function toggleShellCollapse() {
+            shell.classList.toggle('collapsed');
+        }
+        menuBtn.addEventListener('click', toggleShellCollapse);
+        collapseBtn.addEventListener('click', toggleShellCollapse);
+
+        workwearNav.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach((item) => item.classList.remove('active'));
+            workwearNav.classList.add('active');
+        });
+        workwearSub.querySelectorAll('button').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                workwearSub.querySelectorAll('button').forEach((item) => item.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        function readFilters() {
+            return {
+                q: document.getElementById('globalSearch').value.trim().toLowerCase(),
+                dept: document.getElementById('deptFilter').value,
+                month: document.getElementById('monthFilter').value,
+                type: document.getElementById('typeFilter').value
+            };
+        }
+
+        function rowMatches(row, filters) {
+            const keywords = (row.dataset.keywords || '').toLowerCase();
+            const text = row.textContent.toLowerCase();
+            if (filters.q && !keywords.includes(filters.q) && !text.includes(filters.q)) return false;
+            if (filters.dept && filters.dept !== '部门' && filters.dept !== '全部' && !text.includes(filters.dept.toLowerCase())) return false;
+            if (filters.month && filters.month !== '月份' && !text.includes(filters.month)) return false;
+            if (filters.type && filters.type !== '类型' && filters.type !== '全部') {
+                const type = filters.type.toLowerCase();
+                if (type === '工服' && !text.includes('工服')) return false;
+                if (type === '工鞋' && !text.includes('鞋')) return false;
+                if (type === '自购' && !text.includes('自购')) return false;
+            }
+            return true;
+        }
+
+        function applyFilters() {
+            const filters = readFilters();
+            issueRows.querySelectorAll('tr').forEach((row) => {
+                row.style.display = rowMatches(row, filters) ? '' : 'none';
+            });
+        }
+
+        document.getElementById('globalSearch').addEventListener('input', applyFilters);
+        document.getElementById('deptFilter').addEventListener('change', applyFilters);
+        document.getElementById('monthFilter').addEventListener('change', applyFilters);
+        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+        document.getElementById('queryBtn').addEventListener('click', applyFilters);
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('globalSearch').value = '';
+            document.getElementById('deptFilter').value = '全部';
+            document.getElementById('monthFilter').value = '2025-05';
+            document.getElementById('typeFilter').value = '全部';
+            applyFilters();
+        });
+
+        document.querySelectorAll('[data-step]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const input = btn.parentElement.querySelector('input');
+                const value = Math.max(1, parseInt(input.value || '1', 10) + (btn.dataset.step === 'plus' ? 1 : -1));
+                input.value = String(value);
+            });
+        });
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            alert('导出功能待接入');
+        });
+    </script>
+</body>
+</html>

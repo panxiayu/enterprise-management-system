@@ -25,16 +25,64 @@
         body.theme-glass-workbench {
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
-        .container {
+        body.env-miniapp.theme-glass-workbench {
+            background: linear-gradient(180deg, #f4f9ff 0%, #eef5ff 100%);
+            padding-top: calc(env(safe-area-inset-top) + 6px);
+        }
+        body.env-miniapp {
+            overflow: auto;
+        }
+        body.env-miniapp .gw-ambient {
+            display: none;
+        }
+        body.theme-glass-workbench > .container {
             position: relative;
             z-index: 1;
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            min-height: 100dvh;
-            padding: 18px;
+            height: 100vh !important;
+            height: 100dvh !important;
+            padding: 18px !important;
+            max-width: none !important;
+            margin: 0 !important;
+            width: 100% !important;
+        }
+        /* PC浏览器垂直居中：排除小程序环境，避免影响移动端布局 */
+        @media (min-width: 768px) {
+            body.theme-glass-workbench:not(.env-miniapp) > .container > .page-stack {
+                justify-content: center !important;
+                height: auto !important;
+                min-height: 0 !important;
+            }
+            body.theme-glass-workbench:not(.env-miniapp) .page-stack .beian-link {
+                position: fixed !important;
+                left: 0;
+                right: 0;
+                bottom: 12px;
+                text-align: center;
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+            }
+        }
+        body.env-miniapp .container {
+            padding-top: 24px;
+            padding-bottom: calc(24px + env(safe-area-inset-bottom));
+        }
+        .page-stack {
+            width: 100%;
+            max-width: 440px;
+            height: calc(100vh - 36px);
+            height: calc(100dvh - 36px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        body.env-miniapp .page-stack {
+            max-width: 100%;
+            min-height: calc(100vh - 48px - env(safe-area-inset-bottom));
+            min-height: calc(100dvh - 48px - env(safe-area-inset-bottom));
         }
 
         .fade-item {
@@ -57,6 +105,14 @@
             backdrop-filter: blur(24px) saturate(135%);
             box-shadow: 0 22px 50px rgba(68, 110, 158, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.56);
             box-sizing: border-box;
+        }
+        body.env-miniapp .login-box {
+            max-width: 100%;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.96);
+            border-color: rgba(214, 233, 255, 0.92);
+            box-shadow: 0 16px 40px rgba(74, 144, 226, 0.12);
+            backdrop-filter: none;
         }
         .logo {
             width: 176px;
@@ -85,6 +141,9 @@
             color: #8aa0b4;
             text-align: center;
             margin-bottom: 32px;
+        }
+        body.env-miniapp .subtitle {
+            margin-bottom: 24px;
         }
         .form-group {
             margin-bottom: 20px;
@@ -136,6 +195,10 @@
             transition: all .28s ease;
             margin-top: 8px;
             box-shadow: 0 10px 24px rgba(48, 129, 205, 0.28);
+        }
+        body.env-miniapp .login-btn {
+            border-radius: 16px;
+            box-shadow: 0 12px 28px rgba(48, 129, 205, 0.22);
         }
         .login-btn:hover {
             transform: translateY(-2px);
@@ -193,11 +256,25 @@
             color: #2f6ca4;
             background: rgba(255,255,255,.36);
         }
-        .hint {
+        body.env-miniapp .admin-link {
+            margin-top: 20px;
+        }
+        .beian-link {
+            margin-top: auto;
+            padding-top: 18px;
+            text-align: center;
+        }
+        body.env-miniapp .beian-link {
+            padding-top: 14px;
+        }
+        .beian-link a {
             font-size: 12px;
             color: #7f99b1;
-            text-align: center;
-            margin-top: 20px;
+            text-decoration: none;
+        }
+        .beian-link a:hover {
+            color: #2f6ca4;
+            text-decoration: underline;
         }
         @media (max-width: 767px) {
             body.theme-glass-workbench {
@@ -214,6 +291,10 @@
                 border-color: rgba(196, 215, 232, 0.74);
                 box-shadow: 0 10px 28px rgba(89, 124, 161, 0.12);
             }
+            .page-stack {
+                min-height: calc(100vh - 24px);
+                min-height: calc(100dvh - 24px);
+            }
             .logo { width: 150px; height: 150px; margin-bottom: 4px; }
             .title { font-size: 24px; }
             .subtitle { font-size: 13px; margin-bottom: 24px; }
@@ -229,31 +310,34 @@
         <span class="gw-curve gw-curve-violet"></span>
     </div>
     <div class="container">
-        <div class="login-box fade-item">
-            <div class="logo"><img src="/icons/兴利logo.svg" alt="兴利公司 Logo"></div>
-            <div class="title">兴利汽车模具</div>
-            <div class="subtitle">企业管理系统</div>
+        <div class="page-stack">
+            <div class="login-box fade-item">
+                <div class="logo"><img src="/icons/兴利logo.svg" alt="兴利公司 Logo"></div>
+                <div class="title">兴利汽车模具</div>
+                <div class="subtitle">企业管理系统</div>
 
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div id="msgExpired" class="msg msg-expired">登录已过期，请重新登录</div>
-                <div class="form-group">
-                    <label class="form-label">工号</label>
-                    <input type="text" id="employeeId" class="form-control" placeholder="请输入工号" required autocomplete="off" inputmode="numeric" pattern="[0-9]*" oninput="onEmployeeIdInput()">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">姓名</label>
-                    <input type="text" id="name" class="form-control name-input" placeholder="输入工号后自动填充" readonly>
-                </div>
-                <button type="submit" class="login-btn" id="loginBtn">登 录</button>
-                <div id="msgError" class="msg msg-error"></div>
-                <div id="msgSuccess" class="msg msg-success"></div>
-            </form>
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div id="msgExpired" class="msg msg-expired">登录已过期，请重新登录</div>
+                    <div class="form-group">
+                        <label class="form-label">工号</label>
+                        <input type="text" id="employeeId" class="form-control" placeholder="请输入工号" required autocomplete="off" inputmode="numeric" pattern="[0-9]*" oninput="onEmployeeIdInput()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">姓名</label>
+                        <input type="text" id="name" class="form-control name-input" placeholder="输入工号后自动填充" readonly>
+                    </div>
+                    <button type="submit" class="login-btn" id="loginBtn">登 录</button>
+                    <div id="msgError" class="msg msg-error"></div>
+                    <div id="msgSuccess" class="msg msg-success"></div>
+                </form>
 
-            <div class="admin-link">
-                <a href="/admin/login.html">管理员登录</a>
+                <div class="admin-link">
+                    <a href="/admin/login.html">管理员登录</a>
+                </div>
             </div>
-
-            <div class="hint">输入工号和姓名即可登录，无需密码</div>
+            <div class="beian-link">
+                <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">浙ICP备2026043292号</a>
+            </div>
         </div>
     </div>
 

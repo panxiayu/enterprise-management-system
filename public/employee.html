@@ -36,6 +36,12 @@
             padding-bottom: 80px;
             padding-top: 20px;
         }
+        body.env-miniapp {
+            padding-top: 10px;
+            padding-bottom: calc(92px + env(safe-area-inset-bottom));
+            background:
+                linear-gradient(180deg, #f6fbff 0%, #eef5ff 100%);
+        }
 
         /* 序列入场动画 */
         .fade-item {
@@ -68,6 +74,9 @@
             max-width: 480px;
             margin: 0 auto;
             padding: 0 16px;
+        }
+        body.env-miniapp .container {
+            padding: 0 14px;
         }
 
         @media (min-width: 768px) {
@@ -122,6 +131,11 @@
             align-items: center;
             transition: var(--transition);
         }
+        body.env-miniapp .welcome-card {
+            border-radius: 24px;
+            padding: 22px 20px;
+            box-shadow: 0 14px 34px rgba(74, 144, 226, 0.10);
+        }
         .welcome-card:hover {
             transform: translateY(-4px);
             box-shadow: var(--shadow-hover);
@@ -155,6 +169,11 @@
             gap: 16px;
             text-decoration: none;
             color: var(--text);
+        }
+        body.env-miniapp .module-card {
+            border-radius: 24px;
+            padding: 18px;
+            box-shadow: 0 12px 30px rgba(74, 144, 226, 0.10);
         }
         .module-card:hover {
             transform: translateY(-4px);
@@ -261,6 +280,13 @@
             padding-bottom: 20px;
             border-top: 1px solid var(--border);
             z-index: 999;
+        }
+        body.env-miniapp .tabbar {
+            height: 84px;
+            padding-bottom: calc(18px + env(safe-area-inset-bottom));
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
         }
 
         .tab-item {

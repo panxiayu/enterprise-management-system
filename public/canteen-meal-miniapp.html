@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>今日报餐 - 小程序版</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #f5f7fb;
+  --text: #13283f;
+  --sub: #768aa1;
+  --line: #e8eef5;
+  --white: #ffffff;
+  --orange: #ff9f38;
+  --blue: #4c7dff;
+}
+body {
+  min-height: 100dvh;
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  color: var(--text);
+  padding: max(18px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+  max-width: 480px;
+  margin: 0 auto;
+}
+.hero {
+  border-radius: 34px;
+  background: linear-gradient(160deg, #ff4a4a 0%, #ff665c 55%, #ff8770 100%);
+  padding: 24px;
+  color: #fff;
+  box-shadow: 0 18px 42px rgba(255, 86, 86, 0.22);
+}
+.top { display: flex; align-items: center; justify-content: space-between; }
+.title { font-size: 34px; font-weight: 800; letter-spacing: -1px; }
+.date { text-align: right; font-size: 13px; line-height: 1.5; opacity: .92; }
+.staff-block {
+  margin-top: 24px;
+  padding: 22px;
+  border-radius: 22px;
+  background: rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+.staff-label { font-size: 14px; opacity: .92; }
+.staff-num { margin-top: 10px; font-size: 64px; line-height: 1; font-weight: 800; }
+.staff-detail { margin-top: 10px; font-size: 13px; opacity: .8; }
+.content { margin-top: 18px; }
+.meal-card {
+  background: #fff;
+  border-radius: 28px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.05);
+}
+.meal-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.meal-title { font-size: 22px; font-weight: 700; }
+.orange-text { color: var(--orange); }
+.blue-text { color: var(--blue); }
+.meal-count { display: flex; align-items: baseline; gap: 4px; }
+.meal-count .n { font-size: 40px; line-height: 1; font-weight: 800; }
+.meal-count .u { font-size: 13px; color: #9aa9b8; }
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+.item:first-child { border-top: none; }
+.item-info { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+.item-name { font-size: 16px; font-weight: 600; }
+.item-reason { font-size: 13px; color: #8a9aab; }
+.item-num { font-size: 16px; font-weight: 700; color: #10b981; flex-shrink: 0; }
+.footer { text-align: center; margin-top: 28px; color: #8897a8; font-size: 13px; }
+.loading, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 20px;
+  color: #8190a1;
+  text-align: center;
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e7edf5;
+  border-top-color: #ff5656;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-bottom: 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="loading" class="loading">
+  <div class="spinner"></div>
+  <div>加载中...</div>
+</div>
+
+<div id="emptyState" class="empty-state" style="display:none;">
+  <div>今日暂无报餐数据</div>
+</div>
+
+<div id="content" style="display:none;">
+  <div class="hero">
+    <div class="top">
+      <div class="title">今日报餐</div>
+      <div class="date">
+        <div id="currentDate">5月17日</div>
+        <div id="currentWeek">周五</div>
+      </div>
+    </div>
+    <div class="staff-block">
+      <div class="staff-label">员工餐</div>
+      <div class="staff-num" id="staffTotal">0</div>
+      <div class="staff-detail" id="staffDetail">午餐时段</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="lunchGuestCard" class="meal-card" style="display:none;">
+      <div class="meal-top">
+        <div class="meal-title orange-text">客餐午餐</div>
+        <div class="meal-count">
+          <div class="n orange-text" id="lunchGuestCount">0</div>
+          <div class="u">人</div>
+        </div>
+      </div>
+      <div id="lunchGuestList"></div>
+    </div>
+
+    <div id="dinnerGuestCard" class="meal-card" style="display:none;">
+      <div class="meal-top">
+        <div class="meal-title blue-text">客餐晚餐</div>
+        <div class="meal-count">
+          <div class="n blue-text" id="dinnerGuestCount">0</div>
+          <div class="u">人</div>
+        </div>
+      </div>
+      <div id="dinnerGuestList"></div>
+    </div>
+  </div>
+
+  <div class="footer">小程序版每次打开自动刷新</div>
+</div>
+
+<script>
+function isLunchPeriod() {
+  const hour = new Date().getHours();
+  return hour >= 0 && hour < 12;
+}
+
+function initDate() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  document.getElementById("currentDate").textContent = `${month}月${day}日`;
+  document.getElementById("currentWeek").textContent = weekdays[now.getDay()];
+}
+
+function renderGuestRows(list) {
+  if (!list || list.length === 0) return "";
+  return list.map((g) => {
+    const reporter = g.employee_id ? `${g.employee_id} ${g.name}` : "-";
+    const reason = g.reason || "";
+    return `
+      <div class="item">
+        <div class="item-info">
+          <span class="item-name">${reporter}</span>
+          ${reason ? `<span class="item-reason">${reason}</span>` : ""}
+        </div>
+        <div class="item-num">${g.guest_count}人</div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function loadData() {
+  try {
+    const res = await fetch("/api/meal/canteen-today");
+    const data = await res.json();
+    document.getElementById("loading").style.display = "none";
+
+    if (data.code !== 0 || !data.data) {
+      document.getElementById("emptyState").style.display = "";
+      return;
+    }
+
+    const s = data.data;
+    const isLunch = isLunchPeriod();
+    document.getElementById("content").style.display = "";
+
+    const employeeCount = isLunch ? (s.lunch_employee || 0) : (s.dinner_employee || 0);
+    document.getElementById("staffTotal").textContent = employeeCount;
+    document.getElementById("staffDetail").textContent = isLunch ? "午餐时段" : "晚餐时段";
+
+    if (isLunch) {
+      document.getElementById("lunchGuestCard").style.display = "";
+      document.getElementById("dinnerGuestCard").style.display = "none";
+      document.getElementById("lunchGuestCount").textContent = s.lunch_guest || 0;
+      document.getElementById("lunchGuestList").innerHTML = renderGuestRows(s.lunch_guests);
+    } else {
+      document.getElementById("dinnerGuestCard").style.display = "";
+      document.getElementById("lunchGuestCard").style.display = "none";
+      document.getElementById("dinnerGuestCount").textContent = s.dinner_guest || 0;
+      document.getElementById("dinnerGuestList").innerHTML = renderGuestRows(s.dinner_guests);
+    }
+  } catch (err) {
+    console.error("加载失败:", err);
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("emptyState").style.display = "";
+  }
+}
+
+initDate();
+loadData();
+</script>
+</body>
+</html>

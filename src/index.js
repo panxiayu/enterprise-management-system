@@ -25,6 +25,7 @@ const sixSRoutes = require('./routes/6s');
 const homeworkTimerRoutes = require('./routes/homework-timer');
 const feedbackRoutes = require('./routes/feedback');
 const notificationRoutes = require('./routes/notifications');
+const miniappRoutes = require('./routes/miniapp');
 const { feedbackInjectMiddleware, employeeRedirectMiddleware } = require('./middleware/feedback-inject');
 const { ensureS6UploadDirs } = require('./utils/s6-storage');
 const { startS6CloudSyncWorker } = require('./services/s6-cloud-sync');
@@ -43,7 +44,11 @@ app.use(cors({
     'https://112.16.178.98',
     'http://112.16.178.98:3000',
     'https://112.16.178.98:3000',
-    'https://xlmould.panxy.online'
+    'https://xlmould.panxy.online',
+    'http://xlmould.work',
+    'https://xlmould.work',
+    'http://www.xlmould.work',
+    'https://www.xlmould.work'
   ],
   credentials: true
 }));
@@ -100,6 +105,7 @@ app.use('/api/staff', staffRoutes); // 人员管理
 app.use('/api/student-roster', studentRosterRoutes); // 学生名册
 app.use('/api/task', taskRoutes); // 工作任务
 app.use('/api/notifications', notificationRoutes); // 站内通知
+app.use('/api/miniapp', miniappRoutes); // 小程序混合接入
 app.use('/api/learning-materials', learningMaterialRoutes); // 学习资料
 app.use('/api', uploadRoutes); // 文件上传
 app.use('/api/settings', settingsRoutes); // 系统设置

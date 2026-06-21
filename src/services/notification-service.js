@@ -1,4 +1,5 @@
 const db = require('../models/database');
+const { queueMiniAppNotifications } = require('./miniapp-service');
 
 function normalizeRecipient(recipient) {
   if (!recipient) return null;
@@ -32,10 +33,11 @@ function createNotifications(recipients, payload) {
       created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
   `);
+  const created = [];
 
   db.transaction((items) => {
     items.forEach((recipient) => {
-      insert.run(
+      const result = insert.run(
         recipient.recipient_type,
         recipient.recipient_id,
         payload.category || 'notice',
@@ -49,8 +51,22 @@ function createNotifications(recipients, payload) {
         payload.created_by_id || null,
         payload.created_by_name || null
       );
+      created.push({
+        id: result.lastInsertRowid,
+        recipient_type: recipient.recipient_type,
+        recipient_id: recipient.recipient_id,
+        category: payload.category || 'notice',
+        module: payload.module || 'system',
+        source_id: payload.source_id || null,
+        title: payload.title,
+        content: payload.content || '',
+        link: payload.link || null,
+        level: payload.level || 'info'
+      });
     });
   })(rows);
+
+  queueMiniAppNotifications(created);
 
   return rows.length;
 }

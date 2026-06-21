@@ -1,0 +1,76 @@
+<view class="page">
+  <view class="ambient">
+    <view class="curve curve-blue"></view>
+    <view class="curve curve-warm"></view>
+    <view class="curve curve-violet"></view>
+    <view class="grid"></view>
+  </view>
+
+  <view class="container">
+    <view class="hero">
+      <view class="hero-topline">
+        <view class="hero-dot"></view>
+        <view class="hero-chip">EMPLOYEE ACCESS</view>
+      </view>
+
+      <image class="logo" src="/assets/company-logo.jpg" mode="aspectFit" />
+
+      <view class="hero-title">员工登录</view>
+      <view class="hero-brand">兴利汽车模具</view>
+      <view class="hero-subtitle">企业管理系统</view>
+
+      <view class="hero-note">
+        <view class="hero-note-label">快捷登录</view>
+        <view class="hero-note-text">输入工号后自动识别员工姓名，无需密码即可进入系统。</view>
+      </view>
+    </view>
+
+    <view class="login-box">
+      <view class="box-head">
+        <view class="box-title">身份验证</view>
+        <view class="box-caption">请确认员工信息</view>
+      </view>
+
+      <view class="field-card">
+        <view class="field-label">工号</view>
+        <input
+          class="input"
+          type="number"
+          placeholder="请输入工号"
+          placeholder-class="input-placeholder"
+          value="{{employeeId}}"
+          bindinput="onEmployeeIdInput"
+        />
+      </view>
+
+      <view class="field-card field-card-readonly">
+        <view class="field-label">姓名</view>
+        <input
+          class="input input-readonly"
+          type="text"
+          placeholder="{{namePlaceholder}}"
+          placeholder-class="input-placeholder"
+          value="{{name}}"
+          disabled
+        />
+      </view>
+
+      <view class="status-row status-row-{{lookupState}}">
+        <view class="status-dot"></view>
+        <view class="status-text">{{helperText}}</view>
+      </view>
+
+      <button class="submit" loading="{{loading}}" disabled="{{!canSubmit || loading}}" bindtap="submit">
+        {{loading ? '登录中...' : '进入系统'}}
+      </button>
+
+      <view class="secure-row">
+        <view class="secure-pill">员工专用</view>
+        <view class="secure-pill">自动识别姓名</view>
+        <view class="secure-pill">HTTPS 安全访问</view>
+      </view>
+
+      <view class="beian">浙ICP备2026043292号</view>
+    </view>
+  </view>
+</view>

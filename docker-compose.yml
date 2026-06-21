@@ -21,6 +21,8 @@ services:
       - SMB_USER=${SMB_USER:-xlmould\\HMCTB}
       - SMB_PASS=${SMB_PASS:-HMCTB123}
       - EXCEL_PASSWORD=${EXCEL_PASSWORD:-1111}
+      - WECHAT_MINIAPP_APP_ID=${WECHAT_MINIAPP_APP_ID:-wx4a0fd7786a7ece59}
+      - WECHAT_MINIAPP_APP_SECRET=${WECHAT_MINIAPP_APP_SECRET:-}
       - SIX_S_UPLOAD_DIR=${SIX_S_UPLOAD_DIR:-/app/uploads/6s}
     volumes:
       # 持久化数据库文件

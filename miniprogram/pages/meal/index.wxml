@@ -1,0 +1,56 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">加载中...</view>
+  <view wx:elif="{{activities.length === 0}}" class="state">当前暂无可用报餐活动</view>
+
+  <block wx:else>
+    <block wx:for="{{activities}}" wx:key="id">
+      <view class="card">
+        <view class="head">
+          <view>
+            <view class="title">{{item.title}}</view>
+            <view class="meta">{{item.start_date}} 至 {{item.end_date}}</view>
+          </view>
+          <view class="status {{item.isExpired ? 'expired' : 'active'}}">
+            {{item.isExpired ? '已截止' : '进行中'}}
+          </view>
+        </view>
+
+        <view class="section">
+          <view class="row">
+            <view class="row-main">
+              <view class="row-title">员工午餐</view>
+              <view class="row-sub">
+                {{item.canSignupLunch ? ('报餐时间 ' + item.lunch_signup_start + ' - ' + item.lunch_signup_end) : '当前不可报'}}
+              </view>
+            </view>
+            <switch
+              color="#2f8fff"
+              checked="{{item.lunchChecked}}"
+              disabled="{{!item.canSignupLunch && !item.todayEmployeeLunch}}"
+              data-id="{{item.id}}"
+              bindchange="onLunchChange"
+            />
+          </view>
+
+          <view class="row">
+            <view class="row-main">
+              <view class="row-title">员工晚餐</view>
+              <view class="row-sub">
+                {{item.canSignupDinner ? ('报餐时间 ' + item.dinner_signup_start + ' - ' + item.dinner_signup_end) : '当前不可报'}}
+              </view>
+            </view>
+            <switch
+              color="#2f8fff"
+              checked="{{item.dinnerChecked}}"
+              disabled="{{!item.canSignupDinner && !item.todayEmployeeDinner}}"
+              data-id="{{item.id}}"
+              bindchange="onDinnerChange"
+            />
+          </view>
+        </view>
+
+        <button class="submit" data-id="{{item.id}}" bindtap="submitMeal">提交本活动报餐</button>
+      </view>
+    </block>
+  </block>
+</view>

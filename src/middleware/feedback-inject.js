@@ -33,10 +33,19 @@ function feedbackInjectMiddleware(req, res, next) {
         String(now.getSeconds()).padStart(2, '0');
 
       // 0. 在 <body> 标签后注入 auth-guard.js（token 过期检测 & fetch 401 拦截）
+      const headTagRegex = /<head[^>]*>/i;
+      if (headTagRegex.test(body) && !body.includes('/css/miniapp-overrides.css')) {
+        const envStyle = `\n<link rel="stylesheet" href="/css/miniapp-overrides.css?v=${ts}">\n`;
+        body = body.replace(headTagRegex, (match) => match + envStyle);
+      }
+
       const bodyTagRegex = /<body[^>]*>/i;
       if (bodyTagRegex.test(body)) {
-        const authScript = `\n<script src="/js/auth-guard.js?v=${ts}"></script>\n`;
-        body = body.replace(bodyTagRegex, (match) => match + authScript);
+        const bootScripts = [
+          `/js/auth-guard.js?v=${ts}`,
+          `/js/miniapp-bridge.js?v=${ts}`
+        ].map((src) => `\n<script src="${src}"></script>`).join('');
+        body = body.replace(bodyTagRegex, (match) => match + bootScripts + '\n');
       }
 
       // 登录页和反馈列表页不注入悬浮按钮脚本

@@ -1,0 +1,51 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">加载中...</view>
+  <view wx:elif="{{empty}}" class="state">今日暂无报餐数据</view>
+
+  <block wx:else>
+    <view class="hero">
+      <view class="hero-top">
+        <view class="title">今日报餐</view>
+        <view class="date">
+          <view>{{dateText}}</view>
+          <view>{{weekText}}</view>
+        </view>
+      </view>
+      <view class="summary">
+        <view class="summary-label">员工餐</view>
+        <view class="summary-num">{{isLunch ? stats.lunch_employee : stats.dinner_employee}}</view>
+        <view class="summary-sub">{{isLunch ? '午餐时段' : '晚餐时段'}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{isLunch}}" class="card">
+      <view class="card-head">
+        <view class="card-title orange">客餐午餐</view>
+        <view class="count">{{stats.lunch_guest || 0}}人</view>
+      </view>
+      <block wx:for="{{stats.lunch_guests}}" wx:key="id">
+        <view class="item">
+          <view class="item-name">{{item.employee_id}} {{item.name}}</view>
+          <view class="item-reason" wx:if="{{item.reason}}">{{item.reason}}</view>
+          <view class="item-count">{{item.guest_count}}人</view>
+        </view>
+      </block>
+    </view>
+
+    <view wx:if="{{!isLunch}}" class="card">
+      <view class="card-head">
+        <view class="card-title blue">客餐晚餐</view>
+        <view class="count">{{stats.dinner_guest || 0}}人</view>
+      </view>
+      <block wx:for="{{stats.dinner_guests}}" wx:key="id">
+        <view class="item">
+          <view class="item-name">{{item.employee_id}} {{item.name}}</view>
+          <view class="item-reason" wx:if="{{item.reason}}">{{item.reason}}</view>
+          <view class="item-count">{{item.guest_count}}人</view>
+        </view>
+      </block>
+    </view>
+
+    <view class="footer">下拉即可刷新最新数据</view>
+  </block>
+</view>

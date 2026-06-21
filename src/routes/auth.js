@@ -473,7 +473,8 @@ router.post('/employee-login', (req, res) => {
           employee_id: staffData.employee_id,
           department: staffData.department,
           position: staffData.position,
-          is_student: isStudent ? 1 : 0
+          is_student: isStudent ? 1 : 0,
+          s6_permission: Number(staffData.s6_permission || 0)
         }
       }
     });
