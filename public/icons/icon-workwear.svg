@@ -1,0 +1,20 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="workwearBg" x1="16" y1="12" x2="80" y2="84" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7CC4FF"/>
+      <stop offset="1" stop-color="#2B78D0"/>
+    </linearGradient>
+    <linearGradient id="workwearShirt" x1="27" y1="26" x2="69" y2="73" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D8EBFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="76" height="76" rx="24" fill="url(#workwearBg)"/>
+  <path d="M38.4 24H57.6L64.2 31.2L72 34.8L66.9 45L60.6 42.3V72H35.4V42.3L29.1 45L24 34.8L31.8 31.2L38.4 24Z" fill="url(#workwearShirt)"/>
+  <path d="M44.7 24H51.3V31.8L48 35.1L44.7 31.8V24Z" fill="#9EC9F5"/>
+  <path d="M35.4 44.4L43.2 40.2L48 45L52.8 40.2L60.6 44.4" stroke="#68A8E9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M41.4 53.4H54.6" stroke="#7BB4EC" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M41.4 60.9H54.6" stroke="#7BB4EC" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="68.5" cy="67.5" r="11.5" fill="#1F5FAE"/>
+  <path d="M63.5 68L66.8 71.3L73.7 64.4" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
