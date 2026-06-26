@@ -255,7 +255,65 @@ router.post('/logout', authMiddleware, (req, res) => {
  */
 router.post('/refresh', authMiddleware, (req, res) => {
   try {
-    const currentUserId = req.user.type === 'employee' ? req.user.id : req.user.userId;
+    if (req.user.type === 'employee') {
+      const staff = db.prepare(`
+        SELECT id, employee_id, name, s6_permission, workwear_permission, status
+        FROM staff
+        WHERE id = ?
+        LIMIT 1
+      `).get(req.user.id);
+
+      if (!staff || staff.status !== 'active') {
+        const student = db.prepare(`
+          SELECT id, employee_id, name
+          FROM student_roster
+          WHERE id = ?
+          LIMIT 1
+        `).get(req.user.id);
+        if (student) {
+          const newToken = generateToken({
+            id: student.id,
+            type: 'employee',
+            employee_id: student.employee_id,
+            name: student.name,
+            s6_permission: 0,
+            workwear_permission: 0
+          });
+
+          return res.json({
+            code: 0,
+            msg: 'token 刷新成功',
+            data: {
+              token: newToken
+            }
+          });
+        }
+        return res.status(404).json({
+          code: -1,
+          msg: '员工不存在或已停用',
+          data: null
+        });
+      }
+
+      const newToken = generateToken({
+        id: staff.id,
+        type: 'employee',
+        employee_id: staff.employee_id,
+        name: staff.name,
+        s6_permission: staff.s6_permission || 0,
+        workwear_permission: staff.workwear_permission || 0
+      });
+
+      return res.json({
+        code: 0,
+        msg: 'token 刷新成功',
+        data: {
+          token: newToken
+        }
+      });
+    }
+
+    const currentUserId = req.user.userId;
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(currentUserId);
 
     if (!user) {
@@ -266,10 +324,7 @@ router.post('/refresh', authMiddleware, (req, res) => {
       });
     }
 
-    // 根据用户类型生成对应的 token
-    const newToken = req.user.type === 'employee'
-      ? generateToken({ id: user.id, type: 'employee', employee_id: user.employee_id, name: user.name })
-      : generateToken({
+    const newToken = generateToken({
           userId: user.id,
           username: user.username,
           role: user.role,
@@ -395,19 +450,24 @@ router.get('/lookup', (req, res) => {
  */
 router.get('/search-staff', authMiddleware, (req, res) => {
   try {
-    const { keyword } = req.query;
+    const keyword = String(req.query.keyword || '').trim();
     if (!keyword) {
       return res.json({ code: 0, msg: 'ok', data: [] });
     }
+    const pinyinKeyword = keyword.toLowerCase();
     const staffResults = db.prepare(`
-      SELECT id, employee_id, name, department, position, '员工' as type
+      SELECT id, employee_id, name, name_pinyin, department, position, '员工' as type
       FROM staff
-      WHERE status = 'active' AND (name LIKE ? OR employee_id LIKE ?)
+      WHERE status = 'active' AND (
+        name LIKE ?
+        OR employee_id LIKE ?
+        OR LOWER(COALESCE(name_pinyin, '')) LIKE ?
+      )
       LIMIT 20
-    `).all(`%${keyword}%`, `%${keyword}%`);
+    `).all(`%${keyword}%`, `%${keyword}%`, `${pinyinKeyword}%`);
 
     const studentResults = db.prepare(`
-      SELECT id, employee_id, name, department, '实训生' as position, '学生' as type
+      SELECT id, employee_id, name, '' as name_pinyin, department, '实训生' as position, '学生' as type
       FROM student_roster
       WHERE name LIKE ? OR employee_id LIKE ?
       LIMIT 20
@@ -416,6 +476,117 @@ router.get('/search-staff', authMiddleware, (req, res) => {
     const combined = [...staffResults, ...studentResults].slice(0, 30);
     res.json({ code: 0, msg: 'ok', data: combined });
   } catch (err) {
+    res.status(500).json({ code: -1, msg: '服务器错误', data: null });
+  }
+});
+
+/**
+ * GET /api/auth/verify-staff?employee_id=xxx&name=xxx
+ * 校验工号和姓名是否匹配，并返回当前员工信息
+ */
+router.get('/verify-staff', authMiddleware, (req, res) => {
+  try {
+    const employeeId = String(req.query.employee_id || '').trim();
+    const name = String(req.query.name || '').trim();
+    const isPinyinInitials = /^[a-z]{1,3}$/i.test(name);
+
+    if (!employeeId || !name) {
+      return res.status(400).json({ code: -1, msg: '工号和姓名不能为空', data: null });
+    }
+
+    const staff = db.prepare(`
+      SELECT *
+      FROM staff
+      WHERE employee_id = ?
+        AND status = 'active'
+        AND (
+          name = ?
+          OR (
+            ? = 1
+            AND LOWER(SUBSTR(COALESCE(name_pinyin, ''), 1, ?)) = LOWER(?)
+          )
+        )
+      LIMIT 1
+    `).get(employeeId, name, isPinyinInitials ? 1 : 0, name.length, name);
+
+    if (!staff) {
+      return res.status(404).json({ code: -1, msg: '工号和姓名不匹配', data: null });
+    }
+
+    res.json({
+      code: 0,
+      msg: 'ok',
+      data: {
+        id: staff.id,
+        employee_id: staff.employee_id,
+        name: staff.name,
+        department: staff.department || '',
+        position: staff.position || '',
+        hire_date: staff.hire_date || '',
+        gender: staff.gender || '',
+        status: staff.status
+      }
+    });
+  } catch (err) {
+    console.error('校验员工信息失败:', err);
+    res.status(500).json({ code: -1, msg: '服务器错误', data: null });
+  }
+});
+
+/**
+ * GET /api/auth/staff-profile?staff_id=xxx&name=xxx
+ * 按 staff_id 优先获取当前员工实时档案；若无 staff_id，可按姓名精确匹配唯一在职员工
+ */
+router.get('/staff-profile', authMiddleware, (req, res) => {
+  try {
+    const staffId = Number(req.query.staff_id || 0);
+    const name = String(req.query.name || '').trim();
+    let staff = null;
+
+    if (staffId) {
+      staff = db.prepare(`
+        SELECT *
+        FROM staff
+        WHERE id = ? AND status = 'active'
+        LIMIT 1
+      `).get(staffId);
+    } else if (name) {
+      const matches = db.prepare(`
+        SELECT *
+        FROM staff
+        WHERE name = ? AND status = 'active'
+        ORDER BY id DESC
+      `).all(name);
+
+      if (matches.length === 1) {
+        staff = matches[0];
+      } else if (matches.length > 1) {
+        return res.status(409).json({ code: -1, msg: '存在同名在职员工，请使用 staff_id 查询', data: null });
+      }
+    } else {
+      return res.status(400).json({ code: -1, msg: 'staff_id 或 name 不能为空', data: null });
+    }
+
+    if (!staff) {
+      return res.status(404).json({ code: -1, msg: '未找到当前在职员工档案', data: null });
+    }
+
+    res.json({
+      code: 0,
+      msg: 'ok',
+      data: {
+        id: staff.id,
+        employee_id: staff.employee_id,
+        name: staff.name,
+        department: staff.department || '',
+        position: staff.position || '',
+        hire_date: staff.hire_date || '',
+        gender: staff.gender || '',
+        status: staff.status
+      }
+    });
+  } catch (err) {
+    console.error('获取员工实时档案失败:', err);
     res.status(500).json({ code: -1, msg: '服务器错误', data: null });
   }
 });
@@ -460,7 +631,14 @@ router.post('/employee-login', (req, res) => {
       return res.status(401).json({ code: -1, msg: '工号或姓名不匹配，无登录权限', data: null });
     }
 
-    const token = generateToken({ id: staffData.id, type: 'employee', employee_id: staffData.employee_id, name: staffData.name, s6_permission: staffData.s6_permission || 0 });
+    const token = generateToken({
+      id: staffData.id,
+      type: 'employee',
+      employee_id: staffData.employee_id,
+      name: staffData.name,
+      s6_permission: staffData.s6_permission || 0,
+      workwear_permission: staffData.workwear_permission || 0
+    });
 
     res.json({
       code: 0,
@@ -474,7 +652,8 @@ router.post('/employee-login', (req, res) => {
           department: staffData.department,
           position: staffData.position,
           is_student: isStudent ? 1 : 0,
-          s6_permission: Number(staffData.s6_permission || 0)
+          s6_permission: Number(staffData.s6_permission || 0),
+          workwear_permission: Number(staffData.workwear_permission || 0)
         }
       }
     });

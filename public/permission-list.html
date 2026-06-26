@@ -177,6 +177,7 @@
                 <button class="btn btn-secondary btn-sm" onclick="location.href='dashboard.html'">返回</button>
                 <button class="btn btn-primary btn-sm" id="addAdminBtn" onclick="showAddAdminModal()">+ 添加管理员</button>
                 <button class="btn btn-primary btn-sm" id="addS6Btn" style="display: none;" onclick="showAddS6Modal()">+ 添加6S权限</button>
+                <button class="btn btn-primary btn-sm" id="addWorkwearBtn" style="display: none;" onclick="showAddWorkwearModal()">+ 添加工服权限</button>
             </div>
         </div>
 
@@ -185,6 +186,7 @@
             <button class="perm-tab" onclick="switchTab('exam')" data-tab="exam">考试权限</button>
             <button class="perm-tab" onclick="switchTab('meal')" data-tab="meal">报餐权限</button>
             <button class="perm-tab" onclick="switchTab('s6')" data-tab="s6">6S权限</button>
+            <button class="perm-tab" onclick="switchTab('workwear')" data-tab="workwear">工服权限</button>
             <button class="perm-tab" onclick="switchTab('task')" data-tab="task">个人待办分派</button>
             <button class="perm-tab" onclick="switchTab('file')" data-tab="file">文件权限</button>
             <div class="perm-tab-indicator"></div>
@@ -237,6 +239,11 @@
             <!-- 6S权限 -->
             <div id="section-s6" class="perm-section">
                 <div id="s6StaffList" class="s6-list"></div>
+            </div>
+
+            <!-- 工服权限 -->
+            <div id="section-workwear" class="perm-section">
+                <div id="workwearStaffList" class="s6-list"></div>
             </div>
 
             <!-- 个人待办分派岗位级别 -->
@@ -346,6 +353,27 @@
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="closeS6Modal()">取消</button>
                     <button type="submit" class="btn btn-primary btn-sm" id="s6SaveBtn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 工服权限添加弹窗 -->
+    <div class="modal" id="workwearModal">
+        <div class="modal-box" style="max-width: 340px; padding: 16px;">
+            <div class="modal-title" id="workwearModalTitle">添加工服权限</div>
+            <form onsubmit="handleAddWorkwearPerm(event)">
+                <div class="form-group">
+                    <label>工号 *</label>
+                    <input type="text" id="workwearEmployeeId" class="form-control" required placeholder="员工工号" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input type="text" id="workwearEmployeeName" class="form-control" placeholder="输入姓名或工号自动匹配" autocomplete="off">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeWorkwearModal()">取消</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="workwearSaveBtn">保存</button>
                 </div>
             </form>
         </div>
@@ -648,6 +676,7 @@ A002,李四,1,1,0"></textarea>
             const isAdmin = currentUser.username === 'admin';
             document.getElementById('addAdminBtn').style.display = (tab === 'admin' && isAdmin) ? '' : 'none';
             document.getElementById('addS6Btn').style.display = tab === 's6' ? '' : 'none';
+            document.getElementById('addWorkwearBtn').style.display = tab === 'workwear' ? '' : 'none';
             if (tab === 'task' && !taskPositionLevels.length) {
                 loadTaskPositionLevels();
             }
@@ -673,6 +702,7 @@ A002,李四,1,1,0"></textarea>
                 ['exam', loadExamPerms],
                 ['meal', loadGuestMealPerms],
                 ['s6', loadS6Perms],
+                ['workwear', loadWorkwearPerms],
                 ['task', loadTaskPositionLevels],
                 ['file-public', loadFilePublicPerms],
                 ['file-personal', loadFilePersonalPerms]
@@ -1541,6 +1571,168 @@ A002,李四,1,1,0"></textarea>
                 }
             } catch (err) {
                 logAction(`删除6S权限失败：网络错误`, 'fail');
+                alert('删除失败');
+            }
+        }
+
+        // ============ 工服权限 ============
+        let allWorkwearStaff = [];
+
+        async function loadWorkwearPerms() {
+            try {
+                const res = await fetch(`${API_URL}/permissions/workwear`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                if (data.code === 0) {
+                    allWorkwearStaff = data.data || [];
+                    renderWorkwearList(allWorkwearStaff);
+                }
+            } catch (err) { console.error('加载工服权限失败:', err); }
+        }
+
+        function renderWorkwearList(staff) {
+            const list = document.getElementById('workwearStaffList');
+            const staffWithPerm = staff.filter(s => s.has_perm == 1);
+
+            if (staffWithPerm.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无工服权限员工</div>';
+                return;
+            }
+
+            list.innerHTML = staffWithPerm.map(s => `
+                <div class="s6-item">
+                    <div class="s6-item-top">
+                        <div class="s6-info">
+                            <div class="s6-avatar">${(s.name || '服').charAt(0)}</div>
+                            <div>
+                                <div class="s6-name">${s.name || s.employee_id}</div>
+                                <div class="s6-meta">工号: ${s.employee_id || '-'} | 部门: ${s.department || '-'}</div>
+                            </div>
+                        </div>
+                        <div class="s6-actions">
+                            <button class="btn btn-danger btn-sm" onclick="deleteWorkwearPerm(${s.id})">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddWorkwearModal() {
+            document.getElementById('workwearEmployeeId').value = '';
+            document.getElementById('workwearEmployeeName').value = '';
+            document.getElementById('workwearModal').classList.add('active');
+        }
+
+        function closeWorkwearModal() {
+            document.getElementById('workwearModal').classList.remove('active');
+        }
+
+        document.getElementById('workwearEmployeeId').addEventListener('blur', async function() {
+            const empId = this.value.trim();
+            if (!empId) return;
+            try {
+                const res = await fetch(`${API_URL}/staff?search=${encodeURIComponent(empId)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.code === 0 && data.data && data.data.length > 0) {
+                    const matched = data.data.find(s => s.employee_id === empId);
+                    const staff = matched || data.data[0];
+                    document.getElementById('workwearEmployeeName').value = staff.name || '';
+                }
+            } catch (e) { /* ignore */ }
+        });
+
+        document.getElementById('workwearEmployeeName').addEventListener('blur', async function() {
+            const name = this.value.trim();
+            if (!name) return;
+            try {
+                const res = await fetch(`${API_URL}/staff?search=${encodeURIComponent(name)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.code === 0 && data.data && data.data.length > 0) {
+                    const matched = data.data.find(s => s.name === name);
+                    const staff = matched || data.data[0];
+                    document.getElementById('workwearEmployeeId').value = staff.employee_id || '';
+                }
+            } catch (e) { /* ignore */ }
+        });
+
+        async function handleAddWorkwearPerm(e) {
+            e.preventDefault();
+            const employeeId = document.getElementById('workwearEmployeeId').value.trim();
+            const employeeNameEl = document.getElementById('workwearEmployeeName');
+            if (!employeeId) {
+                alert('请输入工号');
+                return;
+            }
+            try {
+                const searchRes = await fetch(`${API_URL}/staff?search=${encodeURIComponent(employeeId)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const searchData = await searchRes.json();
+                if (searchData.code !== 0 || !searchData.data || searchData.data.length === 0) {
+                    logAction('添加工服权限失败：员工不存在', 'fail');
+                    alert('员工不存在');
+                    return;
+                }
+                const matched = searchData.data.find(s => s.employee_id === employeeId);
+                const staff = matched || searchData.data[0];
+                employeeNameEl.value = staff.name || '';
+                const actualName = staff.name || employeeId;
+                const staffId = staff.id;
+
+                if (allWorkwearStaff.find(s => s.id === staffId && s.has_perm == 1)) {
+                    logAction(`添加工服权限失败：${actualName}已有权限`, 'fail');
+                    alert('该员工已有工服权限');
+                    return;
+                }
+
+                const res = await fetch(`${API_URL}/permissions/workwear`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ staff_id: staffId })
+                });
+                const data = await res.json();
+                if (data.code === 0) {
+                    logAction(`添加工服权限：${actualName}(${employeeId})`);
+                    alert('添加成功');
+                    closeWorkwearModal();
+                    loadWorkwearPerms();
+                } else {
+                    logAction(data.msg || '添加失败', 'fail');
+                    alert(data.msg || '添加失败');
+                }
+            } catch (err) {
+                logAction('添加工服权限失败：网络错误', 'fail');
+                console.error('添加工服权限失败:', err);
+                alert('添加失败');
+            }
+        }
+
+        async function deleteWorkwearPerm(staffId) {
+            if (!confirm('确定删除该员工的工服权限？')) return;
+            const staff = allWorkwearStaff.find(s => s.id === staffId);
+            const staffName = staff?.name || staff?.employee_id || staffId;
+            try {
+                const currentIds = allWorkwearStaff.filter(s => s.has_perm == 1).map(s => s.id);
+                const newIds = currentIds.filter(id => id !== staffId);
+                const res = await fetch(`${API_URL}/permissions/workwear`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ staff_ids: newIds })
+                });
+                const data = await res.json();
+                if (data.code === 0) {
+                    logAction(`删除工服权限：${staffName}`);
+                    alert('删除成功');
+                    loadWorkwearPerms();
+                } else {
+                    logAction(`删除工服权限失败：${data.msg || staffName}`, 'fail');
+                    alert(data.msg || '删除失败');
+                }
+            } catch (err) {
+                logAction('删除工服权限失败：网络错误', 'fail');
                 alert('删除失败');
             }
         }

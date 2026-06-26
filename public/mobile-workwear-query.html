@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>工服查询</title>
+  <link rel="stylesheet" href="css/mobile-theme.css">
+  <style>
+    :root{
+      --bg:#eef6ff;
+      --card:#ffffff;
+      --line:#d9e9ff;
+      --primary:#4a90e2;
+      --primary-deep:#1d2b5a;
+      --soft:#6e86b3;
+      --good:#2ca56c;
+      --warn:#ea6a4a;
+      --radius:22px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:
+        radial-gradient(circle at top right, rgba(106,182,255,.22), transparent 28%),
+        linear-gradient(180deg, #f4f9ff 0%, #eef5ff 100%);
+      color:var(--primary-deep);
+      font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    }
+    .page{
+      max-width:720px;
+      margin:0 auto;
+      padding:20px 16px 28px;
+    }
+    .hero,.panel,.history-item,.empty{
+      background:rgba(255,255,255,.96);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 14px 38px rgba(74,144,226,.08);
+    }
+    .hero{
+      padding:18px 18px 16px;
+      margin-bottom:14px;
+    }
+    .hero-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    .title{
+      font-size:24px;
+      font-weight:800;
+      line-height:1.15;
+    }
+    .subtitle{
+      margin-top:6px;
+      color:var(--soft);
+      font-size:13px;
+    }
+    .hero-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .btn{
+      border:none;
+      border-radius:14px;
+      height:40px;
+      padding:0 14px;
+      font-size:13px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn-primary{background:linear-gradient(135deg,#4a90e2,#66b5ff);color:#fff}
+    .btn-ghost{background:#f2f8ff;color:var(--primary)}
+    .profile-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .profile-cell{
+      padding:12px 14px;
+      border-radius:16px;
+      background:#f7fbff;
+      border:1px solid #e1efff;
+    }
+    .profile-label{
+      font-size:12px;
+      color:var(--soft);
+      margin-bottom:6px;
+    }
+    .profile-value{
+      font-size:16px;
+      font-weight:800;
+    }
+    .panel{
+      padding:16px;
+      margin-bottom:14px;
+    }
+    .panel-head{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .panel-title{
+      font-size:18px;
+      font-weight:800;
+    }
+    .panel-hint{
+      color:var(--soft);
+      font-size:12px;
+    }
+    .entitlement-list{
+      display:grid;
+      gap:10px;
+    }
+    .entitlement-item{
+      border:1px solid #e1efff;
+      background:linear-gradient(180deg,#fcfeff 0%,#f5faff 100%);
+      border-radius:18px;
+      padding:14px;
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+    }
+    .entitlement-main{
+      display:flex;
+      flex-direction:column;
+      gap:5px;
+    }
+    .entitlement-name{
+      font-size:17px;
+      font-weight:800;
+    }
+    .entitlement-meta{
+      color:var(--soft);
+      font-size:12px;
+      line-height:1.6;
+    }
+    .entitlement-badge{
+      width:56px;
+      height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:12px;
+      background:#edf6ff;
+      color:var(--primary-deep);
+      border:1px solid #d9eaff;
+      flex-shrink:0;
+    }
+    .entitlement-badge strong{
+      font-size:24px;
+      line-height:1;
+    }
+    .entitlement-unit{
+      font-size:20px;
+      font-weight:700;
+      color:var(--primary-deep);
+      margin-left:4px;
+    }
+    .history-list{
+      display:grid;
+      gap:8px;
+    }
+    .history-item{
+      padding:12px 14px;
+    }
+    .history-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .history-name{
+      font-size:14px;
+      font-weight:700;
+      flex:1;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .history-qty{
+      font-size:13px;
+      color:var(--soft);
+      flex-shrink:0;
+    }
+    .history-date{
+      color:var(--soft);
+      font-size:12px;
+      flex-shrink:0;
+      margin-left:auto;
+    }
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      padding:4px 9px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      background:#eef6ff;
+      color:var(--primary);
+    }
+    .tag.warn{
+      background:#fff2ed;
+      color:var(--warn);
+    }
+    .empty{
+      padding:20px 16px;
+      text-align:center;
+      color:var(--soft);
+      font-size:13px;
+    }
+    .loading{
+      padding:28px 16px;
+      text-align:center;
+      color:var(--soft);
+      font-size:14px;
+    }
+    @media (min-width:768px){
+      .profile-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .entitlement-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .entitlement-item{grid-template-columns:1fr}
+      .entitlement-badge{min-width:0}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="title">工服查询</div>
+        </div>
+
+      </div>
+      <div class="profile-grid" id="profileGrid">
+        <div class="profile-cell"><div class="profile-label">工号</div><div class="profile-value">-</div></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">可领用情况</div>
+        </div>
+      </div>
+      <div class="entitlement-list" id="entitlementList">
+        <div class="loading">加载中...</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">最近领用记录</div>
+          <div class="panel-hint">仅显示本人名下最近 30 条记录</div>
+        </div>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="loading">加载中...</div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/js/employee-session.js"></script>
+  <script src="/js/auth-guard.js"></script>
+  <script>
+    const API = window.location.origin + '/api';
+
+    function authHeaders() {
+      return { Authorization: 'Bearer ' + localStorage.getItem('employee_token') };
+    }
+
+    async function fetchJson(path) {
+      const response = await fetch(API + path, { headers: authHeaders() });
+      const data = await response.json();
+      if (!response.ok || data.code !== 0) {
+        throw new Error(data.msg || '加载失败');
+      }
+      return data.data;
+    }
+
+    function safeText(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function buildProfileGrid(staff) {
+      const cells = [
+        ['工号', staff.employee_id || '-'],
+        ['姓名', staff.name || '-'],
+        ['部门', staff.department || '-'],
+        ['岗位', staff.position || '-'],
+        ['入职日期', staff.hire_date || '-'],
+        ['性别', staff.gender || '-']
+      ];
+      document.getElementById('profileGrid').innerHTML = cells.map(([label, value]) => `
+        <div class="profile-cell">
+          <div class="profile-label">${safeText(label)}</div>
+          <div class="profile-value">${safeText(value)}</div>
+        </div>
+      `).join('');
+    }
+
+    function getRecentText(item) {
+      if (!item) return '最近暂无记录';
+      const text = [item.item_name || '', item.model || ''].filter(Boolean).join(' ');
+      return `${text || '已领用'} · ${item.issue_date || '-'}`;
+    }
+
+    function renderEntitlements(data) {
+      const config = [
+        { key: 'summer', label: '夏季工作服', unit: '件' },
+        { key: 'winter', label: '冬季工作服', unit: '件' },
+        { key: 'shoes', label: '劳保鞋', unit: '双' }
+      ];
+      const list = document.getElementById('entitlementList');
+      list.innerHTML = config.map((item) => {
+        const detail = data.details?.[item.key];
+        const ruleDesc = detail?.enabled
+          ? `周期 ${detail.cycleStart || '?'} 至 ${detail.cycleEnd || '?'}，可领 ${detail.allowedQty || 0} ${item.unit}，已领 ${detail.claimedQty || 0} ${item.unit}`
+          : '暂无适用规则';
+        return `
+        <div class="entitlement-item">
+          <div class="entitlement-main">
+            <div class="entitlement-name">${item.label}</div>
+            <div class="entitlement-meta">最近记录：${safeText(getRecentText(data.recent_by_category?.[item.key]))}</div>
+            <div class="entitlement-meta">${safeText(ruleDesc)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <div class="entitlement-badge">
+              <strong>${Number(data.available?.[item.key] || 0)}</strong>
+            </div>
+            <span class="entitlement-unit">${item.unit}</span>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    function renderHistory(rows) {
+      const wrap = document.getElementById('historyList');
+      if (!rows.length) {
+        wrap.innerHTML = '<div class="empty">暂无领用记录</div>';
+        return;
+      }
+      wrap.innerHTML = rows.map((row) => `
+        <div class="history-item">
+          <div class="history-row">
+            <div class="history-name">${safeText(row.model && row.item_name && !row.item_name.includes(row.model) ? row.item_name + ' ' + row.model : (row.item_name || row.model || ''))}</div>
+            <span class="history-qty">x${safeText(row.quantity)}</span>
+            <span class="tag${row.self_purchase ? ' warn' : ''}">${row.self_purchase ? '自购' : '领用'}</span>
+            <div class="history-date">${safeText(row.issue_date || '-')}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function init() {
+      if (!window.EmployeeSession.ensureValid()) {
+        window.EmployeeSession.redirectToLogin();
+        return;
+      }
+      try {
+        const data = await fetchJson('/workwear/my-entitlement');
+        buildProfileGrid(data.staff || {});
+        renderEntitlements(data);
+        renderHistory(data.history || []);
+
+
+      } catch (err) {
+        document.getElementById('entitlementList').innerHTML = `<div class="empty">${safeText(err.message || '加载失败')}</div>`;
+        document.getElementById('historyList').innerHTML = `<div class="empty">${safeText(err.message || '加载失败')}</div>`;
+
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

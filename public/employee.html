@@ -356,6 +356,22 @@
                 </div>
                 <div class="module-arrow">›</div>
             </a>
+            <a class="module-card card-task fade-item" id="cardWorkwearQuery" href="mobile-workwear-query.html" style="display:none">
+                <div class="module-icon"><img src="icons/icon-workwear.svg" alt="工服"></div>
+                <div class="module-info">
+                    <div class="module-name">工服查询</div>
+                    <div class="module-desc">查看本人可领用工服和历史记录</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+            <a class="module-card card-6s fade-item" id="cardWorkwearManage" href="employee-module-auth.html?scope=workwear-admin&title=%E5%B7%A5%E6%9C%8D%E7%AE%A1%E7%90%86&target=mobile-workwear-inventory-count.html" style="display:none">
+                <div class="module-icon"><img src="icons/icon-workwear.svg" alt="工服管理"></div>
+                <div class="module-info">
+                    <div class="module-name">工服管理</div>
+                    <div class="module-desc">人工盘点结转，处理库存差异</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
             <a class="module-card card-voting fade-item" id="cardVoting" href="mobile-voting-list.html" style="display:none">
                 <div class="module-icon"><img src="icons/icon-voting.svg" alt="投票"></div>
                 <div class="module-info">
@@ -424,6 +440,14 @@
                 document.getElementById('card6STasks').style.display = '';
                 hasAny = true;
             }
+            if (perms.hasWorkwearQuery) {
+                document.getElementById('cardWorkwearQuery').style.display = '';
+                hasAny = true;
+            }
+            if (perms.hasWorkwearManage) {
+                document.getElementById('cardWorkwearManage').style.display = '';
+                hasAny = true;
+            }
 
             if (perms.hasVoting) {
                 document.getElementById('cardVoting').style.display = '';
@@ -444,20 +468,22 @@
 
         async function checkGranularPermissions(token, staffId) {
             try {
-                const [examRes, mealRes, s6Res, taskRes, votingRes] = await Promise.all([
+                const [examRes, mealRes, s6Res, taskRes, votingRes, workwearRes] = await Promise.all([
                     fetch(`${API}/permissions/exams`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${API}/permissions/meals`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${API}/permissions/s6`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${API}/6s/my-tasks`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${API}/voting/list`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    fetch(`${API}/voting/list`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API}/workwear/access`, { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
 
-                const [examData, mealData, s6Data, taskData, votingData] = await Promise.all([
+                const [examData, mealData, s6Data, taskData, votingData, workwearData] = await Promise.all([
                     examRes.json(),
                     mealRes.json(),
                     s6Res.json(),
                     taskRes.json(),
-                    votingRes.json()
+                    votingRes.json(),
+                    workwearRes.json()
                 ]);
 
                 const hasExam = examData.code === 0 && examData.data.some(e => e.perm_count > 0);
@@ -466,11 +492,13 @@
                 const has6STasks = taskData.code === 0 && taskData.data && taskData.data.length > 0;
                 // 有投票任务才显示投票入口
                 const hasVoting = votingData.code === 0 && votingData.data && votingData.data.length > 0;
+                const hasWorkwearManage = workwearData.code === 0 && workwearData.data && Number(workwearData.data.can_manage) === 1;
+                const hasWorkwearQuery = hasWorkwearManage;
 
-                return { hasExam, hasMeal, has6S, has6STasks, hasVoting };
+                return { hasExam, hasMeal, has6S, has6STasks, hasVoting, hasWorkwearManage, hasWorkwearQuery };
             } catch (err) {
                 console.error('检查权限失败:', err);
-                return { hasExam: false, hasMeal: false, has6S: false, has6STasks: false, hasVoting: false };
+                return { hasExam: false, hasMeal: false, has6S: false, has6STasks: false, hasVoting: false, hasWorkwearManage: false, hasWorkwearQuery: false };
             }
         }
 
@@ -480,6 +508,8 @@
                 hasMeal: perms.hasMeal ? 1 : 0,
                 has6S: perms.has6S ? 1 : 0,
                 has6STasks: perms.has6STasks ? 1 : 0,
+                hasWorkwearManage: perms.hasWorkwearManage ? 1 : 0,
+                hasWorkwearQuery: perms.hasWorkwearQuery ? 1 : 0,
                 hasVoting: perms.hasVoting ? 1 : 0,
                 timestamp: Date.now()
             }));

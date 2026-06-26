@@ -26,16 +26,20 @@ const homeworkTimerRoutes = require('./routes/homework-timer');
 const feedbackRoutes = require('./routes/feedback');
 const notificationRoutes = require('./routes/notifications');
 const miniappRoutes = require('./routes/miniapp');
+const workwearRoutes = require('./routes/workwear');
+const oaSyncRoutes = require('./routes/oa-sync');
 const { feedbackInjectMiddleware, employeeRedirectMiddleware } = require('./middleware/feedback-inject');
 const { ensureS6UploadDirs } = require('./utils/s6-storage');
 const { startS6CloudSyncWorker } = require('./services/s6-cloud-sync');
 const { startStaffSyncScheduler } = require('./services/staff-sync');
+const { startOASyncScheduler } = require('./services/oa-sync-scheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 ensureS6UploadDirs();
 startS6CloudSyncWorker();
 startStaffSyncScheduler();
+startOASyncScheduler();
 
 // 中间件
 app.use(cors({
@@ -122,6 +126,8 @@ app.use('/api', importRoutes); // import 路由（备用）
 app.use('/api/6s', sixSRoutes); // 6S曝光管理
 app.use('/api/homework-timer', homeworkTimerRoutes); // 作业计时器
 app.use('/api/feedback', feedbackRoutes); // 问题反馈
+app.use('/api/workwear', workwearRoutes); // 工服管理
+app.use('/api/oa-sync', oaSyncRoutes); // 泛微OA考勤同步
 app.use('/api', importRoutes); // import 通配符路由（必须在最后）
 
 // 健康检查

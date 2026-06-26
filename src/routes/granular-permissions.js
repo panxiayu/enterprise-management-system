@@ -408,6 +408,103 @@ router.post('/s6/batch', authMiddleware, adminMiddleware, (req, res) => {
     }
 });
 
+// ============ 工服权限 API ============
+
+// GET /api/permissions/workwear - 获取工服权限列表
+router.get('/workwear', authMiddleware, (req, res) => {
+    try {
+        const staff = db.prepare(`
+            SELECT s.id, s.employee_id, s.name, s.department,
+                s.workwear_permission as has_perm
+            FROM staff s
+            WHERE s.status = 'active'
+            ORDER BY s.employee_id
+        `).all();
+
+        res.json({ code: 0, data: staff });
+    } catch (err) {
+        console.error('获取工服权限失败:', err);
+        res.status(500).json({ code: -1, msg: '服务器错误' });
+    }
+});
+
+// PUT /api/permissions/workwear - 批量更新工服权限
+router.put('/workwear', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+        const { staff_ids } = req.body;
+
+        if (!Array.isArray(staff_ids)) {
+            return res.status(400).json({ code: -1, msg: '参数错误' });
+        }
+
+        db.prepare('UPDATE staff SET workwear_permission = 0').run();
+
+        if (staff_ids.length > 0) {
+            const placeholders = staff_ids.map(() => '?').join(',');
+            db.prepare(`UPDATE staff SET workwear_permission = 1 WHERE id IN (${placeholders})`).run(...staff_ids);
+        }
+
+        res.json({ code: 0, msg: '更新成功', data: { count: staff_ids.length } });
+    } catch (err) {
+        console.error('更新工服权限失败:', err);
+        res.status(500).json({ code: -1, msg: '服务器错误' });
+    }
+});
+
+// POST /api/permissions/workwear - 添加单个员工工服权限
+router.post('/workwear', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+        const { staff_id } = req.body;
+
+        if (!staff_id) {
+            return res.status(400).json({ code: -1, msg: '参数错误' });
+        }
+
+        db.prepare('UPDATE staff SET workwear_permission = 1 WHERE id = ?').run(staff_id);
+
+        res.json({ code: 0, msg: '添加成功', data: null });
+    } catch (err) {
+        console.error('添加工服权限失败:', err);
+        res.status(500).json({ code: -1, msg: '服务器错误' });
+    }
+});
+
+// POST /api/permissions/workwear/batch - 批量导入工服权限
+router.post('/workwear/batch', authMiddleware, adminMiddleware, (req, res) => {
+    try {
+        const { employee_ids } = req.body;
+        if (!Array.isArray(employee_ids)) {
+            return res.status(400).json({ code: -1, msg: '参数错误' });
+        }
+        const validStaff = db.prepare('SELECT employee_id FROM staff WHERE status = "active"').all();
+        const validIds = new Set(validStaff.map(s => s.employee_id));
+
+        db.prepare('UPDATE staff SET workwear_permission = 0').run();
+        let success = 0, fail = 0;
+        const errors = [];
+        for (const empId of employee_ids) {
+            if (!empId) {
+                fail++;
+                errors.push({ employee_id: empId || '', error: '工号为空' });
+                continue;
+            }
+            if (!validIds.has(empId)) {
+                fail++;
+                errors.push({ employee_id: empId, error: '工号不存在' });
+                continue;
+            }
+            try {
+                db.prepare('UPDATE staff SET workwear_permission = 1 WHERE employee_id = ?').run(empId);
+                success++;
+            } catch (e) { fail++; }
+        }
+        res.json({ code: 0, msg: `成功 ${success} 条${fail > 0 ? `，失败 ${fail} 条` : ''}`, data: { success, fail, errors: errors.slice(0, 20) } });
+    } catch (err) {
+        console.error('批量导入工服权限失败:', err);
+        res.status(500).json({ code: -1, msg: '服务器错误' });
+    }
+});
+
 // ============ 文件权限 API ============
 
 // GET /api/permissions/files/public - 获取公共文件权限列表
