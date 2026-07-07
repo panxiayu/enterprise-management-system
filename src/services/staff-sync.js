@@ -10,6 +10,7 @@ const SCHEDULES = [
   { hour: 20, minute: 0, label: '20:00' }
 ];
 const POLL_MS = 30 * 1000;
+const CHANGE_POLL_MS = 5 * 60 * 1000;
 
 let schedulerStarted = false;
 let syncRunning = false;
@@ -40,7 +41,7 @@ function wasSyncedThisMinute(minuteKey) {
   }
 }
 
-function runStaffSyncScript(source = 'manual') {
+function runStaffSyncScript(source = 'manual', options = {}) {
   if (!fs.existsSync(SCRIPT_PATH)) {
     return Promise.reject(new Error('同步脚本不存在'));
   }
@@ -52,7 +53,12 @@ function runStaffSyncScript(source = 'manual') {
 
     const child = spawn('node', [SCRIPT_PATH], {
       cwd: SCRIPT_CWD,
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        STAFF_SYNC_SOURCE: source,
+        STAFF_SYNC_CHECK_CHANGED: options.checkChanged ? '1' : '0'
+      }
     });
 
     child.stdout.on('data', (data) => { stdout += data.toString(); });
@@ -62,7 +68,7 @@ function runStaffSyncScript(source = 'manual') {
       finished = true;
       child.kill();
       reject(new Error('同步超时'));
-    }, 120000);
+    }, 180000);
 
     child.on('close', (code) => {
       if (finished) return;
@@ -98,6 +104,28 @@ function runStaffSyncScript(source = 'manual') {
       reject(err);
     });
   });
+}
+
+async function tryFileChangeSync() {
+  if (syncRunning) {
+    console.warn('[STAFF_SYNC] 文件变更检测跳过，上一轮仍在执行');
+    return;
+  }
+
+  syncRunning = true;
+  console.log('[STAFF_SYNC] 开始执行 5分钟文件变更检测');
+  try {
+    const result = await runStaffSyncScript('watch', { checkChanged: true });
+    if (result?.skipped || result?.result === 'skipped_no_change') {
+      console.log('[STAFF_SYNC] 文件未变化，跳过写库');
+    } else {
+      console.log(`[STAFF_SYNC] 文件变化自动同步成功: ${JSON.stringify(result)}`);
+    }
+  } catch (err) {
+    console.error('[STAFF_SYNC] 文件变更检测失败:', err.message);
+  } finally {
+    syncRunning = false;
+  }
 }
 
 async function tryScheduledSync() {
@@ -139,11 +167,21 @@ function startStaffSyncScheduler() {
       console.error('[STAFF_SYNC] 自动同步轮询异常:', err.message);
     });
   }, POLL_MS);
+  setInterval(() => {
+    tryFileChangeSync().catch((err) => {
+      console.error('[STAFF_SYNC] 文件变更检测轮询异常:', err.message);
+    });
+  }, CHANGE_POLL_MS);
   setTimeout(() => {
     tryScheduledSync().catch((err) => {
       console.error('[STAFF_SYNC] 自动同步初始化异常:', err.message);
     });
   }, 5000);
+  setTimeout(() => {
+    tryFileChangeSync().catch((err) => {
+      console.error('[STAFF_SYNC] 文件变更检测初始化异常:', err.message);
+    });
+  }, 15000);
 }
 
 module.exports = {

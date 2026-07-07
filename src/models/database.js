@@ -195,6 +195,18 @@ function initStaffNamePinyin() {
       db.exec("ALTER TABLE staff ADD COLUMN name_pinyin TEXT");
       console.log('✅ staff 表新增 name_pinyin 字段');
     }
+    if (!columnNames.includes('leave_type')) {
+      db.exec("ALTER TABLE staff ADD COLUMN leave_type TEXT");
+      console.log('✅ staff 表新增 leave_type 字段');
+    }
+    if (!columnNames.includes('workwear_leave_date')) {
+      db.exec("ALTER TABLE staff ADD COLUMN workwear_leave_date TEXT");
+      console.log('✅ staff 表新增 workwear_leave_date 字段');
+    }
+    if (!columnNames.includes('workwear_leave_confirmed_at')) {
+      db.exec("ALTER TABLE staff ADD COLUMN workwear_leave_confirmed_at TEXT");
+      console.log('✅ staff 表新增 workwear_leave_confirmed_at 字段');
+    }
 
     const staffList = db.prepare(`
       SELECT id, name
@@ -836,6 +848,9 @@ function migrateTimestampsToLocaltime() {
 function initWorkwearTables() {
   try {
     ensureColumn('staff', 'workwear_permission', 'INTEGER DEFAULT 0');
+    ensureColumn('staff', 'workwear_special_permission', 'INTEGER DEFAULT 0');
+    ensureColumn('staff', 'workwear_leave_date', 'TEXT');
+    ensureColumn('staff', 'workwear_leave_confirmed_at', 'TEXT');
 
     // 工服领用记录表
     db.exec(`
@@ -846,6 +861,7 @@ function initWorkwearTables() {
         department TEXT,
         position TEXT,
         hire_date TEXT,
+        leave_date TEXT,
         issue_date TEXT NOT NULL,
         item_name TEXT NOT NULL,
         item_type TEXT DEFAULT '工服',
@@ -865,6 +881,53 @@ function initWorkwearTables() {
     `);
     console.log('✅ workwear_records 工服领用记录表已创建/存在');
     ensureColumn('workwear_records', 'hire_date', 'TEXT');
+    ensureColumn('workwear_records', 'leave_date', 'TEXT');
+    ensureColumn('workwear_records', 'deduction_status', 'TEXT');
+    ensureColumn('workwear_records', 'final_leave_date', 'TEXT');
+    ensureColumn('workwear_records', 'final_deduction_ratio', 'REAL');
+    ensureColumn('workwear_records', 'final_deduction', 'REAL');
+    ensureColumn('workwear_records', 'deduction_reviewed_at', 'TEXT');
+    ensureColumn('workwear_records', 'seq_no', 'INTEGER');
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workwear_record_remark_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_id INTEGER NOT NULL,
+        old_remark TEXT,
+        new_remark TEXT,
+        changed_by INTEGER,
+        changed_by_name TEXT,
+        changed_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      )
+    `);
+    console.log('✅ workwear_record_remark_history 备注历史表已创建/存在');
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_remark_history_record_id ON workwear_record_remark_history(record_id, changed_at DESC)`);
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workwear_deduction_adjustments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        staff_id INTEGER,
+        employee_id TEXT,
+        staff_name TEXT NOT NULL,
+        record_id INTEGER,
+        item_name TEXT,
+        model TEXT,
+        quantity INTEGER DEFAULT 0,
+        unit_price REAL DEFAULT 0,
+        provisional_leave_date TEXT,
+        official_leave_date TEXT,
+        original_deduction_ratio REAL DEFAULT 0,
+        official_deduction_ratio REAL DEFAULT 0,
+        original_deduction REAL DEFAULT 0,
+        official_deduction REAL DEFAULT 0,
+        diff_amount REAL DEFAULT 0,
+        source TEXT DEFAULT 'excel_sync',
+        status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        UNIQUE(record_id, official_leave_date)
+      );
+      CREATE INDEX IF NOT EXISTS idx_workwear_deduction_adjustments_staff ON workwear_deduction_adjustments(staff_id);
+      CREATE INDEX IF NOT EXISTS idx_workwear_deduction_adjustments_status ON workwear_deduction_adjustments(status);
+    `);
 
     // 工服库存表
     db.exec(`
@@ -921,6 +984,7 @@ function initWorkwearTables() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         source_ref TEXT UNIQUE,
         purchase_date TEXT NOT NULL,
+        default_purchaser TEXT,
         purchaser TEXT,
         item_id INTEGER,
         item_name TEXT NOT NULL,
@@ -937,6 +1001,49 @@ function initWorkwearTables() {
       )
     `);
     console.log('✅ workwear_purchase_entries 采购入库记录表已创建/存在');
+
+    const purchaseEntryColumns = db.prepare(`PRAGMA table_info(workwear_purchase_entries)`).all().map((column) => column.name);
+    if (!purchaseEntryColumns.includes('default_purchaser')) {
+      db.exec(`ALTER TABLE workwear_purchase_entries ADD COLUMN default_purchaser TEXT`);
+      db.exec(`
+        UPDATE workwear_purchase_entries
+        SET default_purchaser = purchaser
+        WHERE COALESCE(TRIM(default_purchaser), '') = ''
+      `);
+      console.log('✅ workwear_purchase_entries 新增 default_purchaser 字段');
+    }
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS workwear_purchase_adjustments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        adjustment_group_id TEXT,
+        purchase_date TEXT NOT NULL,
+        item_id INTEGER,
+        item_name TEXT NOT NULL,
+        category TEXT,
+        model TEXT NOT NULL DEFAULT '',
+        unit TEXT,
+        unit_price REAL DEFAULT 0,
+        original_qty INTEGER DEFAULT 0,
+        adjusted_qty INTEGER DEFAULT 0,
+        diff_qty INTEGER DEFAULT 0,
+        remark TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        requested_by INTEGER,
+        requested_by_name TEXT,
+        approver_staff_id INTEGER,
+        approver_name TEXT,
+        requested_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        reviewed_by INTEGER,
+        reviewed_by_name TEXT,
+        reviewed_at DATETIME,
+        review_comment TEXT,
+        applied_entry_id INTEGER,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      )
+    `);
+    console.log('✅ workwear_purchase_adjustments 采购更改追溯表已创建/存在');
 
     db.exec(`
       CREATE TABLE IF NOT EXISTS workwear_inventory_opening (
@@ -1043,6 +1150,32 @@ function initWorkwearTables() {
     console.log('✅ workwear_inventory_count_items 盘点明细表已创建/存在');
 
     db.exec(`
+      CREATE TABLE IF NOT EXISTS workwear_inventory_count_adjustments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id INTEGER NOT NULL,
+        count_item_id INTEGER NOT NULL,
+        closing_month TEXT NOT NULL,
+        opening_month TEXT NOT NULL,
+        item_id INTEGER NOT NULL,
+        system_closing_qty INTEGER DEFAULT 0,
+        manual_total_qty INTEGER DEFAULT 0,
+        difference_qty INTEGER DEFAULT 0,
+        remark TEXT,
+        status TEXT DEFAULT 'approved',
+        submitted_by INTEGER,
+        approver_staff_id INTEGER,
+        approver_name TEXT,
+        reviewed_by INTEGER,
+        reviewed_at DATETIME,
+        review_comment TEXT,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        UNIQUE(count_item_id)
+      )
+    `);
+    console.log('✅ workwear_inventory_count_adjustments 盘点差异调整表已创建/存在');
+
+    db.exec(`
       CREATE TABLE IF NOT EXISTS workwear_inventory_count_locations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         count_item_id INTEGER NOT NULL,
@@ -1065,6 +1198,8 @@ function initWorkwearTables() {
       CREATE INDEX IF NOT EXISTS idx_workwear_items_category_model ON workwear_items(category, model);
       CREATE INDEX IF NOT EXISTS idx_workwear_purchase_entries_date ON workwear_purchase_entries(purchase_date);
       CREATE INDEX IF NOT EXISTS idx_workwear_purchase_entries_item ON workwear_purchase_entries(item_id);
+      CREATE INDEX IF NOT EXISTS idx_workwear_purchase_adjustments_date ON workwear_purchase_adjustments(purchase_date);
+      CREATE INDEX IF NOT EXISTS idx_workwear_purchase_adjustments_status ON workwear_purchase_adjustments(status);
       CREATE INDEX IF NOT EXISTS idx_workwear_inventory_opening_month ON workwear_inventory_opening(year_month);
       CREATE INDEX IF NOT EXISTS idx_workwear_inventory_monthly_month ON workwear_inventory_monthly(year_month);
       CREATE INDEX IF NOT EXISTS idx_workwear_inventory_exceptions_month ON workwear_inventory_exceptions(year_month);
@@ -1072,6 +1207,8 @@ function initWorkwearTables() {
       CREATE INDEX IF NOT EXISTS idx_workwear_inventory_count_items_session ON workwear_inventory_count_items(session_id);
       CREATE INDEX IF NOT EXISTS idx_workwear_inventory_count_items_status ON workwear_inventory_count_items(status);
       CREATE INDEX IF NOT EXISTS idx_workwear_inventory_count_items_approver ON workwear_inventory_count_items(approver_staff_id);
+      CREATE INDEX IF NOT EXISTS idx_workwear_inventory_count_adjustments_month ON workwear_inventory_count_adjustments(closing_month);
+      CREATE INDEX IF NOT EXISTS idx_workwear_inventory_count_adjustments_item ON workwear_inventory_count_adjustments(item_id);
       CREATE INDEX IF NOT EXISTS idx_workwear_inventory_count_locations_item ON workwear_inventory_count_locations(count_item_id);
     `);
     console.log('✅ 工服管理索引已创建');

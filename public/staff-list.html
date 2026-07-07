@@ -36,13 +36,16 @@
         .btn-sm { padding: 6px 12px; font-size: 12px; }
 
         /* 表格 */
-        .table-container { width: 100%; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.6); box-sizing: border-box; overflow-x: auto; overflow-y: visible; margin-top: 15px; margin-bottom: 10px; }
+        .table-container { width: 100%; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.6); box-sizing: border-box; overflow: hidden; margin-top: 15px; margin-bottom: 10px; }
         .table-container { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
         .table-container::-webkit-scrollbar { height: 6px; }
         .table-container::-webkit-scrollbar-track { background: transparent; border-radius: 3px; }
         .table-container::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
         .table-container::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
         .table-container::-webkit-scrollbar-corner { background: transparent; }
+        .table-header-scroll { display: none; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.98); }
+        .table-header-scroll::-webkit-scrollbar { display: none; }
+        .table-header-scroll { scrollbar-width: none; }
         .table-scroll-inner { overflow-x: auto; overflow-y: auto; min-height: 400px; height: calc(100vh - 140px); display: block; padding-bottom: 10px; box-sizing: border-box; }
         .table-scroll-inner { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
         .table-scroll-inner::-webkit-scrollbar { height: 6px; width: 6px; }
@@ -50,20 +53,35 @@
         .table-scroll-inner::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
         .table-scroll-inner::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
         .table-scroll-inner::-webkit-scrollbar-corner { background: transparent; }
-        table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+        table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
         .btn-col { background: linear-gradient(135deg, #7FCEF7 0%, #5BB8E0 50%, #A8B0D0 100%); color: #fff; font-weight: 600; box-shadow: 0 4px 16px rgba(59,130,246,0.3); }
         .btn-col:hover { background: linear-gradient(135deg, #5BB8E0 0%, #4AA8D0 50%, #8A9AB0 100%); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.4); }
         /* 冻结列样式 - 工号姓名始终在最左边 */
-        thead { background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 13; }
-        th { padding: 4px 6px; text-align: center !important; font-weight: 700; color: var(--text); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); white-space: nowrap; background: rgba(255,255,255,0.98); vertical-align: middle !important; height: 34px; box-sizing: border-box; position: relative; z-index: 5; }
-        td { padding: 3px 6px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text); text-align: center !important; background: rgba(255,255,255,0.98); vertical-align: middle !important; height: 26px; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        thead { position: relative; background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); z-index: 30; }
+        th { padding: 4px 6px; text-align: center !important; font-weight: 700; color: var(--text); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); white-space: nowrap; background: rgba(255,255,255,0.98); vertical-align: middle !important; height: 34px; box-sizing: border-box; position: sticky; top: 0; z-index: 40; }
+        td { padding: 3px 6px; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text); text-align: center !important; background: rgba(255,255,255,0.98); vertical-align: middle !important; height: 26px; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; z-index: 1; }
         tbody tr:last-child td { border-bottom: none; }
         tbody { min-height: 200px; }
-        /* 冻结列 - 序号工号姓名固定，z-index低于普通th */
-        th[data-key="serial"], td[data-key="serial"] { position: sticky; left: 0; z-index: 12; background: rgba(255,255,255,0.98); width: 60px; min-width: 60px; }
-        th[data-key="employee_id"], td[data-key="employee_id"] { position: sticky; left: 60px; z-index: 12; background: rgba(255,255,255,0.98); width: 70px; min-width: 70px; }
-        th[data-key="name"], td[data-key="name"] { position: sticky; left: 130px; z-index: 12; background: rgba(255,255,255,0.98); width: 70px; min-width: 70px; }
-        thead { background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 13; }
+        /* 冻结列 - 序号/工号/姓名始终固定在左侧 */
+        th[data-key="serial"], td[data-key="serial"] { position: sticky; left: 0; background: #fff; width: 60px; min-width: 60px; }
+        th[data-key="employee_id"], td[data-key="employee_id"] { position: sticky; left: 60px; background: #fff; width: 70px; min-width: 70px; }
+        th[data-key="name"], td[data-key="name"] { position: sticky; left: 130px; background: #fff; width: 70px; min-width: 70px; }
+        th[data-key="serial"],
+        th[data-key="employee_id"],
+        th[data-key="name"] { z-index: 50; }
+        td[data-key="serial"],
+        td[data-key="employee_id"],
+        td[data-key="name"] { z-index: 5; }
+        th[data-key="serial"],
+        th[data-key="employee_id"],
+        th[data-key="name"],
+        td[data-key="serial"],
+        td[data-key="employee_id"],
+        td[data-key="name"] {
+            background-clip: padding-box;
+        }
+        th[data-key="name"],
+        td[data-key="name"] { box-shadow: 8px 0 12px -10px rgba(29, 43, 90, 0.28); }
         /* 隐藏列完全不显示 */
         th[style*="display: none"], td[style*="display: none"] { display: none !important; }
         /* 状态列完全隐藏 */
@@ -76,6 +94,8 @@
         tbody tr.not-in-sync-row td { color: var(--danger) !important; background: rgba(220, 38, 38, 0.05); }
         .clickable-link { cursor: pointer; color: var(--text); text-decoration: none; font-weight: 500; display: inline-block; text-align: center; }
         .clickable-link:hover { text-decoration: underline; color: var(--accent); }
+        .copyable-phone { cursor: pointer; color: inherit; text-decoration: none; }
+        .copyable-phone:hover { color: inherit; text-decoration: none; }
         .checkbox-cell { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
 
         /* 状态提示 */
@@ -238,11 +258,22 @@
 
         /* 标签页切换 */
         .tab-bar { position: relative; display: flex; gap: 0; margin: 0; background: var(--bg); padding: 3px; border-radius: var(--radius); width: fit-content; overflow: hidden; }
-        .tab-bar::before { content: ''; position: absolute; top: 3px; left: 3px; width: calc(50% - 3px); height: calc(100% - 6px); background: var(--white); border-radius: calc(var(--radius) - 2px); box-shadow: var(--shadow); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 0; }
-        .tab-bar.student::before { transform: translateX(100%); }
+        .tab-bar::before { content: ''; position: absolute; top: 3px; left: 3px; width: calc(33.333% - 2px); height: calc(100% - 6px); background: var(--white); border-radius: calc(var(--radius) - 2px); box-shadow: var(--shadow); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 0; }
+        .tab-bar.inactive::before { transform: translateX(100%); }
+        .tab-bar.student::before { transform: translateX(200%); }
         .tab-btn { position: relative; padding: 8px 20px; border: none; border-radius: calc(var(--radius) - 2px); cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; background: transparent; color: var(--text-secondary); transition: color 0.3s; z-index: 1; }
         .tab-btn:hover { color: var(--text); }
         .tab-btn.active { color: var(--primary); }
+        .search-hits { display:none; align-items:center; gap:8px; flex-wrap:wrap; margin:8px 0 0; padding:8px 10px; border:1px solid var(--border); border-radius:12px; background:var(--white); color:var(--text-secondary); font-size:12px; }
+        .search-hit-btn { border:1px solid var(--border); background:var(--bg-input); color:var(--text); border-radius:999px; padding:5px 10px; cursor:pointer; font-size:12px; }
+        .search-hit-btn:hover { border-color:var(--accent); color:var(--accent); }
+        .mobile-card-list { display:none; margin-top:12px; gap:10px; }
+        .roster-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:12px; box-shadow:var(--shadow); cursor:pointer; }
+        .roster-card-main { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+        .roster-card-name { font-weight:700; color:var(--text); font-size:15px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .roster-card-id { color:var(--text-muted); font-size:12px; flex:0 0 auto; }
+        .roster-card-meta { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px 10px; margin-top:8px; color:var(--text-secondary); font-size:12px; }
+        .roster-card-meta span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
         .detail-section { background: var(--white); border-radius: var(--radius-lg); padding: 14px; border: 1px solid var(--border); }
         .detail-section-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
@@ -375,30 +406,40 @@
             }
 
             .table-container {
-                margin-top: 12px;
-                border-radius: 16px;
+                display: none !important;
+            }
+
+            .mobile-card-list {
+                display: grid;
+            }
+
+            .table-header-scroll {
+                display: block;
                 overflow-x: auto;
-                overflow-y: visible;
+                overflow-y: hidden;
             }
 
             .table-scroll-inner {
                 min-height: 0;
-                height: auto;
-                max-height: none;
+                height: min(70vh, calc(100vh - 220px));
+                max-height: calc(100vh - 220px);
                 overflow-x: auto;
-                overflow-y: visible;
+                overflow-y: auto;
                 padding-bottom: 6px;
                 -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
             }
 
             table {
                 width: max-content;
                 min-width: 100%;
                 table-layout: fixed;
+                border-collapse: separate;
+                border-spacing: 0;
             }
 
-            thead {
-                display: table-header-group;
+            .table-scroll-inner > table > thead {
+                display: none;
             }
 
             th,
@@ -570,6 +611,7 @@
                 height: calc(100vh - 120px);
                 min-height: 0;
                 overflow-y: auto;
+                overscroll-behavior: contain;
             }
 
             th,
@@ -620,6 +662,54 @@
                 min-width: 96px;
             }
         }
+
+        body.env-miniapp.page-staff-list .table-container {
+            display: none !important;
+        }
+
+        body.env-miniapp.page-staff-list .table-header-scroll {
+            display: block;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        body.env-miniapp.page-staff-list .table-scroll-inner {
+            min-height: 0;
+            height: min(68vh, calc(100vh - 210px - var(--miniapp-safe-bottom, 0px)));
+            max-height: calc(100vh - 210px - var(--miniapp-safe-bottom, 0px));
+            overflow-x: auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
+        body.env-miniapp.page-staff-list th[data-key="serial"],
+        body.env-miniapp.page-staff-list td[data-key="serial"] {
+            left: 0 !important;
+        }
+
+        body.env-miniapp.page-staff-list th[data-key="employee_id"],
+        body.env-miniapp.page-staff-list td[data-key="employee_id"] {
+            left: 42px !important;
+        }
+
+        body.env-miniapp.page-staff-list th[data-key="name"],
+        body.env-miniapp.page-staff-list td[data-key="name"] {
+            left: 104px !important;
+        }
+
+        body.env-miniapp.page-staff-list table {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+
+        body.env-miniapp.page-staff-list .table-scroll-inner > table > thead {
+            display: none;
+        }
+
+        body.env-miniapp.page-staff-list .mobile-card-list {
+            display: grid;
+        }
     </style>
 </head>
 <body>
@@ -631,7 +721,8 @@
             </div>
             <div class="toolbar-right" style="position:relative;">
                 <div class="tab-bar" style="margin: 0 12px 0 0;">
-                    <button class="tab-btn active" data-tab="employee" onclick="switchTab('employee')">员工名册</button>
+                    <button class="tab-btn active" data-tab="active" onclick="switchTab('active')">在职名册</button>
+                    <button class="tab-btn" data-tab="inactive" onclick="switchTab('inactive')">离职名册</button>
                     <button class="tab-btn" data-tab="student" onclick="switchTab('student')">学生名册</button>
                 </div>
                 <div class="toolbar-actions">
@@ -660,16 +751,26 @@
 
         <!-- 搜索栏 -->
         <div id="searchBar" style="margin: 12px 0; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 4px 0;">
-            <input type="text" id="globalSearchInput" placeholder="搜索姓名、工号..." style="flex:1; padding:8px 12px; border:2px solid var(--border); border-radius:10px; background:var(--bg-input); color:var(--text); font-size:13px; box-sizing:border-box; height:38px; outline:none;" oninput="handleGlobalSearch(this.value)">
+            <input type="text" id="globalSearchInput" placeholder="搜索姓名、工号、部门、电话..." style="flex:1; padding:8px 12px; border:2px solid var(--border); border-radius:10px; background:var(--bg-input); color:var(--text); font-size:13px; box-sizing:border-box; height:38px; outline:none;" oninput="handleGlobalSearch(this.value)">
             <button class="btn btn-secondary btn-sm" onclick="document.getElementById('globalSearchInput').value='';handleGlobalSearch('')" style="flex-shrink:0;">清除</button>
         </div>
+        <div id="searchHits" class="search-hits"></div>
 
         <!-- 卡片列表 -->
         <div id="loading" class="loading" style="display: none;">加载中...</div>
         <div id="emptyState" class="empty-state" style="display: none;">暂无员工数据</div>
         <div id="tableContainer" class="table-container" style="display: none;">
+            <div id="tableHeaderScroll" class="table-header-scroll">
+                <table id="staffHeaderTableMobile">
+                    <colgroup id="staffColgroupMobile"></colgroup>
+                    <thead id="staffTheadMobile">
+                        <tr id="staffHeaderRowMobile"></tr>
+                    </thead>
+                </table>
+            </div>
             <div class="table-scroll-inner">
-                <table>
+                <table id="staffTable">
+                    <colgroup id="staffColgroup"></colgroup>
                     <thead id="staffThead">
                         <tr id="staffHeaderRow"></tr>
                     </thead>
@@ -677,6 +778,7 @@
                 </table>
             </div>
         </div>
+        <div id="mobileCardList" class="mobile-card-list"></div>
     </div>
 
     <!-- 添加员工弹窗 -->
@@ -795,10 +897,16 @@
         let currentStaffData = [];
         let loadStaffController = null; // 用于取消上一个请求
 
+        function normalizeRosterTab(tab) {
+            if (tab === 'employee') return 'active';
+            return ['active', 'inactive', 'student'].includes(tab) ? tab : 'active';
+        }
+
         // 标签页切换
-        let currentTab = localStorage.getItem('staffListTab') || 'employee';
+        let currentTab = normalizeRosterTab(localStorage.getItem('staffListTab') || 'active');
         let allStaffData = []; // 员工名册数据
         let allStudentData = []; // 学生名册数据
+        let searchTimer = null;
 
         // 列配置是否已从API数据同步过（持久化到localStorage）
         function isColumnsSynced() {
@@ -809,8 +917,9 @@
         }
 
         // 标签页切换
-        async function switchTab(tab) {
-            if (currentTab === tab) return;
+        async function switchTab(tab, options = {}) {
+            tab = normalizeRosterTab(tab);
+            if (currentTab === tab && !options.forceReload) return;
             currentTab = tab;
             localStorage.setItem('staffListTab', tab);
 
@@ -819,12 +928,16 @@
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tab);
             });
+            tabBar.classList.toggle('inactive', tab === 'inactive');
             tabBar.classList.toggle('student', tab === 'student');
 
-            // 清空搜索和筛选
-            document.getElementById('globalSearchInput').value = '';
-            globalSearchKeyword = '';
+            if (!options.preserveSearch) {
+                document.getElementById('globalSearchInput').value = '';
+                globalSearchKeyword = '';
+                hideSearchHits();
+            }
             clearAllFilters();
+            await loadColumnConfig();
 
             // 重新渲染表头（使用对应的列配置）
             renderTableHeader();
@@ -843,16 +956,19 @@
 
         // 获取列配置存储键名
         function getColumnsStorageKey() {
-            return currentTab === 'student' ? 'studentRosterColumns' : 'staffColumns';
+            if (currentTab === 'student') return 'studentRosterColumns';
+            return currentTab === 'inactive' ? 'inactiveStaffColumns' : 'activeStaffColumns';
         }
 
         // 获取筛选存储键名前缀
         function getFilterStoragePrefix() {
-            return currentTab === 'student' ? 'studentRosterFilter_' : 'staffFilter_';
+            if (currentTab === 'student') return 'studentRosterFilter_';
+            return currentTab === 'inactive' ? 'inactiveStaffFilter_' : 'activeStaffFilter_';
         }
 
         function getSortStorageKey() {
-            return currentTab === 'student' ? 'studentRosterSort' : 'staffSort';
+            if (currentTab === 'student') return 'studentRosterSort';
+            return currentTab === 'inactive' ? 'inactiveStaffSort' : 'activeStaffSort';
         }
 
         // 列配置 - 员工名册
@@ -866,6 +982,8 @@
             { key: 'team', label: '班组', visible: true, sortable: false, width: '80px' },
             { key: 'position', label: '职位', visible: true, sortable: false, width: '80px' },
             { key: 'hire_date', label: '入职日期', visible: true, sortable: true, width: '100px' },
+            { key: 'leave_date', label: '离职日期', visible: false, sortable: true, width: '100px' },
+            { key: 'leave_type', label: '离职类型', visible: false, sortable: true, width: '100px' },
             { key: 'id_card', label: '身份证号', visible: false, sortable: false, width: '160px' },
             { key: 'birthday', label: '出生年月', visible: false, sortable: false, width: '100px' },
             { key: 'nationality', label: '民族', visible: false, sortable: false, width: '70px' },
@@ -913,6 +1031,99 @@
             return currentTab === 'student' ? STUDENT_COLUMNS : COLUMNS;
         }
 
+        function applySavedColumnOrder(columns, config) {
+            if (!config || typeof config !== 'object' || !Array.isArray(config._order) || config._order.length === 0) {
+                return;
+            }
+
+            const orderMap = new Map(config._order.map((key, index) => [key, index]));
+            const originalOrder = new Map(columns.map((col, index) => [col.key, index]));
+
+            columns.sort((a, b) => {
+                const aSavedIndex = orderMap.has(a.key) ? orderMap.get(a.key) : Number.MAX_SAFE_INTEGER;
+                const bSavedIndex = orderMap.has(b.key) ? orderMap.get(b.key) : Number.MAX_SAFE_INTEGER;
+                if (aSavedIndex !== bSavedIndex) return aSavedIndex - bSavedIndex;
+                return (originalOrder.get(a.key) || 0) - (originalOrder.get(b.key) || 0);
+            });
+        }
+
+        function getWidthSourceData() {
+            if (currentStaffData && currentStaffData.length > 0) return currentStaffData;
+            return currentTab === 'student' ? (window.allStudentData || []) : (window.allStaffData || []);
+        }
+
+        function estimateVisualLength(value) {
+            const str = String(value == null ? '' : value);
+            let total = 0;
+            for (const char of str) {
+                total += char.charCodeAt(0) > 255 ? 2 : 1;
+            }
+            return total;
+        }
+
+        function getColumnPlainText(col, row, index) {
+            if (!row) return '';
+            if (col.key === 'serial') return String(index + 1);
+            if (col.key === 'status') return row.status === 'inactive' ? '离职' : '在职';
+            if (col.key === 'team') {
+                const teamVal = row.team || '';
+                return teamVal.includes('/') ? teamVal.split('/').pop() : teamVal;
+            }
+            const rawValue = row[col.key];
+            return rawValue === null || rawValue === undefined || rawValue === '' ? '-' : String(rawValue);
+        }
+
+        function applyRosterColumnDefaults(columns, hasSavedConfig) {
+            if (currentTab === 'student') return;
+            columns.forEach(col => {
+                if (col.key === 'status') col.visible = false;
+                if (!hasSavedConfig && (col.key === 'leave_date' || col.key === 'leave_type')) {
+                    col.visible = currentTab === 'inactive';
+                }
+            });
+        }
+
+        function getColumnMaxWidth(col, baseWidth) {
+            if (['address', 'current_address', 'home_address', 'job_change_record', 'other_info'].includes(col.key)) {
+                return Math.max(baseWidth, 320);
+            }
+            if (['id_card', 'bank_account'].includes(col.key)) {
+                return Math.max(baseWidth, 180);
+            }
+            if (['graduate_school', 'bank_name', 'bank_branch', 'employer'].includes(col.key)) {
+                return Math.max(baseWidth, 180);
+            }
+            return Math.max(baseWidth, 220);
+        }
+
+        function getComputedColumnWidths(columns, data) {
+            const widthMap = {};
+            const sampleRows = Array.isArray(data) ? data.slice(0, 200) : [];
+
+            columns.forEach(col => {
+                const baseWidth = parseInt(String(col.width || '0'), 10) || 80;
+                const isFrozen = ['serial', 'employee_id', 'name'].includes(col.key);
+                if (isFrozen) {
+                    widthMap[col.key] = `${baseWidth}px`;
+                    return;
+                }
+
+                const headerLength = estimateVisualLength(col.label || col.key);
+                let maxLength = headerLength;
+                sampleRows.forEach((row, index) => {
+                    const len = estimateVisualLength(getColumnPlainText(col, row, index));
+                    if (len > maxLength) maxLength = len;
+                });
+
+                const iconPadding = col.key === 'status' ? 20 : 34;
+                const calculatedWidth = Math.max(baseWidth, Math.round(maxLength * 7.5 + iconPadding));
+                const finalWidth = Math.min(getColumnMaxWidth(col, baseWidth), calculatedWidth);
+                widthMap[col.key] = `${finalWidth}px`;
+            });
+
+            return widthMap;
+        }
+
         // 从后端加载用户列配置（失败时回退到localStorage）
         async function loadColumnConfig() {
             const columns = getCurrentColumns();
@@ -934,16 +1145,16 @@
                         columns.forEach(col => {
                             if (localData[col.key] !== undefined) col.visible = localData[col.key];
                         });
+                        applySavedColumnOrder(columns, localData);
                     }
                 }
-                // 始终隐藏状态列（员工名册）
-                columns.forEach(col => { if (col.key === 'status') col.visible = false; });
+                applyRosterColumnDefaults(columns, localData !== null);
                 console.log('[DEBUG] After localStorage restore, columns:', JSON.stringify(columns.map(c => ({k:c.key,v:c.visible}))));
             } catch(e) {
                 console.warn('localStorage恢复失败:', e);
             }
             // 异步从后端加载最新配置（只有localStorage为空时才使用后端数据）
-            const configKey = currentTab === 'student' ? 'student_columns' : 'staff_columns';
+            const configKey = currentTab === 'student' ? 'student_columns' : (currentTab === 'inactive' ? 'inactive_staff_columns' : 'active_staff_columns');
             try {
                 const res = await fetch(`${API_URL}/staff/column-config?key=${configKey}`, {
                     headers: { 'Authorization': `Bearer ${getToken()}` }
@@ -962,9 +1173,10 @@
                         columns.forEach(col => {
                             if (cfg[col.key] !== undefined) col.visible = cfg[col.key];
                         });
+                        applySavedColumnOrder(columns, cfg);
                     }
-                    // 始终隐藏状态列
-                    columns.forEach(col => { if (col.key === 'status') col.visible = false; });
+                    localData = cfg;
+                    applyRosterColumnDefaults(columns, true);
                     // 同步到localStorage
                     const backupData = {};
                     columns.forEach(col => { backupData[col.key] = col.visible; });
@@ -974,6 +1186,7 @@
             } catch(e) {
                 console.warn('从后端加载列配置失败，继续使用localStorage:', e);
             }
+            applyRosterColumnDefaults(columns, localData !== null);
         }
 
         // 保存列配置到后端（同时保存到localStorage作为后备）
@@ -990,7 +1203,7 @@
             // 先保存到localStorage
             localStorage.setItem(getColumnsStorageKey(), JSON.stringify(data));
             // 尝试保存到后端
-            const configKey = currentTab === 'student' ? 'student_columns' : 'staff_columns';
+            const configKey = currentTab === 'student' ? 'student_columns' : (currentTab === 'inactive' ? 'inactive_staff_columns' : 'active_staff_columns');
             try {
                 const res = await fetch(`${API_URL}/staff/column-config`, {
                     method: 'POST',
@@ -1023,11 +1236,15 @@
                 });
                 const data = await res.json();
                 if (data.code === 0 && data.data) {
-                    const d = new Date(data.data);
-                    const month = d.getMonth() + 1;
-                    const day = d.getDate();
-                    const hour = String(d.getHours()).padStart(2, '0');
-                    const minute = String(d.getMinutes()).padStart(2, '0');
+                    const match = String(data.data).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+                    if (!match) {
+                        el.textContent = '';
+                        return;
+                    }
+                    const month = String(Number(match[2]));
+                    const day = String(Number(match[3]));
+                    const hour = match[4];
+                    const minute = match[5];
                     el.textContent = `上次同步: ${month}月${day}日 ${hour}:${minute}`;
                 } else {
                     el.textContent = '';
@@ -1054,6 +1271,74 @@
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateX(-50%) translateY(-10px)';
             }, 1000);
+        }
+
+        function escapeHtml(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function isPhoneField(key) {
+            return ['phone', 'office_phone', 'virtual_phone', 'emergency_phone'].includes(key);
+        }
+
+        function isCopyableField(key) {
+            return isPhoneField(key) || key === 'id_card';
+        }
+
+        function normalizePhoneValue(value) {
+            return String(value == null ? '' : value).trim();
+        }
+
+        async function copyPhone(value) {
+            const phone = normalizePhoneValue(value);
+            if (!phone || phone === '-') {
+                showToast('没有可复制的电话号码', 'error');
+                return;
+            }
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(phone);
+                } else {
+                    const input = document.createElement('textarea');
+                    input.value = phone;
+                    input.setAttribute('readonly', '');
+                    input.style.position = 'fixed';
+                    input.style.opacity = '0';
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(input);
+                }
+                showToast(`已复制：${phone}`);
+            } catch (err) {
+                showToast('复制失败，请手动长按或选中复制', 'error');
+            }
+        }
+
+        function renderPhoneCopy(value, displayValue) {
+            const phone = normalizePhoneValue(value);
+            const text = displayValue == null ? phone : displayValue;
+            if (!phone || phone === '-') return escapeHtml(text || '-');
+            return `<span class="copyable-phone" onclick="copyPhone('${escapeHtml(phone)}')">${escapeHtml(text)}</span>`;
+        }
+
+        function renderCopyableValue(key, value, displayValue) {
+            if (isPhoneField(key)) {
+                return renderPhoneCopy(value, displayValue);
+            }
+            if (key === 'id_card') {
+                const text = String(displayValue == null ? (value || '-') : displayValue);
+                const raw = String(value == null ? '' : value).trim();
+                if (!raw || raw === '-') return escapeHtml(text);
+                return `<span class="copyable-phone" onclick="copyPhone('${escapeHtml(raw)}')">${escapeHtml(text)}</span>`;
+            }
+            return escapeHtml(displayValue == null ? (value || '-') : displayValue);
         }
 
         // 切换列显示/隐藏
@@ -1157,8 +1442,9 @@
                     columns.splice(toIdx, 0, moved);
 
                     saveColumnConfig().catch(()=>{});
-                    // 只更新表头单元格位置，不重新渲染整个表头
-                    updateHeaderOrder();
+                    // 拖拽完成后直接重渲染，立即按新顺序重新计算列宽
+                    renderTableHeader();
+                    refreshFilteredTable();
                     updateColumnCheckboxes();
                 });
             });
@@ -1183,18 +1469,20 @@
 
         // 只更新表头单元格顺序
         function updateHeaderOrder() {
-            const row = document.getElementById('staffHeaderRow');
-            const ths = Array.from(row.querySelectorAll('th'));
             const columns = getCurrentColumns();
-            // 按columns顺序重新排列TH
-            ths.sort((a, b) => {
-                const keyA = a.dataset.key;
-                const keyB = b.dataset.key;
-                const idxA = columns.findIndex(c => c.key === keyA);
-                const idxB = columns.findIndex(c => c.key === keyB);
-                return idxA - idxB;
+            ['staffHeaderRow', 'staffHeaderRowMobile'].forEach(rowId => {
+                const row = document.getElementById(rowId);
+                if (!row) return;
+                const ths = Array.from(row.querySelectorAll('th'));
+                ths.sort((a, b) => {
+                    const keyA = a.dataset.key;
+                    const keyB = b.dataset.key;
+                    const idxA = columns.findIndex(c => c.key === keyA);
+                    const idxB = columns.findIndex(c => c.key === keyB);
+                    return idxA - idxB;
+                });
+                ths.forEach(th => row.appendChild(th));
             });
-            ths.forEach(th => row.appendChild(th));
 
             // 同时更新表体行的TD顺序
             const tbody = document.getElementById('staffList');
@@ -1219,7 +1507,7 @@
             const allHidden = visibleCols.length === 0;
 
             // 只更新现有表头单元格的显示状态（不重建）
-            const headers = document.querySelectorAll('#staffHeaderRow th');
+            const headers = document.querySelectorAll('#staffHeaderRow th, #staffHeaderRowMobile th');
             headers.forEach(th => {
                 const key = th.dataset.key;
                 const col = columns.find(c => c.key === key);
@@ -1254,11 +1542,15 @@
         }
 
         function renderTableHeader() {
-            const thead = document.getElementById('staffThead');
-            const row = document.getElementById('staffHeaderRow');
             const columns = getCurrentColumns(); // 根据当前标签获取对应列配置
+            const widthMap = getComputedColumnWidths(columns, getWidthSourceData());
             const visibleNonCheckbox = columns.filter(c => c.visible);
             const allHidden = visibleNonCheckbox.length === 0;
+
+            function parseWidth(width) {
+                const value = parseInt(String(width || '0'), 10);
+                return Number.isFinite(value) ? value : 0;
+            }
 
             function getFilterIcon(key) {
                 // 箭头颜色由父级按钮的 class 控制
@@ -1266,14 +1558,43 @@
             }
 
             function getFilterCount(key) {
-                return `<span class="th-filter-count" id="${key}Count" style="display:none;"></span>`;
+                return `<span class="th-filter-count" data-count-key="${key}" style="display:none;"></span>`;
             }
 
             function getSerialCount() {
-                return `<span class="th-filter-count" id="serialCount"></span>`;
+                return `<span class="th-filter-count" data-count-key="serial"></span>`;
             }
 
-            row.innerHTML = columns.map(col => {
+            const colgroupHtml = columns.map(col => {
+                if (!col.visible) {
+                    return `<col data-key="${col.key}" style="width:0; min-width:0; display:none;">`;
+                }
+                const renderWidth = widthMap[col.key] || col.width;
+                return `<col data-key="${col.key}" style="width:${renderWidth}; min-width:${renderWidth};">`;
+            }).join('');
+
+            const tableWidth = columns.reduce((sum, col) => {
+                return sum + (col.visible ? parseWidth(widthMap[col.key] || col.width) : 0);
+            }, 0);
+
+            ['staffColgroup', 'staffColgroupMobile'].forEach(colgroupId => {
+                const colgroup = document.getElementById(colgroupId);
+                if (colgroup) colgroup.innerHTML = colgroupHtml;
+            });
+
+            ['staffTable', 'staffHeaderTableMobile'].forEach(tableId => {
+                const table = document.getElementById(tableId);
+                if (!table) return;
+                if (tableWidth > 0) {
+                    table.style.width = `${tableWidth}px`;
+                    table.style.minWidth = `${tableWidth}px`;
+                } else {
+                    table.style.width = '';
+                    table.style.minWidth = '';
+                }
+            });
+
+            const headerHtml = columns.map(col => {
                 const isFrozen = false;
                 // 所有数据列都可以筛选（除了 status）
                 const isFilterable = col.key !== 'status';
@@ -1288,16 +1609,21 @@
                     thContent = `<button type="button" class="${btnClass}" data-filter="${col.key}"><span class="th-filter-btn-text">${col.label}</span>${getFilterIcon(col.key)}</button>`;
                 }
 
-                return `<th data-key="${col.key}" class="${isFrozen ? 'frozen' : ''}" style="text-align:center; width:${col.width}; min-width:${col.width}; cursor:pointer; display:${col.visible ? '' : 'none'};">${thContent}</th>`;
+                const renderWidth = widthMap[col.key] || col.width;
+                return `<th data-key="${col.key}" class="${isFrozen ? 'frozen' : ''}" style="text-align:center; width:${renderWidth}; min-width:${renderWidth}; cursor:pointer; display:${col.visible ? '' : 'none'};">${thContent}</th>`;
             }).join('');
 
+            ['staffHeaderRow', 'staffHeaderRowMobile'].forEach(rowId => {
+                const row = document.getElementById(rowId);
+                if (row) row.innerHTML = headerHtml;
+            });
+
             // 设置序号统计数字
-            const serialCountEl = row.querySelector('#serialCount');
             const currentData = currentTab === 'student' ? window.allStudentData : window.allStaffData;
-            if (serialCountEl) {
-                serialCountEl.textContent = currentData ? currentData.length : 0;
-                serialCountEl.style.display = 'inline-block';
-            }
+            document.querySelectorAll('[data-count-key="serial"]').forEach(el => {
+                el.textContent = currentData ? currentData.length : 0;
+                el.style.display = 'inline-block';
+            });
 
             initSortable();
             // 初始化表头筛选下拉
@@ -2064,10 +2390,9 @@
                 if (key !== 'serial') updateFilterIcon(key);
             });
 
-            const serialCountEl = document.getElementById('serialCount');
-            if (serialCountEl) {
-                serialCountEl.textContent = filtered.length;
-            }
+            document.querySelectorAll('[data-count-key="serial"]').forEach(el => {
+                el.textContent = filtered.length;
+            });
 
             renderStaffTable(filtered);
         }
@@ -2101,16 +2426,18 @@
 
         // 更新筛选计数
         function updateFilterCount(key) {
-            const countEl = document.getElementById(key + 'Count');
-            if (!countEl) return;
+            const countEls = document.querySelectorAll(`[data-count-key="${key}"]`);
+            if (!countEls.length) return;
 
             const filterPrefix = getFilterStoragePrefix();
             const savedFilterStr = localStorage.getItem(filterPrefix + key);
 
             // 无筛选条件 = 隐藏
             if (!savedFilterStr) {
-                countEl.style.display = 'none';
-                countEl.textContent = '';
+                countEls.forEach(countEl => {
+                    countEl.style.display = 'none';
+                    countEl.textContent = '';
+                });
                 return;
             }
 
@@ -2118,16 +2445,22 @@
             try {
                 savedValues = JSON.parse(savedFilterStr) || [];
             } catch(e) {
-                countEl.style.display = 'none';
+                countEls.forEach(countEl => {
+                    countEl.style.display = 'none';
+                });
                 return;
             }
 
             if (savedValues.length === 0) {
-                countEl.style.display = 'inline';
-                countEl.textContent = '0';
+                countEls.forEach(countEl => {
+                    countEl.style.display = 'inline';
+                    countEl.textContent = '0';
+                });
             } else {
-                countEl.textContent = savedValues.length;
-                countEl.style.display = 'inline';
+                countEls.forEach(countEl => {
+                    countEl.textContent = savedValues.length;
+                    countEl.style.display = 'inline';
+                });
             }
         }
 
@@ -2149,14 +2482,14 @@
 
         // 更新筛选图标
         function updateFilterIcon(key) {
-            const btn = document.querySelector(`.th-filter-btn[data-filter="${key}"]`);
-            if (!btn) return;
             const isFiltered = hasActiveFilter(key);
-            if (isFiltered) {
-                btn.classList.add('th-filter-btn-active');
-            } else {
-                btn.classList.remove('th-filter-btn-active');
-            }
+            document.querySelectorAll(`.th-filter-btn[data-filter="${key}"]`).forEach(btn => {
+                if (isFiltered) {
+                    btn.classList.add('th-filter-btn-active');
+                } else {
+                    btn.classList.remove('th-filter-btn-active');
+                }
+            });
         }
 
         // 获取字段的所有唯一值
@@ -2349,6 +2682,26 @@
             // Only colDropdown now
         }
 
+        function initTableScrollSync() {
+            const headerScroll = document.getElementById('tableHeaderScroll');
+            const bodyScroll = document.querySelector('.table-scroll-inner');
+            if (!headerScroll || !bodyScroll || bodyScroll.dataset.syncBound === '1') return;
+
+            let syncing = false;
+            const syncTo = (source, target) => {
+                if (syncing) return;
+                syncing = true;
+                target.scrollLeft = source.scrollLeft;
+                requestAnimationFrame(() => {
+                    syncing = false;
+                });
+            };
+
+            bodyScroll.addEventListener('scroll', () => syncTo(bodyScroll, headerScroll), { passive: true });
+            headerScroll.addEventListener('scroll', () => syncTo(headerScroll, bodyScroll), { passive: true });
+            bodyScroll.dataset.syncBound = '1';
+        }
+
         // 点击外部关闭菜单
         document.addEventListener('click', function(e) {
             const colDropdown = document.getElementById('colDropdown');
@@ -2370,18 +2723,21 @@
             if (!currentUser.can_manage_staff) { alert('无权限访问人员管理'); window.location.href = 'dashboard.html'; return; }
 
             // 恢复标签页状态
-            const savedTab = localStorage.getItem('staffListTab') || 'employee';
+            const savedTab = normalizeRosterTab(localStorage.getItem('staffListTab') || 'active');
             currentTab = savedTab;
+            localStorage.setItem('staffListTab', savedTab);
             const tabBar = document.querySelector('.tab-bar');
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === savedTab);
             });
+            tabBar.classList.toggle('inactive', savedTab === 'inactive');
             tabBar.classList.toggle('student', savedTab === 'student');
 
             console.log('[DEBUG] Before loadColumnConfig, columns:', JSON.stringify(getCurrentColumns().map(c => ({k:c.key,v:c.visible}))));
             await loadColumnConfig();
             console.log('[DEBUG] After loadColumnConfig, columns:', JSON.stringify(getCurrentColumns().map(c => ({k:c.key,v:c.visible}))));
             renderTableHeader();
+            initTableScrollSync();
             initColDropdown();
             initHeaderFilterDropdowns();
             showSyncTime();
@@ -2394,7 +2750,7 @@
         function syncColumnsFromData(data) {
             if (!data || data.length === 0) return;
             // 排除的字段
-            const excludeKeys = ['id', '_', 'created_at', 'updated_at', 'exam_permission', 'meal_permission', 'task_permission', 's6_permission', 'guest_meal_permission', 'department_id', 'position_id'];
+            const excludeKeys = ['id', '_', 'created_at', 'updated_at', 'exam_permission', 'meal_permission', 'task_permission', 's6_permission', 'workwear_permission', 'workwear_special_permission', 'guest_meal_permission', 'department_id', 'position_id', 'sync_source', 'workwear_leave_confirmed_at'];
             // 字段中文名映射
             const labelMap = {
                 'serial': '序号',
@@ -2425,6 +2781,8 @@
                 'bank_code': '行号',
                 'status': '状态',
                 'leave_date': '离职日期',
+                'leave_type': '离职类型',
+                'workwear_leave_date': '工服预填离职日期',
                 'seniority': '工龄',
                 'oa': 'OA',
                 'employer': '所属单位',
@@ -2477,6 +2835,8 @@
                 'bank_code': '80px',
                 'status': '60px',
                 'leave_date': '100px',
+                'leave_type': '100px',
+                'workwear_leave_date': '130px',
                 'seniority': '70px',
                 'oa': '60px',
                 'employer': '100px',
@@ -2530,7 +2890,7 @@
                     newColsAdded = true;
                 }
             });
-            // 恢复列顺序 - 不再根据localStorage排序，保持COLUMNS定义顺序
+            applySavedColumnOrder(COLUMNS, savedConfig);
             // 添加新列后标记已完成同步
             if (newColsAdded) {
                 setColumnsSynced(true);
@@ -2542,7 +2902,7 @@
                         }
                     });
                     savedConfig._order = COLUMNS.map(c => c.key);
-                    localStorage.setItem('staffColumns', JSON.stringify(savedConfig));
+                    localStorage.setItem(getColumnsStorageKey(), JSON.stringify(savedConfig));
                 }
             }
             console.log('[DEBUG] syncColumnsFromData done, COLUMNS:', JSON.stringify(COLUMNS.map(c => ({k:c.key,v:c.visible}))));
@@ -2564,6 +2924,9 @@
 
             const apiUrl = getCurrentApiUrl();
             let url = `${apiUrl}?`;
+            if (currentTab === 'active' || currentTab === 'inactive') {
+                url += `status=${currentTab === 'active' ? 'active' : 'inactive'}&`;
+            }
 
             // 取消上一个请求
             if (loadStaffController) {
@@ -2636,14 +2999,140 @@
 
         // 全局搜索
         let globalSearchKeyword = '';
+        function hideSearchHits() {
+            const el = document.getElementById('searchHits');
+            if (!el) return;
+            el.style.display = 'none';
+            el.innerHTML = '';
+        }
+
+        function renderSearchHits(keyword, groups) {
+            const el = document.getElementById('searchHits');
+            if (!el) return;
+            const labels = {
+                active: '在职',
+                inactive: '离职',
+                student: '学生'
+            };
+            const buttons = groups
+                .filter(group => group.count > 0)
+                .map(group => `<button class="search-hit-btn" type="button" onclick="jumpSearchGroup('${group.tab}', '${encodeURIComponent(keyword)}')">${labels[group.tab]} ${group.count}</button>`)
+                .join('');
+            if (!buttons) {
+                el.innerHTML = `未找到与“${escapeHtml(keyword)}”匹配的人员`;
+            } else {
+                el.innerHTML = `<span>搜索“${escapeHtml(keyword)}”命中：</span>${buttons}`;
+            }
+            el.style.display = 'flex';
+        }
+
+        function jumpSearchGroup(tab, encodedKeyword) {
+            const keyword = decodeURIComponent(encodedKeyword || '');
+            document.getElementById('globalSearchInput').value = keyword;
+            globalSearchKeyword = keyword.trim().toLowerCase();
+            switchTab(tab, { preserveSearch: true, forceReload: currentTab === tab });
+        }
+
+        async function runCrossRosterSearch(keyword) {
+            const rawKeyword = keyword.trim();
+            if (!rawKeyword) {
+                hideSearchHits();
+                refreshFilteredTable();
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/staff/search-all?q=${encodeURIComponent(rawKeyword)}`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                const json = await res.json();
+                if (!json || json.code !== 0) {
+                    refreshFilteredTable();
+                    return;
+                }
+                const data = json.data || {};
+                const groups = [
+                    { tab: 'active', count: (data.activeStaff || []).length },
+                    { tab: 'inactive', count: (data.inactiveStaff || []).length },
+                    { tab: 'student', count: (data.students || []).length }
+                ];
+                const hitGroups = groups.filter(group => group.count > 0);
+                renderSearchHits(rawKeyword, groups);
+                if (hitGroups.length === 1) {
+                    const targetTab = hitGroups[0].tab;
+                    if (currentTab !== targetTab) {
+                        await switchTab(targetTab, { preserveSearch: true });
+                    } else {
+                        refreshFilteredTable();
+                    }
+                } else {
+                    refreshFilteredTable();
+                }
+            } catch (err) {
+                console.warn('跨名册搜索失败:', err);
+                refreshFilteredTable();
+            }
+        }
+
         function handleGlobalSearch(keyword) {
             globalSearchKeyword = keyword.trim().toLowerCase();
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => runCrossRosterSearch(keyword), 250);
             refreshFilteredTable();
+        }
+
+        function renderMobileCards(list) {
+            const el = document.getElementById('mobileCardList');
+            if (!el) return;
+            if (!list || list.length === 0) {
+                el.innerHTML = '';
+                return;
+            }
+            el.innerHTML = list.map((item) => {
+                const id = Number(item.id) || 0;
+                const name = escapeHtml(item.name || '-');
+                const employeeId = escapeHtml(item.employee_id || '-');
+                let metas;
+                if (currentTab === 'student') {
+                    metas = [
+                        `学校：${escapeHtml(item.school || '-')}`,
+                        `部门：${escapeHtml(item.department || '-')}`,
+                        `职位：${escapeHtml(item.position || '-')}`,
+                        `电话：${escapeHtml(item.phone || '-')}`
+                    ];
+                } else if (currentTab === 'inactive') {
+                    metas = [
+                        `部门：${escapeHtml(item.department || '-')}`,
+                        `职位：${escapeHtml(item.position || '-')}`,
+                        `离职：${escapeHtml(item.leave_date || '-')}`,
+                        `类型：${escapeHtml(item.leave_type || '-')}`
+                    ];
+                } else {
+                    metas = [
+                        `部门：${escapeHtml(item.department || '-')}`,
+                        `班组：${escapeHtml(item.team || '-')}`,
+                        `职位：${escapeHtml(item.position || '-')}`,
+                        `电话：${escapeHtml(item.phone || '-')}`
+                    ];
+                }
+                return `
+                    <div class="roster-card" onclick="viewStaff(${id})">
+                        <div class="roster-card-main">
+                            <div class="roster-card-name">${name}</div>
+                            <div class="roster-card-id">${employeeId}</div>
+                        </div>
+                        <div class="roster-card-meta">
+                            ${metas.map(meta => `<span>${meta}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderStaffTable(list) {
             console.log('[DEBUG] renderStaffTable called with', list.length, 'items, currentTab:', currentTab);
+            renderMobileCards(list);
             const columns = getCurrentColumns();
+            const widthMap = getComputedColumnWidths(columns, getWidthSourceData());
             console.log('[DEBUG] columns:', columns.filter(c => c.visible).map(c => c.key));
             const visibleNonCheckbox = columns.filter(c => c.visible);
             const allHidden = visibleNonCheckbox.length === 0;
@@ -2662,22 +3151,23 @@
                 // 检查是否不在同步名单中（红色标记）
                 const isNotInSync = notInExcelStaffIds.has(s.employee_id);
                 const rowClass = isInactive ? 'inactive-row' : (isNotInSync ? 'not-in-sync-row' : '');
-                const rowStyle = isInactive ? 'color:#999;text-decoration:line-through;' : (isNotInSync ? 'color:var(--danger);' : '');
+                const rowStyle = isNotInSync ? 'color:var(--danger);' : '';
                 const cells = columns.map(col => {
                     const visStyle = !col.visible ? 'display:none;' : '';
                     const alignStyle = isNotInSync ? 'text-align:center; color:var(--danger);' : 'text-align:center; color:var(--text);';
                     const dataLabel = col.label || '';
+                    const renderWidth = widthMap[col.key] || col.width;
                     if (col.key === 'serial') {
-                        const style = `width:${col.width}; min-width:${col.width}; ${alignStyle} ${visStyle}`;
+                        const style = `width:${renderWidth}; min-width:${renderWidth}; ${alignStyle} ${visStyle}`;
                         return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}">${idx + 1}</td>`;
                     }
                     if (col.key === 'employee_id') {
-                        const style = `width:${col.width}; min-width:${col.width}; ${alignStyle} ${visStyle}`;
+                        const style = `width:${renderWidth}; min-width:${renderWidth}; ${alignStyle} ${visStyle}`;
                         const linkStyle = isNotInSync ? 'color:var(--danger);' : '';
                         return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}"><span class="clickable-link" style="${linkStyle}" onclick="viewStaff(${s.id})">${s.employee_id || '-'}</span></td>`;
                     }
                     if (col.key === 'name') {
-                        const style = `width:${col.width}; min-width:${col.width}; ${alignStyle} ${visStyle}`;
+                        const style = `width:${renderWidth}; min-width:${renderWidth}; ${alignStyle} ${visStyle}`;
                         const linkStyle = isNotInSync ? 'color:var(--danger);' : '';
                         return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}"><span class="clickable-link" style="${linkStyle}" onclick="viewStaff(${s.id})">${s.name}</span></td>`;
                     }
@@ -2695,6 +3185,10 @@
                         const style = `${alignStyle} ${visStyle}`;
                         return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}">${teamVal}</td>`;
                     }
+                    if (isCopyableField(col.key)) {
+                        const style = `${alignStyle} ${visStyle}`;
+                        return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}">${renderCopyableValue(col.key, s[col.key] || '-', s[col.key] || '-')}</td>`;
+                    }
                     const style = `${alignStyle} ${visStyle}`;
                     return `<td data-key="${col.key}" data-label="${dataLabel}" style="${style}">${s[col.key] || '-'}</td>`;
                 }).join('');
@@ -2702,10 +3196,9 @@
             }).join('');
             document.getElementById('staffList').innerHTML = html;
             // 更新序号列的统计数字
-            const serialCountEl = document.getElementById('serialCount');
-            if (serialCountEl) {
-                serialCountEl.textContent = list.length;
-            }
+            document.querySelectorAll('[data-count-key="serial"]').forEach(el => {
+                el.textContent = list.length;
+            });
         }
 
         function viewStaff(id) {
@@ -2746,6 +3239,10 @@
 
         function renderStaffDetailPopup(s) {
             const formatValue = (v, fmt) => v !== null && v !== undefined && v !== '' ? (fmt ? fmt(v) : v) : '-';
+            const renderDetailValue = (field) => {
+                const value = formatValue(s[field.key], field.format);
+                return isCopyableField(field.key) ? renderCopyableValue(field.key, s[field.key], value) : escapeHtml(value);
+            };
 
             const categories = [
                 {
@@ -2832,7 +3329,7 @@
                             ${cat.fields.map(f => `
                                 <div style="display:flex;flex-direction:column;gap:2px;">
                                     <span class="info-label">${f.label}</span>
-                                    <div class="info-value" style="font-size:12px;">${formatValue(s[f.key], f.format)}</div>
+                                    <div class="info-value" style="font-size:12px;">${renderDetailValue(f)}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -2914,6 +3411,10 @@
 
         function renderStudentDetailPopup(s) {
             const formatValue = (v) => v !== null && v !== undefined && v !== '' ? v : '-';
+            const renderDetailValue = (field) => {
+                const value = formatValue(s[field.key]);
+                return isCopyableField(field.key) ? renderCopyableValue(field.key, s[field.key], value) : escapeHtml(value);
+            };
             const fields = [
                 { label: '工号', key: 'employee_id' },
                 { label: '姓名', key: 'name' },
@@ -2940,7 +3441,7 @@
                         ${fields.map(f => `
                             <div style="display:flex;flex-direction:column;gap:2px;">
                                 <span class="info-label">${f.label}</span>
-                                <div class="info-value" style="font-size:12px;">${formatValue(s[f.key])}</div>
+                                <div class="info-value" style="font-size:12px;">${renderDetailValue(f)}</div>
                             </div>
                         `).join('')}
                     </div>
@@ -3139,7 +3640,7 @@
             if (syncDesc) {
                 syncDesc.textContent = currentTab === 'student'
                     ? '从配置的共享数据源同步学生信息'
-                    : '从配置的共享数据源同步员工信息';
+                    : '从配置的共享数据源同步在职与离职员工信息';
             }
             document.getElementById('syncResult').style.display = 'none';
             document.getElementById('syncResult').innerHTML = '';
@@ -3183,6 +3684,10 @@
                     html += `<div style="display: flex; gap: 20px; flex-wrap: wrap;">`;
                     html += `<div>新增: <strong style="color: var(--success);">${r.inserted || 0}</strong> 人</div>`;
                     html += `<div>更新: <strong style="color: var(--accent);">${r.updated || 0}</strong> 人</div>`;
+                    if (currentTab !== 'student') {
+                        html += `<div>在职新增/更新: <strong>${r.activeInserted || 0}/${r.activeUpdated || 0}</strong></div>`;
+                        html += `<div>离职新增/更新: <strong>${r.inactiveInserted || 0}/${r.inactiveUpdated || 0}</strong></div>`;
+                    }
                     if (r.skipped && r.skipped.length > 0) {
                         html += `<div>跳过: <strong>${r.skipped.length}</strong> 人</div>`;
                     }
@@ -3192,21 +3697,30 @@
                         html += `<strong>不在Excel中 (${r.notInExcel.length}人，已标红):</strong> ${r.notInExcel.slice(0, 10).map(s => s.name + '(' + s.employee_id + ')').join(', ')}${r.notInExcel.length > 10 ? '...' : ''}`;
                         html += `</div>`;
                     }
+                    if (r.leaveDateConflicts && r.leaveDateConflicts.length > 0) {
+                        html += `<div style="margin-top: 10px; font-size: 12px; color: var(--orange);">工服预填日期与花名册日期不同：${r.leaveDateConflicts.length} 人</div>`;
+                    }
+                    if (r.deductionReview && Number(r.deductionReview.adjustments || 0) > 0) {
+                        html += `<div style="margin-top: 6px; font-size: 12px; color: var(--danger);">工服扣款待确认差额：${r.deductionReview.adjustments} 条</div>`;
+                    }
                     resultDiv.innerHTML = html;
                     resultDiv.style.background = 'rgba(35,165,89,0.1)';
                     resultDiv.style.display = 'block';
                     btn.style.display = 'none';
                     cancelBtn.textContent = '关闭';
                     cancelBtn.disabled = false;
-                    // 记录同步时间到数据库
-                    fetch(`${API_URL}/staff/sync-time`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${getToken()}`
-                        },
-                        body: JSON.stringify({ result: 'success' })
-                    }).then(() => showSyncTime());
+                    if (currentTab === 'student') {
+                        fetch(`${API_URL}/staff/sync-time`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${getToken()}`
+                            },
+                            body: JSON.stringify({ result: 'success' })
+                        }).then(() => showSyncTime());
+                    } else {
+                        showSyncTime();
+                    }
                     loadStaff();
                 } else {
                     resultDiv.innerHTML = `<div style="color: var(--danger);">✗ ${data.msg || '同步失败'}</div>`;
