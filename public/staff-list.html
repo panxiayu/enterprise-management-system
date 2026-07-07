@@ -1287,26 +1287,26 @@
         }
 
         function isCopyableField(key) {
-            return isPhoneField(key) || key === 'id_card';
+            return isPhoneField(key) || ['id_card', 'employee_id', 'name', 'bank_account', 'bank_name'].includes(key);
         }
 
         function normalizePhoneValue(value) {
             return String(value == null ? '' : value).trim();
         }
 
-        async function copyPhone(value) {
-            const phone = normalizePhoneValue(value);
-            if (!phone || phone === '-') {
-                showToast('没有可复制的电话号码', 'error');
+        async function copyTextValue(value, emptyMessage = '没有可复制的内容') {
+            const text = normalizePhoneValue(value);
+            if (!text || text === '-') {
+                showToast(emptyMessage, 'error');
                 return;
             }
 
             try {
                 if (navigator.clipboard && window.isSecureContext) {
-                    await navigator.clipboard.writeText(phone);
+                    await navigator.clipboard.writeText(text);
                 } else {
                     const input = document.createElement('textarea');
-                    input.value = phone;
+                    input.value = text;
                     input.setAttribute('readonly', '');
                     input.style.position = 'fixed';
                     input.style.opacity = '0';
@@ -1315,10 +1315,14 @@
                     document.execCommand('copy');
                     document.body.removeChild(input);
                 }
-                showToast(`已复制：${phone}`);
+                showToast(`已复制：${text}`);
             } catch (err) {
                 showToast('复制失败，请手动长按或选中复制', 'error');
             }
+        }
+
+        async function copyPhone(value) {
+            return copyTextValue(value, '没有可复制的电话号码');
         }
 
         function renderPhoneCopy(value, displayValue) {
@@ -1332,11 +1336,11 @@
             if (isPhoneField(key)) {
                 return renderPhoneCopy(value, displayValue);
             }
-            if (key === 'id_card') {
+            if (['id_card', 'employee_id', 'name', 'bank_account', 'bank_name'].includes(key)) {
                 const text = String(displayValue == null ? (value || '-') : displayValue);
                 const raw = String(value == null ? '' : value).trim();
                 if (!raw || raw === '-') return escapeHtml(text);
-                return `<span class="copyable-phone" onclick="copyPhone('${escapeHtml(raw)}')">${escapeHtml(text)}</span>`;
+                return `<span class="copyable-phone" onclick="copyTextValue('${escapeHtml(raw)}')">${escapeHtml(text)}</span>`;
             }
             return escapeHtml(displayValue == null ? (value || '-') : displayValue);
         }
