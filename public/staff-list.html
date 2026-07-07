@@ -3400,6 +3400,34 @@
                 `;
             }
 
+            if (s.leaveHistory && s.leaveHistory.length > 0) {
+                html += `
+                    <div class="detail-record-block">
+                        <div class="detail-record-title">历史离职记录</div>
+                        <div class="detail-table-wrap">
+                        <table class="detail-table">
+                            <thead><tr>
+                                <th>离职日期</th>
+                                <th>离职类型</th>
+                                <th>来源表</th>
+                                <th>说明</th>
+                            </tr></thead>
+                            <tbody>
+                                ${s.leaveHistory.map(h => `
+                                    <tr style="border-bottom:1px solid var(--border);">
+                                        <td style="text-align:center;">${h.leave_date || '-'}</td>
+                                        <td style="text-align:center;">${h.leave_type || '-'}</td>
+                                        <td style="text-align:center;">${h.source_sheet || '-'}</td>
+                                        <td style="text-align:center;">${Number(h.is_rehire || 0) === 1 ? '历史离职，当前已复职' : '历史离职'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                `;
+            }
+
             html += `
                 <div class="detail-actions">
                     <button class="btn btn-primary" onclick="openEditStaffModal()">编辑</button>
