@@ -334,12 +334,17 @@ function parseExcel(filePath) {
   const activeList = parseRosterSheet(wb, CONFIG.excel.activeSheetName, 'active');
   const resignedList = parseRosterSheet(wb, CONFIG.excel.resignedSheetName, 'inactive');
   const activeIds = new Set(activeList.map((staff) => staff.employee_id));
-  const conflicts = resignedList
+  const rehireRecords = resignedList
     .filter((staff) => activeIds.has(staff.employee_id))
-    .map((staff) => ({ employee_id: staff.employee_id, name: staff.name }));
+    .map((staff) => ({
+      employee_id: staff.employee_id,
+      name: staff.name,
+      leave_date: staff.leave_date,
+      leave_type: staff.leave_type
+    }));
   const merged = activeList.concat(resignedList.filter((staff) => !activeIds.has(staff.employee_id)));
-  log('INFO', `合并后 ${merged.length} 条员工记录（在职 ${activeList.length}, 离职 ${resignedList.length}, 冲突 ${conflicts.length}）`);
-  return { staffList: merged, activeCount: activeList.length, inactiveCount: resignedList.length, conflicts };
+  log('INFO', `合并后 ${merged.length} 条员工记录（在职 ${activeList.length}, 离职 ${resignedList.length}, 复职 ${rehireRecords.length}）`);
+  return { staffList: merged, activeCount: activeList.length, inactiveCount: resignedList.length, rehireRecords, resignedList };
 }
 
 function ensureColumn(db, table, name, definition) {
@@ -413,6 +418,24 @@ function ensureSyncSchema(db) {
       file_size INTEGER,
       updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
     );
+    CREATE TABLE IF NOT EXISTS staff_leave_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      staff_id INTEGER,
+      employee_id TEXT NOT NULL,
+      staff_name TEXT NOT NULL,
+      department TEXT,
+      team TEXT,
+      position TEXT,
+      hire_date TEXT,
+      leave_date TEXT NOT NULL,
+      leave_type TEXT,
+      source TEXT DEFAULT 'excel_sync',
+      source_sheet TEXT,
+      is_rehire INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(employee_id, leave_date, leave_type, source_sheet)
+    );
     CREATE TABLE IF NOT EXISTS workwear_deduction_adjustments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       staff_id INTEGER,
@@ -436,6 +459,8 @@ function ensureSyncSchema(db) {
       updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
       UNIQUE(record_id, official_leave_date)
     );
+    CREATE INDEX IF NOT EXISTS idx_staff_leave_history_employee ON staff_leave_history(employee_id, leave_date DESC);
+    CREATE INDEX IF NOT EXISTS idx_staff_leave_history_rehire ON staff_leave_history(is_rehire, leave_date DESC);
     CREATE INDEX IF NOT EXISTS idx_workwear_deduction_adjustments_staff ON workwear_deduction_adjustments(staff_id);
     CREATE INDEX IF NOT EXISTS idx_workwear_deduction_adjustments_status ON workwear_deduction_adjustments(status);
   `);
@@ -614,6 +639,8 @@ function reviewWorkwearDeductions(db, officialStaffList) {
 function syncToDatabase(parsed, fileMeta = {}) {
   log('INFO', '正在同步到数据库...');
   const staffList = Array.isArray(parsed) ? parsed : parsed.staffList;
+  const resignedHistoryList = Array.isArray(parsed?.resignedList) ? parsed.resignedList : [];
+  const rehireEmployeeIds = new Set(Array.isArray(parsed?.rehireRecords) ? parsed.rehireRecords.map((row) => row.employee_id) : []);
   
   const db = new Database(CONFIG.db.path);
   ensureSyncSchema(db);
@@ -864,6 +891,23 @@ function syncToDatabase(parsed, fileMeta = {}) {
         workwear_leave_confirmed_at = COALESCE(workwear_leave_confirmed_at, datetime('now', 'localtime'))
     WHERE id = ?
   `);
+  const upsertLeaveHistoryStmt = db.prepare(`
+    INSERT INTO staff_leave_history (
+      staff_id, employee_id, staff_name, department, team, position, hire_date,
+      leave_date, leave_type, source, source_sheet, is_rehire, updated_at
+    ) VALUES (
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, 'excel_sync', ?, ?, datetime('now', 'localtime')
+    )
+    ON CONFLICT(employee_id, leave_date, leave_type, source_sheet) DO UPDATE SET
+      staff_id = excluded.staff_id,
+      staff_name = excluded.staff_name,
+      department = excluded.department,
+      team = excluded.team,
+      position = excluded.position,
+      hire_date = excluded.hire_date,
+      is_rehire = excluded.is_rehire,
+      updated_at = datetime('now', 'localtime')
+  `);
 
   const insertMany = db.transaction((list) => {
     for (const staff of list) {
@@ -957,6 +1001,27 @@ function syncToDatabase(parsed, fileMeta = {}) {
 
   insertMany(staffList);
 
+  const saveLeaveHistory = db.transaction((historyList) => {
+    historyList.forEach((row) => {
+      if (!row.employee_id || !row.leave_date) return;
+      const currentStaff = getStmt.get(row.employee_id);
+      upsertLeaveHistoryStmt.run(
+        currentStaff?.id || null,
+        row.employee_id,
+        row.name || currentStaff?.name || '',
+        row.department || currentStaff?.department || '',
+        row.team || currentStaff?.team || '',
+        row.position || currentStaff?.position || '',
+        row.hire_date || currentStaff?.hire_date || '',
+        row.leave_date,
+        row.leave_type || '',
+        CONFIG.excel.resignedSheetName,
+        rehireEmployeeIds.has(row.employee_id) ? 1 : 0
+      );
+    });
+  });
+  saveLeaveHistory(resignedHistoryList);
+
   // 查找不在Excel中的员工（在数据库中但状态为active且不在同步列表中）
   // 注意：不修改数据库状态，只返回列表供前端展示红色提示
   const notInExcel = db.prepare('SELECT employee_id, name FROM staff WHERE status = ?').all('active');
@@ -982,7 +1047,7 @@ function syncToDatabase(parsed, fileMeta = {}) {
     inactiveCount: Array.isArray(parsed) ? staffList.filter((s) => s.status === 'inactive').length : parsed.inactiveCount,
     skipped,
     notInExcel: notInExcelList,
-    rosterConflicts: Array.isArray(parsed) ? [] : parsed.conflicts,
+    rehireRecords: Array.isArray(parsed) ? [] : (parsed.rehireRecords || []),
     leaveDateConflicts,
     deductionReview,
     fileHash: fileMeta.hash || '',

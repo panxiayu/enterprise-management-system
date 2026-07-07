@@ -143,6 +143,27 @@ function initializeStaffRosterColumns() {
     addColumn('sync_source', 'TEXT');
     addColumn('workwear_leave_date', 'TEXT');
     addColumn('workwear_leave_confirmed_at', 'TEXT');
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS staff_leave_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        staff_id INTEGER,
+        employee_id TEXT NOT NULL,
+        staff_name TEXT NOT NULL,
+        department TEXT,
+        team TEXT,
+        position TEXT,
+        hire_date TEXT,
+        leave_date TEXT NOT NULL,
+        leave_type TEXT,
+        source TEXT DEFAULT 'excel_sync',
+        source_sheet TEXT,
+        is_rehire INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(employee_id, leave_date, leave_type, source_sheet)
+      )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_staff_leave_history_employee ON staff_leave_history(employee_id, leave_date DESC)`);
   } catch (err) {
     console.error('初始化员工名册字段失败:', err);
   }
@@ -467,13 +488,33 @@ router.get('/:id', authMiddleware, (req, res) => {
       LIMIT 10
     `).all(staff.id);
 
+    const leaveHistory = db.prepare(`
+      SELECT
+        id,
+        employee_id,
+        staff_name,
+        department,
+        team,
+        position,
+        hire_date,
+        leave_date,
+        leave_type,
+        source_sheet,
+        is_rehire,
+        updated_at
+      FROM staff_leave_history
+      WHERE employee_id = ?
+      ORDER BY leave_date DESC, id DESC
+    `).all(staff.employee_id);
+
     res.json({
       code: 0,
       msg: 'success',
       data: {
         ...staff,
         examScores,
-        mealOrders
+        mealOrders,
+        leaveHistory
       }
     });
   } catch (err) {

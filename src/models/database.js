@@ -207,6 +207,28 @@ function initStaffNamePinyin() {
       db.exec("ALTER TABLE staff ADD COLUMN workwear_leave_confirmed_at TEXT");
       console.log('✅ staff 表新增 workwear_leave_confirmed_at 字段');
     }
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS staff_leave_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        staff_id INTEGER,
+        employee_id TEXT NOT NULL,
+        staff_name TEXT NOT NULL,
+        department TEXT,
+        team TEXT,
+        position TEXT,
+        hire_date TEXT,
+        leave_date TEXT NOT NULL,
+        leave_type TEXT,
+        source TEXT DEFAULT 'excel_sync',
+        source_sheet TEXT,
+        is_rehire INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(employee_id, leave_date, leave_type, source_sheet)
+      )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_staff_leave_history_employee ON staff_leave_history(employee_id, leave_date DESC)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_staff_leave_history_rehire ON staff_leave_history(is_rehire, leave_date DESC)`);
 
     const staffList = db.prepare(`
       SELECT id, name
