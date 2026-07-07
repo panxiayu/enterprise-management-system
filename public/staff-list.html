@@ -3215,7 +3215,14 @@
 
         function fetchStaffDetail(id) {
             const token = getToken();
-            const detailApi = currentTab === 'student' ? `${API_URL}/student-roster/${id}` : `${API_URL}/staff/${id}`;
+            let detailApi;
+            if (currentTab === 'student') {
+                detailApi = `${API_URL}/student-roster/${id}`;
+            } else if (currentTab === 'inactive') {
+                detailApi = `${API_URL}/staff/leave-history/${id}`;
+            } else {
+                detailApi = `${API_URL}/staff/${id}`;
+            }
             fetch(detailApi, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })

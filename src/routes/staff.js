@@ -170,6 +170,105 @@ function initializeStaffRosterColumns() {
 }
 initializeStaffRosterColumns();
 
+function buildInactiveRosterQuery({ search, departments, teams, hire_date_from, hire_date_to }) {
+  let query = `
+    SELECT
+      lh.id,
+      lh.staff_id,
+      lh.employee_id,
+      lh.staff_name AS name,
+      lh.department,
+      lh.team,
+      lh.position,
+      lh.hire_date,
+      lh.leave_date,
+      lh.leave_type,
+      'inactive' AS status,
+      'leave_history' AS roster_source,
+      lh.source_sheet,
+      lh.is_rehire,
+      COALESCE(s.phone, '') AS phone,
+      COALESCE(s.gender, '') AS gender,
+      COALESCE(s.id_card, '') AS id_card,
+      COALESCE(s.birthday, '') AS birthday,
+      COALESCE(s.nationality, '') AS nationality,
+      COALESCE(s.household, '') AS household,
+      COALESCE(s.address, '') AS address,
+      COALESCE(s.current_address, '') AS current_address,
+      COALESCE(s.education, '') AS education,
+      COALESCE(s.major, '') AS major,
+      COALESCE(s.graduate_school, '') AS graduate_school,
+      COALESCE(s.contract_signed, '') AS contract_signed,
+      COALESCE(s.contract_period, '') AS contract_period,
+      COALESCE(s.category, '') AS category,
+      COALESCE(s.bank_account, '') AS bank_account,
+      COALESCE(s.seniority, '') AS seniority,
+      COALESCE(s.oa, '') AS oa,
+      COALESCE(s.employer, '') AS employer,
+      COALESCE(s.office_phone, '') AS office_phone,
+      COALESCE(s.virtual_phone, '') AS virtual_phone,
+      COALESCE(s.id_validity, '') AS id_validity,
+      COALESCE(s.age, '') AS age,
+      COALESCE(s.graduate_date, '') AS graduate_date,
+      COALESCE(s.trial_period, '') AS trial_period,
+      COALESCE(s.trial_eval_date, '') AS trial_eval_date,
+      COALESCE(s.confirmed, '') AS confirmed,
+      COALESCE(s.confirmed_date, '') AS confirmed_date,
+      COALESCE(s.nda, '') AS nda,
+      COALESCE(s.non_compete, '') AS non_compete,
+      COALESCE(s.job_change_record, '') AS job_change_record,
+      COALESCE(s.insurance_start_date, '') AS insurance_start_date,
+      COALESCE(s.insurance_end_date, '') AS insurance_end_date,
+      COALESCE(s.emergency_contact, '') AS emergency_contact,
+      COALESCE(s.emergency_relation, '') AS emergency_relation,
+      COALESCE(s.emergency_phone, '') AS emergency_phone,
+      COALESCE(s.car_plate, '') AS car_plate,
+      COALESCE(s.other_info, '') AS other_info,
+      COALESCE(s.bank_name, '') AS bank_name,
+      COALESCE(s.bank_branch, '') AS bank_branch,
+      COALESCE(s.bank_code, '') AS bank_code
+    FROM staff_leave_history lh
+    LEFT JOIN staff s ON s.employee_id = lh.employee_id
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (search) {
+    query += ` AND (
+      lh.staff_name LIKE ? OR lh.employee_id LIKE ? OR COALESCE(s.name_pinyin, '') LIKE ?
+      OR COALESCE(lh.department, '') LIKE ? OR COALESCE(lh.team, '') LIKE ?
+      OR COALESCE(lh.position, '') LIKE ? OR COALESCE(s.phone, '') LIKE ?
+      OR COALESCE(lh.leave_date, '') LIKE ? OR COALESCE(lh.leave_type, '') LIKE ?
+    )`;
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  if (departments) {
+    const deptList = departments.split(',');
+    query += ` AND lh.department IN (${deptList.map(() => '?').join(',')})`;
+    params.push(...deptList);
+  }
+
+  if (teams) {
+    const teamList = teams.split(',');
+    query += ` AND lh.team IN (${teamList.map(() => '?').join(',')})`;
+    params.push(...teamList);
+  }
+
+  if (hire_date_from) {
+    query += ' AND lh.hire_date >= ?';
+    params.push(hire_date_from);
+  }
+
+  if (hire_date_to) {
+    query += ' AND lh.hire_date <= ?';
+    params.push(hire_date_to);
+  }
+
+  query += ' ORDER BY lh.leave_date DESC, lh.id DESC';
+  return { query, params };
+}
+
 // 获取用户列配置
 // GET /api/staff/column-config?key=staff_columns
 router.get('/column-config', authMiddleware, (req, res) => {
@@ -290,6 +389,16 @@ router.get('/', authMiddleware, (req, res) => {
   try {
     const { search, departments, teams, status, hire_date_from, hire_date_to } = req.query;
 
+    if (status === 'inactive') {
+      const { query, params } = buildInactiveRosterQuery({ search, departments, teams, hire_date_from, hire_date_to });
+      const inactiveStaff = db.prepare(query).all(...params);
+      return res.json({
+        code: 0,
+        msg: 'success',
+        data: inactiveStaff
+      });
+    }
+
     let query = `SELECT * FROM staff s WHERE 1=1`;
     const params = [];
 
@@ -373,7 +482,32 @@ router.get('/search-all', authMiddleware, (req, res) => {
     `;
     const staffParams = [like, like, like, like, like, like, like, like, like];
     const activeStaff = db.prepare(staffSql).all('active', ...staffParams);
-    const inactiveStaff = db.prepare(staffSql).all('inactive', ...staffParams);
+    const inactiveStaff = db.prepare(`
+      SELECT
+        lh.id,
+        lh.staff_id,
+        lh.employee_id,
+        lh.staff_name AS name,
+        lh.department,
+        lh.team,
+        lh.position,
+        lh.hire_date,
+        lh.leave_date,
+        lh.leave_type,
+        'inactive' AS status,
+        'leave_history' AS roster_source,
+        lh.source_sheet,
+        lh.is_rehire,
+        COALESCE(s.phone, '') AS phone
+      FROM staff_leave_history lh
+      LEFT JOIN staff s ON s.employee_id = lh.employee_id
+      WHERE lh.staff_name LIKE ? OR lh.employee_id LIKE ? OR COALESCE(s.name_pinyin, '') LIKE ?
+        OR COALESCE(lh.department, '') LIKE ? OR COALESCE(lh.team, '') LIKE ?
+        OR COALESCE(lh.position, '') LIKE ? OR COALESCE(s.phone, '') LIKE ?
+        OR COALESCE(lh.leave_date, '') LIKE ? OR COALESCE(lh.leave_type, '') LIKE ?
+      ORDER BY lh.leave_date DESC, lh.id DESC
+      LIMIT 100
+    `).all(...staffParams);
 
     const students = db.prepare(`
       SELECT *
@@ -403,6 +537,82 @@ router.get('/search-all', authMiddleware, (req, res) => {
   } catch (err) {
     console.error('跨名册搜索失败:', err);
     res.status(500).json({ code: -1, msg: '服务器错误: ' + err.message, data: null });
+  }
+});
+
+router.get('/leave-history/:id', authMiddleware, (req, res) => {
+  try {
+    const { id } = req.params;
+    const row = db.prepare(`
+      SELECT
+        lh.id,
+        lh.staff_id,
+        lh.employee_id,
+        lh.staff_name AS name,
+        lh.department,
+        lh.team,
+        lh.position,
+        lh.hire_date,
+        lh.leave_date,
+        lh.leave_type,
+        'inactive' AS status,
+        'leave_history' AS roster_source,
+        lh.source_sheet,
+        lh.is_rehire,
+        COALESCE(s.phone, '') AS phone,
+        COALESCE(s.gender, '') AS gender,
+        COALESCE(s.id_card, '') AS id_card,
+        COALESCE(s.birthday, '') AS birthday,
+        COALESCE(s.nationality, '') AS nationality,
+        COALESCE(s.household, '') AS household,
+        COALESCE(s.address, '') AS address,
+        COALESCE(s.current_address, '') AS current_address,
+        COALESCE(s.education, '') AS education,
+        COALESCE(s.major, '') AS major,
+        COALESCE(s.graduate_school, '') AS graduate_school,
+        COALESCE(s.contract_signed, '') AS contract_signed,
+        COALESCE(s.contract_period, '') AS contract_period,
+        COALESCE(s.category, '') AS category,
+        COALESCE(s.bank_account, '') AS bank_account,
+        COALESCE(s.seniority, '') AS seniority,
+        COALESCE(s.oa, '') AS oa,
+        COALESCE(s.employer, '') AS employer,
+        COALESCE(s.office_phone, '') AS office_phone,
+        COALESCE(s.virtual_phone, '') AS virtual_phone,
+        COALESCE(s.id_validity, '') AS id_validity,
+        COALESCE(s.age, '') AS age,
+        COALESCE(s.graduate_date, '') AS graduate_date,
+        COALESCE(s.trial_period, '') AS trial_period,
+        COALESCE(s.trial_eval_date, '') AS trial_eval_date,
+        COALESCE(s.confirmed, '') AS confirmed,
+        COALESCE(s.confirmed_date, '') AS confirmed_date,
+        COALESCE(s.nda, '') AS nda,
+        COALESCE(s.non_compete, '') AS non_compete,
+        COALESCE(s.job_change_record, '') AS job_change_record,
+        COALESCE(s.insurance_start_date, '') AS insurance_start_date,
+        COALESCE(s.insurance_end_date, '') AS insurance_end_date,
+        COALESCE(s.emergency_contact, '') AS emergency_contact,
+        COALESCE(s.emergency_relation, '') AS emergency_relation,
+        COALESCE(s.emergency_phone, '') AS emergency_phone,
+        COALESCE(s.car_plate, '') AS car_plate,
+        COALESCE(s.other_info, '') AS other_info,
+        COALESCE(s.bank_name, '') AS bank_name,
+        COALESCE(s.bank_branch, '') AS bank_branch,
+        COALESCE(s.bank_code, '') AS bank_code
+      FROM staff_leave_history lh
+      LEFT JOIN staff s ON s.employee_id = lh.employee_id
+      WHERE lh.id = ?
+      LIMIT 1
+    `).get(id);
+
+    if (!row) {
+      return res.status(404).json({ code: -1, msg: '离职记录不存在', data: null });
+    }
+
+    return res.json({ code: 0, msg: 'success', data: row });
+  } catch (err) {
+    console.error('获取离职记录详情失败:', err);
+    return res.status(500).json({ code: -1, msg: '服务器错误: ' + err.message, data: null });
   }
 });
 
