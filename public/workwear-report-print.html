@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工服报表打印</title>
+  <style>
+    :root{
+      --line:#111;
+      --grid:#111;
+      --soft:#f5f7fb;
+      --head:#d8e8fb;
+      --sub:#edf4fd;
+      --text:#162a63;
+      --muted:#5f74a6;
+      --page:#ffffff;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#eef3fb;color:var(--text);font-family:"Microsoft YaHei","PingFang SC",sans-serif}
+    body{padding:18px}
+    .toolbar{
+      position:sticky;top:0;z-index:10;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      margin:0 auto 14px;padding:10px 14px;max-width:1400px;
+      background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+      border:1px solid #d6e5fb;border-radius:14px;box-shadow:0 8px 24px rgba(34,73,140,.08)
+    }
+    .toolbar-copy{display:grid;gap:2px}
+    .toolbar-copy strong{font-size:15px}
+    .toolbar-copy span{font-size:12px;color:var(--muted)}
+    .toolbar-actions{display:flex;align-items:center;gap:8px}
+    .btn{
+      border:1px solid #b8cff7;background:#fff;color:#24428a;
+      border-radius:10px;padding:0 14px;height:34px;cursor:pointer;
+      font-size:13px;font-weight:700
+    }
+    .btn.primary{background:#4a90e2;border-color:#4a90e2;color:#fff}
+    .page{
+      width:100%;max-width:1400px;margin:0 auto;background:var(--page);
+      border-radius:18px;box-shadow:0 16px 40px rgba(37,73,139,.12);
+      padding:24px 24px 18px;overflow:hidden
+    }
+    .report-head{display:grid;gap:10px;margin-bottom:14px}
+    .report-title{font-size:28px;line-height:1.1;font-weight:900;text-align:center;letter-spacing:1px;color:#0d225e}
+    .report-date{
+      display:flex;align-items:center;justify-content:center;gap:0;
+      border:2px solid var(--line);margin:0 auto;width:min(760px,100%)
+    }
+    .report-date div{
+      min-height:34px;padding:6px 12px;display:flex;align-items:center;justify-content:center;
+      border-right:1px solid var(--line);font-size:15px;font-weight:700;color:#111
+    }
+    .report-date div:last-child{border-right:none}
+    .report-date .label{width:42%}
+    .report-date .date{width:25%}
+    .report-date .mid{width:8%}
+    .table-shell{overflow:auto}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    th,td{
+      border:1px solid var(--grid);padding:6px 6px;text-align:center;
+      font-size:13px;line-height:1.2;color:#111;word-break:break-word
+    }
+    th{font-weight:800}
+    .inventory-table thead tr:first-child th{background:var(--head)}
+    .inventory-table thead tr:nth-child(2) th{background:var(--sub)}
+    .inventory-table tbody tr:nth-child(even) td{background:#fbfdff}
+    .inventory-table th.item-col,.inventory-table td.item-col{width:176px}
+    .inventory-table th.price-col,.inventory-table td.price-col{width:84px}
+    .inventory-table th.unit-col,.inventory-table td.unit-col{width:70px}
+    .inventory-table th.carry-col,.inventory-table td.carry-col{width:118px;background:var(--sub)}
+    .inventory-table th.month-col,.inventory-table td.month-col{width:88px}
+    .generic-table thead th{background:var(--head)}
+    .generic-table tbody tr:nth-child(even) td{background:#fbfdff}
+    .state{padding:36px 16px;text-align:center;color:var(--muted);font-weight:700}
+    .note{margin-top:10px;text-align:right;font-size:12px;color:var(--muted)}
+    @media print{
+      @page{size:A4 landscape;margin:10mm}
+      html,body{background:#fff}
+      body{padding:0}
+      .toolbar{display:none}
+      .page{max-width:none;border-radius:0;box-shadow:none;padding:0}
+      .table-shell{overflow:visible}
+      th,td{font-size:11px;padding:4px 5px}
+      .report-title{font-size:20px}
+      .report-date div{font-size:12px;min-height:28px}
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="toolbar-copy">
+      <strong>工服报表打印</strong>
+      <span id="toolbarHint">正在生成打印内容</span>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn" type="button" onclick="window.close()">关闭</button>
+      <button class="btn primary" type="button" onclick="window.print()">打印 / 另存为 PDF</button>
+    </div>
+  </div>
+
+  <main class="page">
+    <section class="report-head">
+      <div class="report-title" id="reportTitle">工服报表</div>
+      <div class="report-date" id="reportDateBar"></div>
+    </section>
+    <section class="table-shell" id="reportBody">
+      <div class="state">正在加载数据...</div>
+    </section>
+    <div class="note" id="reportNote"></div>
+  </main>
+
+  <script>
+    const API_BASE = '/api/workwear';
+    const params = new URLSearchParams(window.location.search);
+    const reportType = params.get('report_type') || 'issue';
+    const dateFrom = params.get('date_from') || '';
+    const dateTo = params.get('date_to') || '';
+    const bodyEl = document.getElementById('reportBody');
+    const titleEl = document.getElementById('reportTitle');
+    const noteEl = document.getElementById('reportNote');
+    const hintEl = document.getElementById('toolbarHint');
+    let autoPrinted = false;
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function normalizeDateValue(value) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim()) ? String(value).trim() : '';
+    }
+
+    function normalizeMonthValue(value) {
+      return /^\d{4}-\d{2}$/.test(String(value || '').trim()) ? String(value).trim() : '';
+    }
+
+    function addMonths(yearMonth, diff) {
+      const normalized = normalizeMonthValue(yearMonth);
+      if (!normalized) return '';
+      const [year, month] = normalized.split('-').map(Number);
+      const date = new Date(year, month - 1 + diff, 1);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function formatMonthLabel(yearMonth) {
+      const normalized = normalizeMonthValue(yearMonth);
+      if (!normalized) return '';
+      const [year, month] = normalized.split('-').map(Number);
+      return `${year}年${month}月`;
+    }
+
+    function setDateBar(fromText, toText, label = '输入查询的起止日期') {
+      document.getElementById('reportDateBar').innerHTML = `
+        <div class="label">${escapeHtml(label)}</div>
+        <div class="date">${escapeHtml(fromText || '-')}</div>
+        <div class="mid">至</div>
+        <div class="date">${escapeHtml(toText || '-')}</div>
+      `;
+    }
+
+    function printWhenReady() {
+      if (autoPrinted) return;
+      autoPrinted = true;
+      setTimeout(() => window.print(), 320);
+    }
+
+    function getTitleByType(type) {
+      if (type === 'purchase') return '工服采购入库打印';
+      if (type === 'inventory') return '工服月盘存打印';
+      if (type === 'leave_self') return '离职 / 自购打印';
+      return '工服领用明细打印';
+    }
+
+    function renderGenericTable(columns, rows) {
+      if (!rows.length) {
+        bodyEl.innerHTML = '<div class="state">当前条件下没有可打印的数据</div>';
+        return;
+      }
+      const colWidth = Math.max(90, Math.floor(1000 / Math.max(columns.length, 1)));
+      bodyEl.innerHTML = `
+        <table class="generic-table">
+          <thead>
+            <tr>${columns.map((column) => `<th style="width:${colWidth}px">${escapeHtml(column.label)}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>${columns.map((column) => {
+                const value = row[column.key];
+                return `<td>${escapeHtml(value == null || value === '' ? '' : value)}</td>`;
+              }).join('')}</tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderInventoryMonthly(payload) {
+      const yearMonth = normalizeMonthValue(payload?.year_month || '');
+      const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+      const prevMonth = addMonths(yearMonth, -1);
+      const monthLabel = formatMonthLabel(yearMonth);
+      const prevLabel = `${Number(prevMonth.slice(5, 7))}月结转盘存`;
+      const currLabel = `${Number(yearMonth.slice(5, 7))}月份`;
+      const carryLabel = `${Number(yearMonth.slice(5, 7))}月结转盘存`;
+      titleEl.textContent = `${monthLabel}工服/工鞋出入盘存`;
+      setDateBar(`${yearMonth}-01`, `${yearMonth}-${new Date(Number(yearMonth.slice(0, 4)), Number(yearMonth.slice(5, 7)), 0).getDate().toString().padStart(2, '0')}`);
+      noteEl.textContent = '打印时可直接选择系统打印机或另存为 PDF。';
+      if (!rows.length) {
+        bodyEl.innerHTML = '<div class="state">当前月份暂无盘存数据</div>';
+        return;
+      }
+      bodyEl.innerHTML = `
+        <table class="inventory-table">
+          <thead>
+            <tr>
+              <th class="item-col" rowspan="2">物品名称</th>
+              <th class="price-col" rowspan="2">单价</th>
+              <th class="unit-col" rowspan="2">单位</th>
+              <th class="carry-col" rowspan="2">${escapeHtml(prevLabel)}</th>
+              <th colspan="3">${escapeHtml(currLabel)}</th>
+              <th class="carry-col" rowspan="2">${escapeHtml(carryLabel)}</th>
+            </tr>
+            <tr>
+              <th class="month-col">入库</th>
+              <th class="month-col">出库</th>
+              <th class="month-col">结存</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td class="item-col">${escapeHtml(row.item_name || '')}</td>
+                <td class="price-col">${escapeHtml(row.unit_price ?? '')}</td>
+                <td class="unit-col">${escapeHtml(row.unit || '')}</td>
+                <td class="carry-col">${escapeHtml(row.opening_qty ?? 0)}</td>
+                <td class="month-col">${Number(row.in_qty || 0) === 0 ? '' : escapeHtml(row.in_qty)}</td>
+                <td class="month-col">${Number(row.out_qty || 0) === 0 ? '' : escapeHtml(row.out_qty)}</td>
+                <td class="month-col">${escapeHtml(row.closing_qty ?? 0)}</td>
+                <td class="carry-col">${escapeHtml(row.closing_qty ?? 0)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function loadInventoryPrint() {
+      const from = normalizeDateValue(dateFrom);
+      const to = normalizeDateValue(dateTo);
+      const startMonth = from ? from.slice(0, 7) : '';
+      const endMonth = to ? to.slice(0, 7) : '';
+      if (startMonth && endMonth && startMonth === endMonth) {
+        const res = await fetch(`${API_BASE}/inventory-monthly?year_month=${encodeURIComponent(startMonth)}`);
+        const result = await res.json();
+        if (result.code !== 0) throw new Error(result.msg || '加载盘存失败');
+        renderInventoryMonthly(result.data || {});
+        return;
+      }
+      titleEl.textContent = '工服盘存打印';
+      setDateBar(from, to);
+      noteEl.textContent = '跨月份打印按明细方式输出。';
+      const url = `${API_BASE}/export?report_type=inventory&date_from=${encodeURIComponent(from)}&date_to=${encodeURIComponent(to)}&format=json`;
+      const res = await fetch(url);
+      const result = await res.json();
+      if (result.code !== 0) throw new Error(result.msg || '加载盘存失败');
+      renderGenericTable([
+        { key: '月份', label: '月份' },
+        { key: '物品名称', label: '物品名称' },
+        { key: '类别', label: '类别' },
+        { key: '型号', label: '型号' },
+        { key: '单位', label: '单位' },
+        { key: '单价', label: '单价' },
+        { key: '期初', label: '期初' },
+        { key: '入库', label: '入库' },
+        { key: '出库', label: '出库' },
+        { key: '结存', label: '结存' },
+        { key: '备注', label: '备注' }
+      ], Array.isArray(result.data) ? result.data : []);
+    }
+
+    async function loadGenericPrint() {
+      const from = normalizeDateValue(dateFrom);
+      const to = normalizeDateValue(dateTo);
+      titleEl.textContent = getTitleByType(reportType);
+      setDateBar(from, to);
+      const url = `${API_BASE}/export?report_type=${encodeURIComponent(reportType)}&date_from=${encodeURIComponent(from)}&date_to=${encodeURIComponent(to)}&format=json`;
+      const res = await fetch(url);
+      const result = await res.json();
+      if (result.code !== 0) throw new Error(result.msg || '加载打印数据失败');
+      const rows = Array.isArray(result.data) ? result.data : [];
+      if (reportType === 'purchase') {
+        renderGenericTable([
+          { key: 'purchase_date', label: '采购日期' },
+          { key: 'item_name', label: '物品名称' },
+          { key: 'unit', label: '单位' },
+          { key: 'model', label: '型号' },
+          { key: 'quantity', label: '采购数量' },
+          { key: 'unit_price', label: '单价' },
+          { key: 'amount', label: '采购金额' },
+          { key: 'purchaser', label: '采购人' },
+          { key: 'remark', label: '备注' }
+        ], rows);
+        return;
+      }
+      if (reportType === 'leave_self') {
+        renderGenericTable([
+          { key: '领用人', label: '领用人' },
+          { key: '部门', label: '部门' },
+          { key: '岗位', label: '岗位' },
+          { key: '离职日期', label: '离职日期' },
+          { key: '领用日期', label: '领用日期' },
+          { key: '类别', label: '类别' },
+          { key: '型号', label: '型号' },
+          { key: '数量', label: '数量' },
+          { key: '单价', label: '单价' },
+          { key: '自购金额', label: '自购金额' },
+          { key: '扣款比例', label: '扣款比例' },
+          { key: '离职扣款', label: '离职扣款' },
+          { key: '备注', label: '备注' }
+        ], rows);
+        return;
+      }
+      renderGenericTable([
+        { key: 'staff_name', label: '领用人' },
+        { key: 'hire_date', label: '入职日期' },
+        { key: 'department', label: '部门' },
+        { key: 'position', label: '岗位' },
+        { key: 'issue_date', label: '领用日期' },
+        { key: 'item_name', label: '类别' },
+        { key: 'unit', label: '单位' },
+        { key: 'model', label: '型号' },
+        { key: 'unit_price', label: '单价(元)' },
+        { key: 'quantity', label: '数量' },
+        { key: 'deduction_ratio', label: '扣款比例' },
+        { key: 'deduction', label: '离职扣款' },
+        { key: 'self_purchase', label: '自购金额' },
+        { key: 'leave_date', label: '离职日期' },
+        { key: 'remark', label: '备注' }
+      ], rows);
+    }
+
+    async function init() {
+      try {
+        hintEl.textContent = `正在生成${getTitleByType(reportType)}`;
+        if (reportType === 'inventory') {
+          await loadInventoryPrint();
+        } else {
+          await loadGenericPrint();
+        }
+        hintEl.textContent = '内容已生成，可直接打印或另存为 PDF';
+        printWhenReady();
+      } catch (error) {
+        hintEl.textContent = '打印内容生成失败';
+        bodyEl.innerHTML = `<div class="state">${escapeHtml(error.message || '打印内容生成失败')}</div>`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

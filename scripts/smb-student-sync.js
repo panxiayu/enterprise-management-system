@@ -95,9 +95,24 @@ print('Decrypted successfully')
 
 // Excel 日期序列号转 YYYY-MM-DD
 function excelSerialToDate(serial) {
-  if (!serial || typeof serial !== 'number') return null;
-  const date = new Date((serial - 1) * 86400000 + new Date(1899, 11, 30).getTime());
-  return date.toISOString().split('T')[0];
+  if (serial == null || serial === '') return null;
+  if (serial instanceof Date && !Number.isNaN(serial.getTime())) {
+    const year = serial.getFullYear();
+    const month = String(serial.getMonth() + 1).padStart(2, '0');
+    const day = String(serial.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  if (typeof serial === 'string') {
+    return serial.trim() || null;
+  }
+  if (typeof serial !== 'number') return null;
+
+  const parsed = XLSX.SSF.parse_date_code(serial);
+  if (!parsed) return null;
+  const year = String(parsed.y).padStart(4, '0');
+  const month = String(parsed.m).padStart(2, '0');
+  const day = String(parsed.d).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // 解析 Excel

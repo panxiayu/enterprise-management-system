@@ -406,11 +406,11 @@
             }
 
             .table-container {
-                display: none !important;
+                display: block !important;
             }
 
             .mobile-card-list {
-                display: grid;
+                display: none !important;
             }
 
             .table-header-scroll {
@@ -439,7 +439,7 @@
             }
 
             .table-scroll-inner > table > thead {
-                display: none;
+                display: table-header-group;
             }
 
             th,
@@ -664,7 +664,7 @@
         }
 
         body.env-miniapp.page-staff-list .table-container {
-            display: none !important;
+            display: block !important;
         }
 
         body.env-miniapp.page-staff-list .table-header-scroll {
@@ -704,11 +704,11 @@
         }
 
         body.env-miniapp.page-staff-list .table-scroll-inner > table > thead {
-            display: none;
+            display: table-header-group;
         }
 
         body.env-miniapp.page-staff-list .mobile-card-list {
-            display: grid;
+            display: none !important;
         }
     </style>
 </head>

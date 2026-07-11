@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>工服查询</title>
+  <title>工服查询（测试版）</title>
   <link rel="stylesheet" href="css/mobile-theme.css">
   <style>
     :root{
@@ -29,7 +29,7 @@
     .page{
       max-width:720px;
       margin:0 auto;
-      padding:20px 16px 28px;
+      padding:16px 14px 26px;
     }
     .hero,.panel,.history-item,.empty{
       background:rgba(255,255,255,.96);
@@ -38,7 +38,7 @@
       box-shadow:0 14px 38px rgba(74,144,226,.08);
     }
     .hero{
-      padding:18px 18px 16px;
+      padding:16px 16px 14px;
       margin-bottom:14px;
     }
     .hero-top{
@@ -49,7 +49,7 @@
       margin-bottom:14px;
     }
     .title{
-      font-size:24px;
+      font-size:23px;
       font-weight:800;
       line-height:1.15;
     }
@@ -78,11 +78,11 @@
     .profile-grid{
       display:grid;
       grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:10px;
+      gap:9px;
     }
     .profile-cell{
-      padding:12px 14px;
-      border-radius:16px;
+      padding:11px 13px;
+      border-radius:15px;
       background:#f7fbff;
       border:1px solid #e1efff;
     }
@@ -92,11 +92,11 @@
       margin-bottom:6px;
     }
     .profile-value{
-      font-size:16px;
+      font-size:15px;
       font-weight:800;
     }
     .panel{
-      padding:16px;
+      padding:14px;
       margin-bottom:14px;
     }
     .panel-head{
@@ -107,7 +107,7 @@
       margin-bottom:12px;
     }
     .panel-title{
-      font-size:18px;
+      font-size:19px;
       font-weight:800;
     }
     .panel-hint{
@@ -165,50 +165,145 @@
       margin-left:4px;
     }
     .history-list{
+      position:relative;
       display:grid;
-      gap:8px;
+      gap:12px;
+      padding-left:14px;
+    }
+    .history-list::before{
+      content:"";
+      position:absolute;
+      left:5px;
+      top:10px;
+      bottom:10px;
+      width:2px;
+      border-radius:999px;
+      background:linear-gradient(180deg,rgba(74,144,226,.38),rgba(74,144,226,.05));
     }
     .history-item{
-      padding:12px 14px;
-    }
-    .history-row{
-      display:flex;
+      position:relative;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
       align-items:center;
       gap:8px;
+      padding:13px 13px 12px;
+      border:1px solid #dcecff;
+      border-radius:18px;
+      background:
+        linear-gradient(135deg,rgba(255,255,255,.98) 0%,rgba(246,251,255,.96) 100%);
+      box-shadow:0 10px 24px rgba(74,144,226,.08);
+      overflow:hidden;
+    }
+    .history-item::before{
+      content:"";
+      position:absolute;
+      left:-14px;
+      top:22px;
+      width:11px;
+      height:11px;
+      border-radius:999px;
+      background:#4a90e2;
+      border:3px solid #eaf5ff;
+      box-shadow:0 0 0 1px rgba(74,144,226,.22);
+      z-index:2;
+    }
+    .history-item.is-warn::before{
+      background:#ea6a4a;
+      box-shadow:0 0 0 1px rgba(234,106,74,.22);
+    }
+    .history-main{
+      min-width:0;
+      display:flex;
+      align-items:center;
+      min-height:52px;
+    }
+    .history-head{
+      display:grid;
+      grid-template-columns:68px 35px 62px;
+      align-items:center;
+      justify-content:start;
+      gap:3px;
+      min-width:0;
+      margin-bottom:0;
+      height:28px;
     }
     .history-name{
-      font-size:14px;
-      font-weight:700;
-      flex:1;
+      display:flex;
+      align-items:center;
+      font-size:15px;
+      font-weight:800;
+      color:var(--primary-deep);
+      line-height:1;
+      width:68px;
+      height:28px;
       min-width:0;
+      white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      white-space:nowrap;
     }
-    .history-qty{
-      font-size:13px;
-      color:var(--soft);
-      flex-shrink:0;
+    .history-meta{
+      display:contents;
     }
-    .history-date{
-      color:var(--soft);
-      font-size:12px;
-      flex-shrink:0;
-      margin-left:auto;
-    }
-    .tag{
+    .history-tag{
       display:inline-flex;
       align-items:center;
-      padding:4px 9px;
-      border-radius:999px;
+      width:35px;
+      height:24px;
       font-size:11px;
+      padding:4px 0;
+      justify-content:center;
+      text-align:center;
+      border-radius:999px;
       font-weight:800;
-      background:#eef6ff;
+      background:#EDF5FF;
       color:var(--primary);
+      flex-shrink:0;
     }
-    .tag.warn{
-      background:#fff2ed;
-      color:var(--warn);
+    .history-tag.warn{
+      background:#FFF4EC;
+      color:#FF6B35;
+    }
+    .history-date{
+      display:flex;
+      align-items:center;
+      width:72px;
+      height:28px;
+      color:var(--soft);
+      font-size:12px;
+      font-weight:700;
+      line-height:1;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    .history-qty{
+      min-width:52px;
+      height:52px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:16px;
+      background:linear-gradient(180deg,#edf6ff 0%,#f8fbff 100%);
+      border:1px solid #d6e9ff;
+      color:var(--primary-deep);
+      font-size:21px;
+      font-weight:800;
+      line-height:1;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+      flex-shrink:0;
+    }
+    .history-side{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:5px;
+      flex-shrink:0;
+      margin-right:10px;
+    }
+    .history-unit{
+      font-size:13px;
+      font-weight:800;
+      color:var(--soft);
+      line-height:1;
     }
     .empty{
       padding:20px 16px;
@@ -221,6 +316,19 @@
       text-align:center;
       color:var(--soft);
       font-size:14px;
+    }
+    @media (max-width:460px){
+      .page{padding:14px 12px 24px}
+      .panel{padding:13px}
+      .history-list{gap:10px;padding-left:13px}
+      .history-item{padding:12px;grid-template-columns:minmax(0,1fr) 52px;border-radius:16px}
+      .history-main{min-height:48px}
+      .history-head{grid-template-columns:64px 35px 58px;gap:2px;height:28px}
+      .history-name{width:64px;height:28px;font-size:15px}
+      .history-tag{width:35px}
+      .history-date{width:58px;height:28px}
+      .history-qty{min-width:48px;height:48px;font-size:20px;border-radius:14px}
+      .history-side{gap:4px}
     }
     @media (min-width:768px){
       .profile-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -235,7 +343,7 @@
     <section class="hero">
       <div class="hero-top">
         <div>
-          <div class="title">工服查询</div>
+          <div class="title">员工信息</div>
         </div>
 
       </div>
@@ -312,8 +420,12 @@
     }
 
     function getRecentText(item) {
-      if (!item) return '最近暂无记录';
-      const text = [item.item_name || '', item.model || ''].filter(Boolean).join(' ');
+      if (!item) return '无';
+      let text = item.item_name || '';
+      // 如果item_name已包含model，不重复添加
+      if (item.model && !text.includes(item.model)) {
+        text = text ? text + ' ' + item.model : item.model;
+      }
       return `${text || '已领用'} · ${item.issue_date || '-'}`;
     }
 
@@ -352,16 +464,26 @@
         wrap.innerHTML = '<div class="empty">暂无领用记录</div>';
         return;
       }
-      wrap.innerHTML = rows.map((row) => `
-        <div class="history-item">
-          <div class="history-row">
-            <div class="history-name">${safeText(row.model && row.item_name && !row.item_name.includes(row.model) ? row.item_name + ' ' + row.model : (row.item_name || row.model || ''))}</div>
-            <span class="history-qty">x${safeText(row.quantity)}</span>
-            <span class="tag${row.self_purchase ? ' warn' : ''}">${row.self_purchase ? '自购' : '领用'}</span>
-            <div class="history-date">${safeText(row.issue_date || '-')}</div>
+      wrap.innerHTML = rows.map((row) => {
+        const displayName = row.model && row.item_name && !row.item_name.includes(row.model)
+          ? row.item_name + ' ' + row.model
+          : (row.item_name || row.model || '');
+        const unit = String(row.item_name || '').includes('鞋') ? '双' : '件';
+        return `
+        <div class="history-item${row.self_purchase ? ' is-warn' : ''}">
+          <div class="history-main">
+            <div class="history-head">
+              <div class="history-name">${safeText(displayName)}</div>
+              <span class="history-tag${row.self_purchase ? ' warn' : ''}">${row.self_purchase ? '自购' : '领用'}</span>
+              <span class="history-date">${safeText(row.issue_date || '-')}</span>
+            </div>
+          </div>
+          <div class="history-side">
+            <div class="history-qty">${safeText(row.quantity)}</div>
+            <span class="history-unit">${unit}</span>
           </div>
         </div>
-      `).join('');
+      `}).join('');
     }
 
     async function init() {

@@ -2,6 +2,8 @@ const db = require('../models/database');
 const { uploadToCloud } = require('../utils/cloud-storage');
 const { getS6UploadPath, getS6FileNameFromUrl, buildS6LocalUrl } = require('../utils/s6-storage');
 const fs = require('fs');
+const path = require('path');
+const { canCompressImage, compressToJpeg, safeUnlink: safeUnlinkTemp } = require('../utils/s6-image-compression');
 
 const RETRY_MINUTES = 5;
 const POLL_MS = 60 * 1000;
@@ -21,6 +23,10 @@ function parseUrlList(value) {
 
 function serializeUrlList(urls) {
   return urls && urls.length ? JSON.stringify(urls) : null;
+}
+
+function hasColumn(record, columnName) {
+  return !!record && Object.prototype.hasOwnProperty.call(record, columnName);
 }
 
 function isLocalS6Url(url) {
@@ -90,16 +96,34 @@ async function syncQueueRow(row) {
     if (!fs.existsSync(filePath)) {
       throw new Error(`本地待同步文件不存在: ${fileName}`);
     }
-    cloudUrls.push(await uploadToCloud(filePath, fileName, '6s/'));
+    let uploadPath = filePath;
+    let uploadName = fileName;
+    let tempCompressedPath = '';
+    try {
+      if (canCompressImage(filePath)) {
+        tempCompressedPath = await compressToJpeg(filePath);
+        uploadPath = tempCompressedPath;
+        uploadName = `${path.parse(fileName).name}.jpg`;
+      }
+      cloudUrls.push(await uploadToCloud(uploadPath, uploadName, '6s/'));
+    } catch (err) {
+      if (tempCompressedPath) {
+        console.error('6S 图片压缩后上传失败，回退原图上传:', fileName, err.message);
+      }
+      cloudUrls.push(await uploadToCloud(filePath, fileName, '6s/'));
+    } finally {
+      safeUnlinkTemp(tempCompressedPath);
+    }
   }
 
   const primaryValue = cloudUrls[0] || null;
   if (row.list_field) {
-    db.prepare(`UPDATE ${row.target_table} SET ${row.primary_field}=?, ${row.list_field}=?, updated_at=datetime('now','localtime') WHERE id=?`)
-      .run(primaryValue, serializeUrlList(cloudUrls), row.target_id);
+    const sql = hasColumn(record, 'updated_at')
+      ? `UPDATE ${row.target_table} SET ${row.primary_field}=?, ${row.list_field}=?, updated_at=datetime('now','localtime') WHERE id=?`
+      : `UPDATE ${row.target_table} SET ${row.primary_field}=?, ${row.list_field}=? WHERE id=?`;
+    db.prepare(sql).run(primaryValue, serializeUrlList(cloudUrls), row.target_id);
   } else {
-    const hasUpdatedAt = Object.prototype.hasOwnProperty.call(record, 'updated_at');
-    const sql = hasUpdatedAt
+    const sql = hasColumn(record, 'updated_at')
       ? `UPDATE ${row.target_table} SET ${row.primary_field}=?, updated_at=datetime('now','localtime') WHERE id=?`
       : `UPDATE ${row.target_table} SET ${row.primary_field}=? WHERE id=?`;
     db.prepare(sql).run(primaryValue, row.target_id);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>工服管理</title>
+  <title>工服盘存</title>
   <link rel="stylesheet" href="css/mobile-theme.css">
   <style>
     :root{
@@ -41,8 +41,9 @@
       align-items:center;
     }
     .hero-top,.toolbar-row,.item-top{justify-content:space-between}
+    .hero-top{align-items:center}
+    .hero-heading{flex:1;min-width:0}
     .title{font-size:22px;font-weight:800;line-height:1.2}
-    .subtitle{margin-top:5px;font-size:12px;color:var(--soft);line-height:1.5}
     .btn{
       border:none;
       border-radius:14px;
@@ -56,6 +57,12 @@
     .btn-ghost{background:#f2f8ff;color:var(--primary)}
     .btn-warn{background:#fff1ec;color:var(--warn)}
     .btn-good{background:#ecfbf3;color:var(--good)}
+    .btn-confirm-inventory{
+      min-width:176px;
+      height:42px;
+      padding:0 30px;
+      font-size:13px;
+    }
     .toolbar{margin-bottom:12px}
     .month-select{
       min-width:148px;
@@ -94,17 +101,117 @@
     }
     .summary-label{font-size:12px;color:var(--soft);margin-bottom:6px}
     .summary-value{font-size:20px;font-weight:800}
+    .hero-month-box{
+      flex:0 0 auto;
+      min-width:136px;
+      padding:10px 12px;
+      border-radius:15px;
+      background:#f7fbff;
+      border:1px solid #e1efff;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      text-align:right;
+    }
+    .hero-month-box .summary-label{margin-bottom:0;white-space:nowrap}
+    .hero-month-box .summary-value{font-size:16px;line-height:1.2;white-space:nowrap}
+    .hero-filters{
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px solid #e6f0ff;
+    }
     .type-filter{margin-bottom:12px}
+    .section-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:10px;
+    }
     .section-title{
       font-size:14px;
       font-weight:800;
       color:var(--text);
-      margin-bottom:10px;
+      margin-bottom:0;
+    }
+    .section-toggle{
+      border:none;
+      background:transparent;
+      color:var(--primary);
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      padding:0;
     }
     .filter-grid{
       display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+    }
+    .size-filter-wrap{
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px solid #e6f0ff;
+    }
+    .subtype-filter-wrap{
+      margin-top:12px;
+      padding-top:12px;
+      border-top:1px solid #e6f0ff;
+    }
+    .size-filter-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .subtype-filter-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .size-filter-title{
+      font-size:12px;
+      font-weight:800;
+      color:var(--soft);
+    }
+    .subtype-filter-title{
+      font-size:12px;
+      font-weight:800;
+      color:var(--soft);
+    }
+    .size-filter-clear{
+      border:none;
+      background:transparent;
+      color:var(--primary);
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      padding:0;
+    }
+    .size-filter-grid{
+      display:grid;
       grid-template-columns:repeat(4,minmax(0,1fr));
       gap:8px;
+    }
+    .subtype-filter-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+    }
+    .size-filter-tip{
+      padding:10px 12px;
+      border:1px dashed #d9e9ff;
+      border-radius:14px;
+      background:#f8fbff;
+      color:var(--soft);
+      font-size:12px;
+      font-weight:700;
+      text-align:center;
+      line-height:1.5;
     }
     .filter-chip{
       min-width:0;
@@ -133,6 +240,28 @@
       color:#fff;
       box-shadow:0 10px 22px rgba(74,144,226,.22);
     }
+    .filter-chip.filter-chip--confirmed-ok{
+      border-color:#7fd3a9;
+      background:#dff7ea;
+      color:#118252;
+    }
+    .filter-chip.filter-chip--confirmed-diff{
+      border-color:#ffb29d;
+      background:#ffe8e0;
+      color:#dd5f3f;
+    }
+    .filter-chip.filter-chip--confirmed-ok.is-active{
+      background:linear-gradient(135deg,#1f9f63,#49c58a);
+      border-color:transparent;
+      color:#fff;
+      box-shadow:0 10px 22px rgba(31,159,99,.22);
+    }
+    .filter-chip.filter-chip--confirmed-diff.is-active{
+      background:linear-gradient(135deg,#eb6e4c,#ff9a73);
+      border-color:transparent;
+      color:#fff;
+      box-shadow:0 10px 22px rgba(235,110,76,.22);
+    }
     .list{display:grid;gap:12px}
     .item-card{padding:12px}
     .item-title{font-size:17px;font-weight:800}
@@ -158,20 +287,40 @@
       border:1px solid #e3efff;
       border-radius:14px;
       background:#f8fbff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
       text-align:center;
-      color:var(--soft);
-      font-size:11px;
-      line-height:1.45;
+      color:#4f6798;
+      font-size:13px;
+      font-weight:700;
+      line-height:1.2;
+      white-space:nowrap;
     }
     .meta-chip strong{
-      display:block;
-      margin-top:2px;
+      display:inline;
+      margin-top:0;
       color:var(--text);
-      font-size:17px;
+      font-size:16px;
+      font-weight:800;
+    }
+    .meta-chip .meta-value{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:40px;
+      padding:3px 10px;
+      margin:0 2px;
+      border:1px solid #bcd8ff;
+      border-radius:10px;
+      background:#fff;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);
     }
     .meta-chip strong.is-warn{color:var(--warn)}
     .location-grid{
       display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
       gap:10px;
       margin-bottom:12px;
     }
@@ -186,10 +335,13 @@
       background:#fbfdff;
     }
     .location-name{
-      padding-top:4px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       font-size:12px;
       font-weight:700;
       color:var(--soft);
+      text-align:center;
     }
     .location-main{
       display:grid;
@@ -198,7 +350,7 @@
     }
     .qty-row{
       display:grid;
-      grid-template-columns:minmax(0,1fr) auto auto;
+      grid-template-columns:auto minmax(0,1fr) auto;
       gap:8px;
       align-items:center;
     }
@@ -229,42 +381,92 @@
       cursor:pointer;
     }
     .qty-step:disabled{opacity:.45;cursor:not-allowed}
-    .qty-presets{
-      display:grid;
-      grid-template-columns:repeat(5,minmax(0,1fr));
-      gap:6px;
-    }
-    .qty-preset{
-      height:30px;
-      border:1px solid #d9e9ff;
-      border-radius:10px;
-      background:#fff;
-      color:var(--soft);
-      font-size:11px;
-      font-weight:800;
-      cursor:pointer;
-    }
-    .qty-preset:disabled{opacity:.45;cursor:not-allowed}
     .remark-input{
-      min-height:72px;
+      min-height:94px;
       padding:11px 13px;
       resize:vertical;
       line-height:1.6;
       font-size:13px;
     }
+    .remark-wrap{
+      margin-top:10px;
+    }
+    .remark-actions{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:8px;
+    }
+    .remark-modal-actions{
+      justify-content:flex-end;
+      gap:12px;
+    }
+    .remark-modal{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px 12px;
+      background:rgba(13,31,66,.28);
+      z-index:60;
+    }
+    .remark-modal-card{
+      position:relative;
+      width:min(100%,520px);
+      padding:18px 16px 16px;
+      border:1px solid var(--line);
+      border-radius:20px;
+      background:#fff;
+      box-shadow:0 18px 40px rgba(29,43,90,.16);
+    }
+    .remark-modal-close{
+      position:absolute;
+      top:12px;
+      right:12px;
+      width:30px;
+      height:30px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:#fff;
+      color:#7f93bf;
+      font-size:18px;
+      line-height:1;
+      cursor:pointer;
+    }
+    .remark-modal-title{
+      font-size:16px;
+      font-weight:800;
+      color:var(--text);
+      margin-bottom:10px;
+      padding-right:36px;
+    }
     .item-actions{
       flex-wrap:wrap;
       justify-content:flex-end;
+      align-items:center;
       margin-top:10px;
+      gap:10px;
     }
     .status-text{
-      margin-right:auto;
+      margin-left:auto;
+      background:#f6faff;
+      padding:6px 10px;
+      border-radius:12px;
       font-size:12px;
       font-weight:800;
       color:var(--soft);
+      line-height:1.35;
+      letter-spacing:.2px;
+      text-align:right;
     }
-    .status-text.warn{color:var(--warn)}
-    .status-text.good{color:var(--good)}
+    .status-text.warn{
+      background:#fff3ef;
+      color:var(--warn);
+    }
+    .status-text.good{
+      background:#ecfbf3;
+      color:var(--good);
+    }
     .review-section{margin-top:16px;display:grid;gap:10px}
     .review-title{font-size:18px;font-weight:800;margin:4px 0 8px}
     .review-card{padding:14px}
@@ -290,22 +492,30 @@
     .empty{padding:18px;text-align:center;color:var(--soft);font-size:13px}
     .hidden{display:none !important}
     @media (max-width:640px){
-      .hero-top,.toolbar-row{flex-direction:column;align-items:stretch}
+      .hero-top{flex-direction:row;align-items:center}
+      .toolbar-row{flex-direction:column;align-items:stretch}
       .summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-      .filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .subtype-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .size-filter-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
       .item-top{align-items:flex-start}
       .item-meta{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .location-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .location-row{grid-template-columns:1fr;gap:8px}
-      .location-name{padding-top:0}
-      .qty-row{grid-template-columns:minmax(0,1fr) 34px 34px}
-      .item-actions{display:grid;grid-template-columns:1fr 1fr;align-items:center}
-      .status-text{grid-column:1 / -1}
+      .qty-row{grid-template-columns:34px minmax(0,1fr) 34px}
+      .item-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
+      .status-text{grid-column:auto;min-height:auto}
+      .item-actions .btn{margin-left:auto}
     }
     @media (max-width:420px){
       .page{padding:12px 10px 24px}
-      .hero-top,.toolbar-row{flex-direction:column;align-items:stretch}
-      .item-meta{grid-template-columns:1fr}
-      .qty-presets{grid-template-columns:repeat(5,minmax(0,1fr))}
+      .hero-top{flex-direction:row;align-items:center}
+      .toolbar-row{flex-direction:column;align-items:stretch}
+      .item-meta{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .subtype-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .size-filter-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+      .location-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
   </style>
 </head>
@@ -313,38 +523,36 @@
   <div class="page">
     <section class="hero">
       <div class="hero-top">
-        <div>
-          <div class="title">工服管理</div>
-          <div class="subtitle">逐项完成结转盘存确认，全部确认后才生成下个月结转盘存数据</div>
+        <div class="hero-heading">
+          <div class="title">工服盘存</div>
         </div>
-        <div class="item-actions">
-          <button class="btn btn-primary" type="button" onclick="location.href='mobile-workwear-query.html'">切换到工服查询</button>
-          <button class="btn btn-ghost" type="button" onclick="location.href='employee.html'">员工首页</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="toolbar">
-      <div class="toolbar-row">
-        <div class="item-actions" style="justify-content:flex-start">
-          <select class="month-select" id="monthSelect"></select>
-          <span class="status-chip" id="sessionStatus">盘点中</span>
-        </div>
-        <div class="item-actions">
-          <button class="btn btn-primary" type="button" id="completeBtn">完成本月结转</button>
+        <div class="hero-month-box" id="summaryGrid">
+          <span class="summary-label">盘点月份</span>
+          <span class="summary-value">-</span>
         </div>
       </div>
-    </section>
-
-    <section class="summary">
-      <div class="summary-grid" id="summaryGrid">
-        <div class="summary-box"><div class="summary-label">状态</div><div class="summary-value">-</div></div>
+      <div class="hero-filters">
+        <div class="section-head">
+          <div class="section-title">快捷选择工服类型</div>
+          <button class="section-toggle" type="button" id="filterPanelToggle">收缩选择项</button>
+        </div>
+        <div id="filterPanelBody">
+          <div class="filter-grid" id="typeFilterGrid"></div>
+          <div class="subtype-filter-wrap hidden" id="subtypeFilterWrap">
+            <div class="subtype-filter-head">
+              <div class="subtype-filter-title" id="subtypeFilterTitle">请选择类别</div>
+            </div>
+            <div class="subtype-filter-grid" id="subtypeFilterGrid"></div>
+          </div>
+          <div class="size-filter-wrap hidden" id="sizeFilterWrap">
+            <div class="size-filter-head">
+              <div class="size-filter-title" id="sizeFilterTitle">请选择尺码</div>
+              <button class="size-filter-clear" type="button" id="sizeFilterClear">清除选择</button>
+            </div>
+            <div class="size-filter-grid" id="sizeFilterGrid"></div>
+          </div>
+        </div>
       </div>
-    </section>
-
-    <section class="type-filter">
-      <div class="section-title">快捷选择工服类型</div>
-      <div class="filter-grid" id="typeFilterGrid"></div>
     </section>
 
     <section class="list" id="itemList">
@@ -357,14 +565,45 @@
     </section>
   </div>
 
+  <div class="remark-modal hidden" id="remarkModal">
+    <div class="remark-modal-card">
+      <button class="remark-modal-close" type="button" id="remarkModalClose" aria-label="关闭">×</button>
+      <div class="remark-modal-title">请填写差异原因</div>
+      <textarea class="remark-input" id="remarkModalInput" placeholder="请输入差异原因，便于后续核对"></textarea>
+      <div class="remark-actions remark-modal-actions">
+        <button class="btn btn-warn" type="button" id="remarkModalConfirm">确认库存</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/employee-session.js"></script>
   <script src="/js/auth-guard.js"></script>
   <script src="/js/module-access.js"></script>
   <script>
     const API = window.location.origin + '/api';
+    const QUICK_CATEGORY_OPTIONS = ['夏季工服', '冬季工服', '劳保鞋'];
+    const MODEL_SORT_ORDER = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL'];
+    const SUBCATEGORY_SORT_ORDER = {
+      夏季工服: ['男夏', '女夏', '车夏'],
+      冬季工服: ['新款冬', '冬'],
+      劳保鞋: ['鞋']
+    };
     let currentPayload = null;
     let reviewTasks = [];
-    let currentTypeFilter = '全部';
+    let currentTypeFilter = '';
+    let currentSubtypeFilter = '';
+    let currentModelFilter = '';
+    let filterPanelCollapsed = false;
+    const autoSaveTimers = new Map();
+    let pendingRemarkItemId = 0;
+    const qtyTouchState = {
+      input: null,
+      startY: 0,
+      startX: 0,
+      startValue: 0,
+      lastSteps: 0,
+      active: false
+    };
 
     function authHeaders() {
       return {
@@ -406,6 +645,7 @@
       if (!input || input.disabled) return;
       input.value = Math.max(0, Number(quantity) || 0);
       updateItemCardTotals(itemId);
+      scheduleAutoPersist(itemId, 200);
     }
 
     function adjustItemLocationQty(itemId, locationCode, delta) {
@@ -414,6 +654,7 @@
       const next = Math.max(0, (Number(input.value) || 0) + delta);
       input.value = next;
       updateItemCardTotals(itemId);
+      scheduleAutoPersist(itemId, 200);
     }
 
     function updateItemCardTotals(itemId) {
@@ -432,13 +673,99 @@
       }
     }
 
+    function normalizeQtyValue(value) {
+      return Math.max(0, Math.trunc(Number(String(value == null ? '' : value).replace(/[^\d-]/g, '')) || 0));
+    }
+
+    function commitQtyInputValue(input, quantity) {
+      if (!input || input.disabled) return;
+      input.value = String(Math.max(0, Math.trunc(Number(quantity) || 0)));
+      const itemId = Number(input.dataset.itemId || 0);
+      if (itemId) updateItemCardTotals(itemId);
+    }
+
+    function handleQtyInputTouchStart(event) {
+      const input = event.currentTarget;
+      if (!input || input.disabled || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      qtyTouchState.input = input;
+      qtyTouchState.startY = touch.clientY;
+      qtyTouchState.startX = touch.clientX;
+      qtyTouchState.startValue = normalizeQtyValue(input.value);
+      qtyTouchState.lastSteps = 0;
+      qtyTouchState.active = false;
+    }
+
+    function handleQtyInputTouchMove(event) {
+      const input = event.currentTarget;
+      if (!input || input.disabled || qtyTouchState.input !== input || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const deltaY = qtyTouchState.startY - touch.clientY;
+      const deltaX = touch.clientX - qtyTouchState.startX;
+      if (!qtyTouchState.active) {
+        if (Math.abs(deltaY) < 12) return;
+        if (Math.abs(deltaY) <= Math.abs(deltaX)) return;
+        qtyTouchState.active = true;
+      }
+      event.preventDefault();
+      const steps = Math.trunc(deltaY / 26);
+      if (steps === qtyTouchState.lastSteps) return;
+      qtyTouchState.lastSteps = steps;
+      commitQtyInputValue(input, qtyTouchState.startValue + steps);
+    }
+
+    function handleQtyInputTouchEnd(event) {
+      const input = event.currentTarget;
+      if (qtyTouchState.input === input) {
+        qtyTouchState.input = null;
+        qtyTouchState.active = false;
+        qtyTouchState.lastSteps = 0;
+      }
+    }
+
+    function handleQtyInputFocus(event) {
+      const input = event.currentTarget;
+      if (!input || input.disabled) return;
+      if (normalizeQtyValue(input.value) === 0) {
+        input.value = '';
+      }
+    }
+
+    function bindQtyInputInteractions() {
+      document.querySelectorAll('.qty-input').forEach((input) => {
+        if (input.dataset.touchBound === '1') return;
+        input.dataset.touchBound = '1';
+        input.setAttribute('inputmode', 'numeric');
+        input.setAttribute('pattern', '[0-9]*');
+        input.addEventListener('touchstart', handleQtyInputTouchStart, { passive: true });
+        input.addEventListener('touchmove', handleQtyInputTouchMove, { passive: false });
+        input.addEventListener('touchend', handleQtyInputTouchEnd, { passive: true });
+        input.addEventListener('touchcancel', handleQtyInputTouchEnd, { passive: true });
+        input.addEventListener('focus', handleQtyInputFocus);
+        input.addEventListener('input', () => {
+          const itemId = Number(input.dataset.itemId || 0);
+          if (itemId) scheduleAutoPersist(itemId, 500);
+        });
+        input.addEventListener('change', () => {
+          commitQtyInputValue(input, input.value);
+          const itemId = Number(input.dataset.itemId || 0);
+          if (itemId) scheduleAutoPersist(itemId, 0);
+        });
+        input.addEventListener('blur', () => {
+          commitQtyInputValue(input, input.value);
+          const itemId = Number(input.dataset.itemId || 0);
+          if (itemId) scheduleAutoPersist(itemId, 0);
+        });
+      });
+    }
+
     function statusText(status) {
       return ({
-        draft: '待录入',
+        draft: '',
         rejected: '已驳回',
-        pending_manager_review: '待主管审核',
+        pending_manager_review: '待审核',
         confirmed: '已确认'
-      })[status] || '盘点中';
+      })[status] || '';
     }
 
     function sessionStatusText(status) {
@@ -449,44 +776,230 @@
       })[status] || '盘点中';
     }
 
+    function formatConfirmedAt(value) {
+      return String(value || '').trim();
+    }
+
+    function buildStatusDisplayText(status, confirmedAt, submittedAt) {
+      const statusLabel = statusText(status);
+      const confirmedText = formatConfirmedAt(confirmedAt);
+      const submittedText = formatConfirmedAt(submittedAt);
+      if (status === 'confirmed' && confirmedText) {
+        return `${statusLabel} ${confirmedText}`;
+      }
+      if (status === 'pending_manager_review' && submittedText) {
+        return `${statusLabel} ${submittedText}`;
+      }
+      return [statusLabel, confirmedText || submittedText].filter(Boolean).join(' ');
+    }
+
     function getItemFilterType(item) {
       const category = String(item.category || '');
       const itemType = String(item.item_type || '');
       const itemName = String(item.item_name || '');
       const text = `${category} ${itemType} ${itemName}`;
       if (text.includes('鞋')) return '劳保鞋';
-      if (text.includes('冬')) return '冬装';
-      if (text.includes('夏')) return '夏装';
-      return '其他';
+      if (text.includes('冬')) return '冬季工服';
+      if (text.includes('夏')) return '夏季工服';
+      return '';
+    }
+
+    function getAvailableTypes(items) {
+      return QUICK_CATEGORY_OPTIONS.filter((type) =>
+        items.some((item) => getItemFilterType(item) === type)
+      );
+    }
+
+    function getDisplayType(items) {
+      return currentTypeFilter || getAvailableTypes(items)[0] || '';
+    }
+
+    function getSubtypeOptions(items, type) {
+      return Array.from(new Set(
+        items
+          .filter((item) => getItemFilterType(item) === type)
+          .map((item) => getItemSubcategory(item))
+          .filter(Boolean)
+      )).sort((a, b) => compareSubtypeValues(type, a, b));
+    }
+
+    function updateFilterPanelVisibility() {
+      const body = document.getElementById('filterPanelBody');
+      const toggle = document.getElementById('filterPanelToggle');
+      if (body) body.classList.toggle('hidden', filterPanelCollapsed);
+      if (toggle) toggle.textContent = filterPanelCollapsed ? '展示选择项' : '收缩选择项';
     }
 
     function renderTypeFilters(payload) {
       const items = Array.isArray(payload?.items) ? payload.items : [];
-      const counts = { 全部: items.length, 夏装: 0, 冬装: 0, 劳保鞋: 0, 其他: 0 };
+      const counts = { 夏季工服: 0, 冬季工服: 0, 劳保鞋: 0 };
       items.forEach((item) => {
         const type = getItemFilterType(item);
-        counts[type] = (counts[type] || 0) + 1;
+        if (type) counts[type] = (counts[type] || 0) + 1;
       });
-      if (!Object.prototype.hasOwnProperty.call(counts, currentTypeFilter)) {
-        currentTypeFilter = '全部';
+      if (currentTypeFilter && !QUICK_CATEGORY_OPTIONS.includes(currentTypeFilter)) {
+        currentTypeFilter = '';
       }
-      document.getElementById('typeFilterGrid').innerHTML = ['全部', '夏装', '冬装', '劳保鞋', '其他'].map((type) => `
+      document.getElementById('typeFilterGrid').innerHTML = QUICK_CATEGORY_OPTIONS.map((type) => `
         <button class="filter-chip ${currentTypeFilter === type ? 'is-active' : ''}" type="button" onclick="setTypeFilter('${type}')">
           ${escapeHtml(type)}
-          <strong>${Number(counts[type] || 0)} 项</strong>
         </button>
       `).join('');
+      updateFilterPanelVisibility();
+      renderSubtypeFilters(payload);
+      renderModelFilters(payload);
     }
 
     function setTypeFilter(type) {
-      currentTypeFilter = type || '全部';
+      currentTypeFilter = currentTypeFilter === type ? '' : (type || '');
+      currentSubtypeFilter = '';
+      currentModelFilter = '';
       if (!currentPayload) return;
       renderTypeFilters(currentPayload);
       renderItems(currentPayload);
     }
 
+    function getItemSubcategory(item) {
+      return String(item.category || '').trim();
+    }
+
+    function compareSubtypeValues(type, a, b) {
+      const orders = SUBCATEGORY_SORT_ORDER[type] || [];
+      const left = String(a || '').trim();
+      const right = String(b || '').trim();
+      const leftOrder = orders.indexOf(left);
+      const rightOrder = orders.indexOf(right);
+      if (leftOrder !== -1 || rightOrder !== -1) {
+        if (leftOrder === -1) return 1;
+        if (rightOrder === -1) return -1;
+        return leftOrder - rightOrder;
+      }
+      return left.localeCompare(right, 'zh-CN');
+    }
+
+    function renderSubtypeFilters(payload) {
+      const wrap = document.getElementById('subtypeFilterWrap');
+      const grid = document.getElementById('subtypeFilterGrid');
+      const title = document.getElementById('subtypeFilterTitle');
+      if (!wrap || !grid || !title) return;
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      const displayType = getDisplayType(items);
+      if (!displayType) {
+        wrap.classList.add('hidden');
+        grid.innerHTML = '';
+        return;
+      }
+      const subtypeOptions = getSubtypeOptions(items, displayType);
+      wrap.classList.remove('hidden');
+      title.textContent = `${displayType}类别`;
+      if (currentSubtypeFilter && !subtypeOptions.includes(currentSubtypeFilter)) {
+        currentSubtypeFilter = '';
+      }
+      if (!subtypeOptions.length) {
+        grid.innerHTML = '<div class="size-filter-tip" style="grid-column:1 / -1;">当前类型暂无可盘点类别</div>';
+        return;
+      }
+      grid.innerHTML = subtypeOptions.map((subtype) => `
+        <button class="filter-chip ${currentSubtypeFilter === subtype ? 'is-active' : ''}" type="button" onclick="setSubtypeFilter('${escapeHtml(subtype)}')">
+          ${escapeHtml(subtype)}
+        </button>
+      `).join('');
+    }
+
+    function setSubtypeFilter(subtype) {
+      currentSubtypeFilter = currentSubtypeFilter === subtype ? '' : String(subtype || '').trim();
+      currentModelFilter = '';
+      if (!currentPayload) return;
+      renderSubtypeFilters(currentPayload);
+      renderModelFilters(currentPayload);
+      renderItems(currentPayload);
+    }
+
+    function normalizeModelValue(value) {
+      return String(value == null ? '' : value).trim().toUpperCase();
+    }
+
+    function compareModelValues(a, b) {
+      const left = normalizeModelValue(a);
+      const right = normalizeModelValue(b);
+      const leftNum = Number(left);
+      const rightNum = Number(right);
+      const leftIsNum = left !== '' && Number.isFinite(leftNum);
+      const rightIsNum = right !== '' && Number.isFinite(rightNum);
+      if (leftIsNum && rightIsNum) return leftNum - rightNum;
+      const leftOrder = MODEL_SORT_ORDER.indexOf(left);
+      const rightOrder = MODEL_SORT_ORDER.indexOf(right);
+      if (leftOrder !== -1 || rightOrder !== -1) {
+        if (leftOrder === -1) return 1;
+        if (rightOrder === -1) return -1;
+        return leftOrder - rightOrder;
+      }
+      return left.localeCompare(right, 'zh-CN');
+    }
+
+    function renderModelFilters(payload) {
+      const wrap = document.getElementById('sizeFilterWrap');
+      const grid = document.getElementById('sizeFilterGrid');
+      const title = document.getElementById('sizeFilterTitle');
+      if (!wrap || !grid || !title) return;
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      const displayType = getDisplayType(items);
+      const subtypeOptions = displayType ? getSubtypeOptions(items, displayType) : [];
+      const displaySubtype = currentSubtypeFilter || subtypeOptions[0] || '';
+      if (!displayType || !displaySubtype) {
+        wrap.classList.add('hidden');
+        grid.innerHTML = '';
+        return;
+      }
+      const modelOptions = Array.from(new Set(
+        items
+          .filter((item) => getItemFilterType(item) === displayType)
+          .filter((item) => getItemSubcategory(item) === displaySubtype)
+          .map((item) => String(item.model || '').trim())
+          .filter(Boolean)
+      )).sort(compareModelValues);
+      wrap.classList.remove('hidden');
+      title.textContent = `${displaySubtype}尺码`;
+      if (!modelOptions.length) {
+        grid.innerHTML = '<div class="size-filter-tip" style="grid-column:1 / -1;">当前类型暂无可盘点尺码</div>';
+        return;
+      }
+      if (currentModelFilter && !modelOptions.includes(currentModelFilter)) {
+        currentModelFilter = '';
+      }
+      grid.innerHTML = modelOptions.map((model) => {
+        const matchedItem = items.find((item) =>
+          getItemFilterType(item) === displayType &&
+          getItemSubcategory(item) === displaySubtype &&
+          String(item.model || '').trim() === model
+        );
+        const diffQty = Number(matchedItem?.difference_qty || 0);
+        const hasDiffStatus = matchedItem && (
+          matchedItem.status === 'pending_manager_review' ||
+          matchedItem.status === 'rejected' ||
+          (matchedItem.status === 'confirmed' && diffQty !== 0)
+        );
+        const statusClass = matchedItem?.status === 'confirmed' && diffQty === 0
+          ? 'filter-chip--confirmed-ok'
+          : (hasDiffStatus ? 'filter-chip--confirmed-diff' : '');
+        return `
+          <button class="filter-chip ${statusClass} ${currentModelFilter === model ? 'is-active' : ''}" type="button" onclick="setModelFilter('${escapeHtml(model)}')">
+            ${escapeHtml(model)}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setModelFilter(model) {
+      currentModelFilter = currentModelFilter === model ? '' : String(model || '').trim();
+      if (!currentPayload) return;
+      renderModelFilters(currentPayload);
+      renderItems(currentPayload);
+    }
+
     function buildMonthSelect(payload) {
       const select = document.getElementById('monthSelect');
+      if (!select) return;
       select.innerHTML = (payload.available_months || []).map((month) => `
         <option value="${escapeHtml(month)}"${month === payload.session.closing_month ? ' selected' : ''}>${escapeHtml(month)} 盘点</option>
       `).join('');
@@ -494,22 +1007,19 @@
     }
 
     function renderSummary(payload) {
-      const totals = payload.totals || {};
-      document.getElementById('sessionStatus').textContent = sessionStatusText(payload.session.status);
-      document.getElementById('summaryGrid').innerHTML = [
-        ['盘点月份', payload.session.closing_month || '-'],
-        ['下月期初', payload.session.opening_month || '-'],
-        ['总项目数', totals.total || 0],
-        ['已确认', totals.confirmed || 0],
-        ['待审核', totals.pending_review || 0],
-        ['已驳回', totals.rejected || 0]
-      ].map(([label, value]) => `
-        <div class="summary-box">
-          <div class="summary-label">${escapeHtml(label)}</div>
-          <div class="summary-value">${escapeHtml(value)}</div>
-        </div>
-      `).join('');
-      document.getElementById('completeBtn').disabled = Number(totals.total || 0) === 0 || Number(totals.confirmed || 0) !== Number(totals.total || 0);
+      const sessionStatusEl = document.getElementById('sessionStatus');
+      if (sessionStatusEl) {
+        sessionStatusEl.textContent = sessionStatusText(payload.session.status);
+      }
+      document.getElementById('summaryGrid').innerHTML = `
+        <span class="summary-label">盘点月份</span>
+        <span class="summary-value">${escapeHtml(payload.session.closing_month || '-')}</span>
+      `;
+      const completeBtn = document.getElementById('completeBtn');
+      if (completeBtn) {
+        const totals = payload.totals || {};
+        completeBtn.disabled = Number(totals.total || 0) === 0 || Number(totals.confirmed || 0) !== Number(totals.total || 0);
+      }
     }
 
     function readItemValues(itemId) {
@@ -530,17 +1040,55 @@
       });
     }
 
-    async function handleSave(itemId) {
-      try {
-        await persistItem(itemId);
-        await refreshCurrentSession();
-      } catch (err) {
-        alert(err.message || '保存失败');
+    function scheduleAutoPersist(itemId, delay = 400) {
+      if (!itemId) return;
+      const currentTimer = autoSaveTimers.get(itemId);
+      if (currentTimer) clearTimeout(currentTimer);
+      const timer = setTimeout(async () => {
+        autoSaveTimers.delete(itemId);
+        try {
+          await persistItem(itemId);
+        } catch (err) {
+          console.warn(err.message || '自动暂存失败');
+        }
+      }, delay);
+      autoSaveTimers.set(itemId, timer);
+    }
+
+    function closeRemarkModal() {
+      pendingRemarkItemId = 0;
+      const modal = document.getElementById('remarkModal');
+      const input = document.getElementById('remarkModalInput');
+      if (input) input.value = '';
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function openRemarkConfirm(itemId) {
+      pendingRemarkItemId = Number(itemId) || 0;
+      const modal = document.getElementById('remarkModal');
+      const input = document.getElementById('remarkModalInput');
+      const item = Array.isArray(currentPayload?.items)
+        ? currentPayload.items.find((row) => Number(row.count_item_id) === pendingRemarkItemId)
+        : null;
+      if (input) {
+        input.value = item?.remark || '';
       }
+      if (modal) modal.classList.remove('hidden');
+      if (input) input.focus();
     }
 
     async function handleConfirm(itemId) {
       try {
+        const payload = readItemValues(itemId);
+        const total = payload.locations.reduce((sum, location) => sum + (Number(location.quantity) || 0), 0);
+        const card = document.querySelector(`[data-count-card="${itemId}"]`);
+        const system = Number(card?.dataset.systemQty || 0);
+        const diff = total - system;
+        if (diff !== 0) {
+          await persistItem(itemId);
+          openRemarkConfirm(itemId);
+          return;
+        }
         await persistItem(itemId);
         await request(`/workwear/inventory-count/items/${itemId}/confirm`, { method: 'POST' });
         await refreshCurrentSession();
@@ -549,24 +1097,28 @@
       }
     }
 
-    async function handleSubmitReview(itemId) {
+    async function handleRemarkConfirm(itemId) {
       try {
-        const payload = readItemValues(itemId);
-        if (!payload.remark) {
+        const targetItemId = Number(itemId) || pendingRemarkItemId;
+        const payload = readItemValues(targetItemId);
+        const remark = document.getElementById('remarkModalInput')?.value?.trim() || '';
+        if (!remark) {
           alert('存在差异时必须填写备注');
           return;
         }
-        await request(`/workwear/inventory-count/items/${itemId}`, {
+        payload.remark = remark;
+        await request(`/workwear/inventory-count/items/${targetItemId}`, {
           method: 'PUT',
           body: JSON.stringify(payload)
         });
-        await request(`/workwear/inventory-count/items/${itemId}/submit-review`, {
+        await request(`/workwear/inventory-count/items/${targetItemId}/submit-review`, {
           method: 'POST',
-          body: JSON.stringify({ remark: payload.remark })
+          body: JSON.stringify({ remark })
         });
+        closeRemarkModal();
         await refreshCurrentSession();
       } catch (err) {
-        alert(err.message || '提交审核失败');
+        alert(err.message || '确认失败');
       }
     }
 
@@ -574,29 +1126,31 @@
       const wrap = document.getElementById('itemList');
       const completed = payload.session.status === 'completed';
       const sourceItems = Array.isArray(payload.items) ? payload.items : [];
-      const visibleItems = currentTypeFilter === '全部'
-        ? sourceItems
-        : sourceItems.filter((item) => getItemFilterType(item) === currentTypeFilter);
+      const visibleItems = sourceItems.filter((item) => {
+        if (currentTypeFilter && getItemFilterType(item) !== currentTypeFilter) return false;
+        if (currentSubtypeFilter && getItemSubcategory(item) !== currentSubtypeFilter) return false;
+        if (currentModelFilter && String(item.model || '').trim() !== currentModelFilter) return false;
+        return true;
+      });
       if (!visibleItems.length) {
         wrap.innerHTML = '<div class="empty">当前月份暂无可盘点项目</div>';
         return;
       }
       wrap.innerHTML = visibleItems.map((item, index) => {
         const diff = Number(item.difference_qty || 0);
-        const canDirectConfirm = diff === 0 && item.status !== 'confirmed';
-        const needsReview = diff !== 0 && item.status !== 'confirmed';
         const statusClass = item.status === 'confirmed' ? 'good' : (item.status === 'pending_manager_review' || item.status === 'rejected' ? 'warn' : '');
         const filterType = getItemFilterType(item);
+        const itemStatusText = statusText(item.status);
         return `
           <article class="item-card" data-count-card="${item.count_item_id}" data-system-qty="${Number(item.system_closing_qty || 0)}">
             <div class="item-top">
               <div class="item-title">${index + 1}. ${escapeHtml(item.item_name)}</div>
-              <div class="item-badge">${escapeHtml(filterType)} · ${escapeHtml(statusText(item.status))}</div>
+              <div class="item-badge">${escapeHtml(filterType)}</div>
             </div>
             <div class="item-meta">
-              <div class="meta-chip">结存数量<strong>${Number(item.system_closing_qty || 0)}</strong>${escapeHtml(item.unit || '')}</div>
-              <div class="meta-chip">盘点合计<strong data-role="manual-total">${Number(item.manual_total_qty || 0)}</strong>${escapeHtml(item.unit || '')}</div>
-              <div class="meta-chip">差异<strong data-role="difference" class="${diff === 0 ? '' : 'is-warn'}">${diff > 0 ? '+' : ''}${diff}</strong></div>
+              <div class="meta-chip">结存 <strong class="meta-value">${Number(item.system_closing_qty || 0)}</strong>${escapeHtml(item.unit || '')}</div>
+              <div class="meta-chip">盘点 <strong class="meta-value" data-role="manual-total">${Number(item.manual_total_qty || 0)}</strong>${escapeHtml(item.unit || '')}</div>
+              <div class="meta-chip">差异 <strong class="meta-value ${diff === 0 ? '' : 'is-warn'}" data-role="difference">${diff > 0 ? '+' : ''}${diff}</strong>${escapeHtml(item.unit || '')}</div>
             </div>
             <div class="location-grid">
               ${(item.locations || []).map((location) => `
@@ -604,6 +1158,7 @@
                   <div class="location-name">${escapeHtml(location.name)}</div>
                   <div class="location-main">
                     <div class="qty-row">
+                      <button class="qty-step" type="button" onclick="adjustItemLocationQty(${item.count_item_id}, '${escapeHtml(location.code)}', -1)" ${completed ? 'disabled' : ''}>-</button>
                       <input
                         class="qty-input"
                         type="number"
@@ -615,31 +1170,21 @@
                         oninput="updateItemCardTotals(${item.count_item_id})"
                         ${completed ? 'disabled' : ''}
                       >
-                      <button class="qty-step" type="button" onclick="adjustItemLocationQty(${item.count_item_id}, '${escapeHtml(location.code)}', -1)" ${completed ? 'disabled' : ''}>-</button>
                       <button class="qty-step" type="button" onclick="adjustItemLocationQty(${item.count_item_id}, '${escapeHtml(location.code)}', 1)" ${completed ? 'disabled' : ''}>+</button>
-                    </div>
-                    <div class="qty-presets">
-                      ${[0,1,2,3].map((qty) => `
-                        <button class="qty-preset" type="button" onclick="setItemLocationQty(${item.count_item_id}, '${escapeHtml(location.code)}', ${qty})" ${completed ? 'disabled' : ''}>${qty}</button>
-                      `).join('')}
-                      <button class="qty-preset" type="button" onclick="setItemLocationQty(${item.count_item_id}, '${escapeHtml(location.code)}', 5)" ${completed ? 'disabled' : ''}>5</button>
                     </div>
                   </div>
                 </div>
               `).join('')}
             </div>
-            <textarea class="remark-input" id="remark-${item.count_item_id}" placeholder="有差异时必须填写备注，说明盘点原因或差异情况" ${completed ? 'disabled' : ''}>${escapeHtml(item.remark || '')}</textarea>
             ${item.review_comment ? `<div class="item-meta">审核意见：${escapeHtml(item.review_comment)}</div>` : ''}
-            ${item.approver_name ? `<div class="item-meta">审核人：${escapeHtml(item.approver_name)}</div>` : ''}
             <div class="item-actions">
-              <span class="status-text ${statusClass}">${escapeHtml(statusText(item.status))}${item.confirmed_at ? ` · ${escapeHtml(item.confirmed_at)}` : ''}</span>
-              ${completed ? '' : `<button class="btn btn-ghost" type="button" onclick="handleSave(${item.count_item_id})">保存</button>`}
-              ${completed || !canDirectConfirm ? '' : `<button class="btn btn-good" type="button" onclick="handleConfirm(${item.count_item_id})">确认</button>`}
-              ${completed || !needsReview ? '' : `<button class="btn btn-warn" type="button" onclick="handleSubmitReview(${item.count_item_id})">提交主管审核</button>`}
+              <span class="status-text ${statusClass}">${escapeHtml(buildStatusDisplayText(item.status, item.confirmed_at, item.submitted_at))}</span>
+              ${completed || item.status === 'confirmed' || item.status === 'pending_manager_review' ? '' : `<button class="btn btn-good btn-confirm-inventory" type="button" onclick="handleConfirm(${item.count_item_id})">确认库存</button>`}
             </div>
           </article>
         `;
       }).join('');
+      bindQtyInputInteractions();
     }
 
     function renderReviewTasks(rows) {
@@ -703,12 +1248,18 @@
         buildMonthSelect(payload);
         renderSummary(payload);
         renderTypeFilters(payload);
+        renderSubtypeFilters(payload);
         renderItems(payload);
       } catch (err) {
         currentPayload = null;
         document.getElementById('itemList').innerHTML = `<div class="empty">${escapeHtml(err.message || '加载失败')}</div>`;
-        document.getElementById('summaryGrid').innerHTML = `<div class="summary-box"><div class="summary-label">提示</div><div class="summary-value" style="font-size:14px">${escapeHtml(err.message || '加载失败')}</div></div>`;
+        document.getElementById('summaryGrid').innerHTML = `<div class="summary-label">提示</div><div class="summary-value" style="font-size:14px">${escapeHtml(err.message || '加载失败')}</div>`;
         document.getElementById('typeFilterGrid').innerHTML = '';
+        document.getElementById('subtypeFilterWrap').classList.add('hidden');
+        document.getElementById('subtypeFilterGrid').innerHTML = '';
+        document.getElementById('sizeFilterWrap').classList.add('hidden');
+        document.getElementById('sizeFilterGrid').innerHTML = '';
+        updateFilterPanelVisibility();
       }
     }
 
@@ -735,7 +1286,7 @@
       }
       const hasEmployeeSession = !!localStorage.getItem('employee_token');
       if (hasEmployeeSession && !window.ModuleAccess.has('workwear-admin')) {
-        window.ModuleAccess.redirectToAuth('mobile-workwear-inventory-count.html', 'workwear-admin', '工服管理');
+        window.ModuleAccess.redirectToAuth('mobile-workwear-inventory-count.html', 'workwear-admin', '工服盘存');
         return;
       }
       try {
@@ -745,7 +1296,28 @@
           return;
         }
         const defaultInfo = await request('/workwear/inventory-count/default-month');
-        document.getElementById('completeBtn').addEventListener('click', completeCurrentSession);
+        const completeBtn = document.getElementById('completeBtn');
+        if (completeBtn) {
+          completeBtn.addEventListener('click', completeCurrentSession);
+        }
+        document.getElementById('remarkModalClose').addEventListener('click', closeRemarkModal);
+        document.getElementById('remarkModalConfirm').addEventListener('click', () => handleRemarkConfirm(pendingRemarkItemId));
+        document.getElementById('remarkModal').addEventListener('click', (event) => {
+          if (event.target?.id === 'remarkModal') closeRemarkModal();
+        });
+        document.getElementById('filterPanelToggle').addEventListener('click', () => {
+          filterPanelCollapsed = !filterPanelCollapsed;
+          updateFilterPanelVisibility();
+        });
+        document.getElementById('sizeFilterClear').addEventListener('click', () => {
+          currentTypeFilter = '';
+          currentSubtypeFilter = '';
+          currentModelFilter = '';
+          if (!currentPayload) return;
+          renderTypeFilters(currentPayload);
+          renderSubtypeFilters(currentPayload);
+          renderItems(currentPayload);
+        });
         await Promise.all([
           loadSession(defaultInfo.default_month),
           loadReviewTasks()
@@ -755,14 +1327,15 @@
       }
     }
 
-    window.handleSave = handleSave;
     window.handleConfirm = handleConfirm;
-    window.handleSubmitReview = handleSubmitReview;
+    window.handleRemarkConfirm = handleRemarkConfirm;
     window.handleReview = handleReview;
     window.setItemLocationQty = setItemLocationQty;
     window.adjustItemLocationQty = adjustItemLocationQty;
     window.updateItemCardTotals = updateItemCardTotals;
     window.setTypeFilter = setTypeFilter;
+    window.setSubtypeFilter = setSubtypeFilter;
+    window.setModelFilter = setModelFilter;
 
     init();
   </script>

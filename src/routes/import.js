@@ -8,6 +8,7 @@ const db = require('../models/database');
 const wordParser = require('../utils/wordParser');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const mammoth = require('mammoth');
+const { getNamePinyin } = require('../utils/name-pinyin');
 
 // 配置文件上传
 const upload = multer({
@@ -250,10 +251,11 @@ router.post('/staff', authMiddleware, adminMiddleware, upload.single('file'), as
 
     // 导入/更新员工
     const insertStmt = db.prepare(`
-      INSERT INTO staff (name, employee_id, status, created_at, updated_at)
-      VALUES (?, ?, 'active', datetime('now'), datetime('now'))
+      INSERT INTO staff (name, name_pinyin, employee_id, status, created_at, updated_at)
+      VALUES (?, ?, ?, 'active', datetime('now'), datetime('now'))
       ON CONFLICT(employee_id) DO UPDATE SET 
         name = excluded.name,
+        name_pinyin = excluded.name_pinyin,
         updated_at = datetime('now')
     `);
 
@@ -262,7 +264,7 @@ router.post('/staff', authMiddleware, adminMiddleware, upload.single('file'), as
 
     for (const emp of employees) {
       try {
-        insertStmt.run(emp.name, emp.employee_id);
+        insertStmt.run(emp.name, getNamePinyin(emp.name), emp.employee_id);
         successCount++;
       } catch (err) {
         errors.push(`${emp.employee_id}: ${err.message}`);

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>备注历史样式方案对比</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:#f5f7fb;padding:40px 20px;}
+.section-title{font-size:18px;font-weight:700;color:#1f2937;margin-bottom:8px;}
+.section-desc{font-size:13px;color:#6b7280;margin-bottom:20px;}
+</style>
+</head>
+<body>
+
+<div class="max-w-7xl mx-auto">
+
+  <h1 class="text-2xl font-bold text-gray-900 mb-2">备注修改历史 - 样式方案对比</h1>
+  <p class="text-sm text-gray-500 mb-10">3 个方向，根据你的喜好选一个，我直接应用</p>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- 方案 A: 现代简洁 (Material 风格) -->
+    <div>
+      <div class="section-title">方案 A · 现代简洁</div>
+      <div class="section-desc">圆角卡片 + 左侧强调条 + 紧凑元数据</div>
+      <div class="space-y-3">
+        <!-- 卡片 A1 -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="flex">
+            <div class="w-1 bg-blue-500"></div>
+            <div class="flex-1 p-4">
+              <div class="flex items-baseline gap-2 mb-2">
+                <span class="text-xs line-through text-gray-400">现场补登记完成 - 张三</span>
+                <span class="text-gray-300">→</span>
+                <span class="text-sm text-gray-900">快速录入</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium">
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+                  潘夏煜
+                </span>
+                <span>·</span>
+                <span class="font-mono">2026-07-05 08:41</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 卡片 A2 -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="flex">
+            <div class="w-1 bg-blue-500"></div>
+            <div class="flex-1 p-4">
+              <div class="flex items-baseline gap-2 mb-2">
+                <span class="text-xs line-through text-gray-400">顺丰已签收，需要补登记 2026-06-30</span>
+                <span class="text-gray-300">→</span>
+                <span class="text-sm text-gray-900">现场补登记完成 - 张三</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium">
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+                  潘夏煜
+                </span>
+                <span>·</span>
+                <span class="font-mono">2026-07-04 08:41</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方案 B: 极简信息流 (类似 iOS 时间线) -->
+    <div>
+      <div class="section-title">方案 B · 极简时间线</div>
+      <div class="section-desc">左侧时间点 + 垂直连接线，零装饰</div>
+      <div class="relative pl-6">
+        <!-- 竖线 -->
+        <div class="absolute left-2 top-2 bottom-2 w-px bg-gray-200"></div>
+
+        <!-- item B1 -->
+        <div class="relative pb-5">
+          <div class="absolute -left-[18px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-blue-50"></div>
+          <div class="text-sm text-gray-900 mb-1">现场补登记完成 - 张三 <span class="text-gray-400 mx-1">→</span> 快速录入</div>
+          <div class="text-xs text-gray-400 flex items-center gap-1.5">
+            <span class="font-medium text-gray-500">潘夏煜</span>
+            <span>·</span>
+            <span class="font-mono">07-05 08:41</span>
+          </div>
+        </div>
+        <!-- item B2 -->
+        <div class="relative pb-5">
+          <div class="absolute -left-[18px] top-1.5 w-2.5 h-2.5 rounded-full bg-gray-300 ring-4 ring-gray-50"></div>
+          <div class="text-sm text-gray-700 mb-1">顺丰已签收，需要补登记 2026-06-30 <span class="text-gray-400 mx-1">→</span> 现场补登记完成 - 张三</div>
+          <div class="text-xs text-gray-400 flex items-center gap-1.5">
+            <span class="font-medium text-gray-500">潘夏煜</span>
+            <span>·</span>
+            <span class="font-mono">07-04 08:41</span>
+          </div>
+        </div>
+        <!-- item B3 -->
+        <div class="relative">
+          <div class="absolute -left-[18px] top-1.5 w-2.5 h-2.5 rounded-full bg-gray-300 ring-4 ring-gray-50"></div>
+          <div class="text-sm text-gray-700 mb-1">原始快递单号 SF1234567890 已签收 <span class="text-gray-400 mx-1">→</span> 顺丰已签收，需要补登记 2026-06-30</div>
+          <div class="text-xs text-gray-400 flex items-center gap-1.5">
+            <span class="font-medium text-gray-500">潘夏煜</span>
+            <span>·</span>
+            <span class="font-mono">07-03 08:41</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 方案 C: 差异对比卡片 (Git diff 风格) -->
+    <div>
+      <div class="section-title">方案 C · 差异对比</div>
+      <div class="section-desc">原值红色删除 / 新值绿色新增，一眼看出改了什么</div>
+      <div class="space-y-3">
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+              <span class="font-medium">潘夏煜</span>
+            </div>
+            <span class="text-xs text-gray-400 font-mono">07-05 08:41</span>
+          </div>
+          <div class="px-4 py-3 space-y-1.5 text-sm">
+            <div class="flex items-start gap-2">
+              <span class="text-red-500 font-bold text-xs mt-0.5">−</span>
+              <span class="line-through text-red-700/70 flex-1">现场补登记完成 - 张三</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-green-600 font-bold text-xs mt-0.5">+</span>
+              <span class="text-green-700 flex-1 font-medium">快速录入</span>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div class="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+              <span class="font-medium">潘夏煜</span>
+            </div>
+            <span class="text-xs text-gray-400 font-mono">07-04 08:41</span>
+          </div>
+          <div class="px-4 py-3 space-y-1.5 text-sm">
+            <div class="flex items-start gap-2">
+              <span class="text-red-500 font-bold text-xs mt-0.5">−</span>
+              <span class="line-through text-red-700/70 flex-1">顺丰已签收，需要补登记 2026-06-30</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="text-green-600 font-bold text-xs mt-0.5">+</span>
+              <span class="text-green-700 flex-1 font-medium">现场补登记完成 - 张三</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mt-10 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+    <strong>选择哪个？</strong>告诉我方案 A / B / C，或要调整的地方，我直接改到 workwear-management-preview.html
+  </div>
+</div>
+
+</body>
+</html>

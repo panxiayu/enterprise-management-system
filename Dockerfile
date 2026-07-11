@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     poppler-utils \
     smbclient \
+    tesseract-ocr \
+    tesseract-ocr-chi-sim \
+    tesseract-ocr-eng \
     tzdata \
     && pip3 install --break-system-packages msoffcrypto-tool \
     && rm -rf /var/lib/apt/lists/*

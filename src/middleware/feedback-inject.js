@@ -1,9 +1,81 @@
 // src/middleware/feedback-inject.js - 移动端页面注入悬浮按钮脚本，防止微信缓存
 const path = require('path');
 
+function getAuthGuardMode(reqPath) {
+  const pathname = reqPath || '';
+  const adminOnlyPages = new Set([
+    '/dashboard.html',
+    '/exam.html',
+    '/exam-print.html',
+    '/exam-print-batch.html',
+    '/feedback-list.html',
+    '/file-manager.html',
+    '/learning-materials-detail.html',
+    '/meal-create.html',
+    '/meal-list.html',
+    '/meal-statistics.html',
+    '/message-center.html',
+    '/permission-list.html',
+    '/settings.html',
+    '/staff-detail.html',
+    '/staff-list.html',
+    '/voting-detail.html',
+    '/voting-list.html'
+  ]);
+
+  const employeeOnlyPages = new Set([
+    '/employee.html',
+    '/employee-module-auth.html',
+    '/exam-doing.html',
+    '/exam-list.html',
+    '/result.html',
+    '/mobile-6s-add.html',
+    '/mobile-6s-detail.html',
+    '/mobile-6s-list.html',
+    '/mobile-6s-tasks.html',
+    '/mobile-exam-detail.html',
+    '/mobile-exam-doing.html',
+    '/mobile-exam-list.html',
+    '/mobile-feedback-list.html',
+    '/mobile-learning-materials-detail.html',
+    '/mobile-learning-materials-list.html',
+    '/mobile-meal-list.html',
+    '/mobile-my-tasks.html',
+    '/mobile-notifications.html',
+    '/mobile-result.html',
+    '/mobile-training-list.html',
+    '/mobile-voting-list.html',
+    '/mobile-workwear-inventory-count.html',
+    '/mobile-workwear-query.html'
+  ]);
+
+  const eitherPages = new Set([
+    '/6s-case-viewer.html',
+    '/6s-list.html',
+    '/6s-report.html',
+    '/personal-todo.html',
+    '/task-detail.html',
+    '/workwear-management-preview.html'
+  ]);
+
+  if (pathname === '/' || pathname === '/index.html' || pathname === '/admin/login.html') {
+    return 'none';
+  }
+  if (adminOnlyPages.has(pathname)) {
+    return 'admin';
+  }
+  if (employeeOnlyPages.has(pathname)) {
+    return 'employee';
+  }
+  if (eitherPages.has(pathname)) {
+    return 'either';
+  }
+  return 'none';
+}
+
 function feedbackInjectMiddleware(req, res, next) {
-  // 拦截所有 HTML 页面请求（排除后台管理页面）
-  if (!req.path.match(/^\/(mobile-|employee|index).*\.html$/) && req.path !== '/') {
+  const isHtmlRequest = req.path === '/' || req.path.endsWith('.html');
+  if (!isHtmlRequest) {
     return next();
   }
 
@@ -32,24 +104,35 @@ function feedbackInjectMiddleware(req, res, next) {
         String(now.getMinutes()).padStart(2, '0') +
         String(now.getSeconds()).padStart(2, '0');
 
-      // 0. 在 <body> 标签后注入 auth-guard.js（token 过期检测 & fetch 401 拦截）
+      // 0. 页面守卫与小程序环境脚本注入
+      const authGuardMode = getAuthGuardMode(req.path);
       const headTagRegex = /<head[^>]*>/i;
-      if (headTagRegex.test(body) && !body.includes('/css/miniapp-overrides.css')) {
+      const shouldInjectMiniappAssets = req.path === '/' || /^\/(mobile-|employee)/.test(req.path);
+      if (shouldInjectMiniappAssets && headTagRegex.test(body) && !body.includes('/css/miniapp-overrides.css')) {
         const envStyle = `\n<link rel="stylesheet" href="/css/miniapp-overrides.css?v=${ts}">\n`;
         body = body.replace(headTagRegex, (match) => match + envStyle);
       }
 
       const bodyTagRegex = /<body[^>]*>/i;
       if (bodyTagRegex.test(body)) {
-        const bootScripts = [
-          `/js/auth-guard.js?v=${ts}`,
-          `/js/miniapp-bridge.js?v=${ts}`
-        ].map((src) => `\n<script src="${src}"></script>`).join('');
-        body = body.replace(bodyTagRegex, (match) => match + bootScripts + '\n');
+        const bootScripts = [];
+        if (authGuardMode !== 'none') {
+          bootScripts.push(`\n<script>window.__AUTH_GUARD_MODE=${JSON.stringify(authGuardMode)};</script>`);
+        }
+        if (authGuardMode !== 'none' && !body.includes('/js/auth-guard.js')) {
+          bootScripts.push(`\n<script src="/js/auth-guard.js?v=${ts}"></script>`);
+        }
+        if (shouldInjectMiniappAssets && !body.includes('/js/miniapp-bridge.js')) {
+          bootScripts.push(`\n<script src="/js/miniapp-bridge.js?v=${ts}"></script>`);
+        }
+        if (bootScripts.length) {
+          body = body.replace(bodyTagRegex, (match) => match + bootScripts.join('') + '\n');
+        }
       }
 
+      const shouldInjectFeedbackButton = req.path === '/' || /^\/(mobile-|employee|index).*\.html$/.test(req.path);
       // 登录页和反馈列表页不注入悬浮按钮脚本
-      if (!req.path.endsWith('index.html') && !req.path.endsWith('mobile-feedback-list.html')) {
+      if (shouldInjectFeedbackButton && !req.path.endsWith('index.html') && !req.path.endsWith('mobile-feedback-list.html')) {
         // 1. 注入带时间戳的脚本
         const injectScript = `\n<script src="/js/mobile-feedback.js?v=${ts}"></script>\n`;
         body = body.replace('</body>', injectScript + '</body>');

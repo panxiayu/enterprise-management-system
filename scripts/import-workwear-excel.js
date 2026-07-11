@@ -4,7 +4,7 @@
 const XLSX = require('xlsx');
 const path = require('path');
 
-const excelPath = '/home/openclaw/tmp/工作服领用管理总表.xlsx';
+const excelPath = '/home/openclaw/tmp/工作服领用管理总表-最新.xlsx';
 
 console.log('📂 读取Excel文件:', excelPath);
 const wb = XLSX.readFile(excelPath);
@@ -18,6 +18,40 @@ function excelDateToISO(serial) {
   if (!serial || typeof serial !== 'number') return null;
   const d = new Date((serial - 25569) * 86400 * 1000);
   return d.toISOString().slice(0, 10);
+}
+
+function parseDateCell(value) {
+  if (value == null || value === '' || value === '-') return null;
+  if (typeof value === 'number') return excelDateToISO(value);
+  const text = String(value).trim();
+  if (!text) return null;
+  const normalized = text.replace(/\./g, '/').replace(/-/g, '/');
+  const parts = normalized.split('/').map((item) => Number(item));
+  if (parts.length !== 3 || parts.some((item) => !Number.isFinite(item) || item <= 0)) {
+    return null;
+  }
+  const [year, month, day] = parts;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function calculateLeaveDeductionRatio(hireDate, leaveDate) {
+  if (!hireDate || !leaveDate) return 0;
+  const hire = new Date(`${hireDate}T00:00:00`);
+  const leave = new Date(`${leaveDate}T00:00:00`);
+  if (Number.isNaN(hire.getTime()) || Number.isNaN(leave.getTime())) return 0;
+  if (leave.getTime() < hire.getTime()) return 0;
+
+  let years = leave.getFullYear() - hire.getFullYear();
+  if (
+    leave.getMonth() < hire.getMonth() ||
+    (leave.getMonth() === hire.getMonth() && leave.getDate() < hire.getDate())
+  ) {
+    years -= 1;
+  }
+
+  if (years >= 2) return 0;
+  if (years >= 1) return 50;
+  return 80;
 }
 
 // 解析物品名称 -> { item_name, item_type, model }
@@ -47,40 +81,50 @@ const records = [];
 for (let i = 4; i < rawData.length; i++) {
   const row = rawData[i];
   if (!row[4]) continue; // 跳过空行（没有领用人）
-  
+
   const staffName = String(row[4]).trim();
   if (!staffName || staffName === '领用人') continue;
-  
+
   const issueDate = excelDateToISO(row[8]);
   if (!issueDate) continue; // 没有领用日期的跳过
-  
+
   const { item_name, item_type, model } = parseItem(row[9], row[11], row[10]);
   const unitPrice = parseNum(row[12]);
   const quantity = parseNum(row[13], 1);
-  
+  const hireDate = parseDateCell(row[5]);
+  const leaveDate = parseDateCell(row[17]);
+
   // 扣款比例（可能是百分比数值，如50表示50%）
   let deductRatio = parseNum(row[14]);
   if (deductRatio > 0 && deductRatio <= 1) deductRatio = deductRatio * 100; // 0.5 -> 50
-    
+
   // 自购
   const selfPurchase = parseNum(row[16]);
-    
-  // 只有自购才产生扣款，非自购不需要费用
-  let deduction = 0;
+
   if (selfPurchase > 0) {
-    deduction = selfPurchase;
-    deductRatio = 100;
-  } else {
     deductRatio = 0;
+  } else if (!leaveDate) {
+    deductRatio = 0;
+  } else if (deductRatio <= 0) {
+    deductRatio = calculateLeaveDeductionRatio(hireDate, leaveDate);
   }
-  
+  const deduction = selfPurchase > 0
+    ? 0
+    : Math.round(unitPrice * quantity * (deductRatio / 100) * 100) / 100;
+
   // 备注
   const remark = row[18] ? String(row[18]).trim() : null;
-  
+
+  // D 列(数组下标 3) 是源表的 NO 列,公式 = ROW()-4
+  const seqNo = parseNum(row[3]);
+
   records.push({
+    seq_no: seqNo > 0 ? Math.floor(seqNo) : null,
     staff_name: staffName,
+    hire_date: hireDate,
     department: row[6] ? String(row[6]).trim() : null,
     position: row[7] ? String(row[7]).trim() : null,
+    leave_date: leaveDate,
     issue_date: issueDate,
     item_name,
     item_type,
@@ -139,12 +183,14 @@ db.exec(`
     deduction REAL DEFAULT 0,
     self_purchase REAL DEFAULT 0,
     deduction_ratio REAL DEFAULT 50,
+    leave_date TEXT,
     remark TEXT,
     status TEXT DEFAULT 'active',
     created_by INTEGER,
     created_by_name TEXT,
     created_at DATETIME DEFAULT (datetime('now', 'localtime')),
-    updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+    seq_no INTEGER
   )
 `);
 
@@ -171,20 +217,20 @@ db.prepare("UPDATE workwear_records SET status = 'archived' WHERE status = 'acti
 // 批量插入
 const insertStmt = db.prepare(`
   INSERT INTO workwear_records (
-    staff_name, department, position, issue_date,
+    staff_name, hire_date, department, position, leave_date, issue_date,
     item_name, item_type, model, quantity,
     unit_price, deduction, self_purchase,
-    deduction_ratio, remark, status
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+    deduction_ratio, remark, status, seq_no
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?)
 `);
 
 const insertMany = db.transaction((rows) => {
   for (const r of rows) {
     insertStmt.run(
-      r.staff_name, r.department, r.position, r.issue_date,
+      r.staff_name, r.hire_date, r.department, r.position, r.leave_date, r.issue_date,
       r.item_name, r.item_type, r.model, r.quantity,
       r.unit_price, r.deduction, r.self_purchase,
-      r.deduction_ratio, r.remark
+      r.deduction_ratio, r.remark, r.seq_no
     );
   }
 });

@@ -1,0 +1,5064 @@
+const express = require('express');
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
+const os = require('os');
+const path = require('path');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const ExcelJS = require('exceljs');
+const XLSX = require('xlsx');
+
+const router = express.Router();
+const db = require('../models/database');
+const { authMiddleware } = require('../middleware/auth');
+const { verifyToken } = require('../utils/auth');
+const { calculateAvailability, getIssueCategory } = require('../services/workwearRules');
+
+const WORKWEAR_INVENTORY_XLSX_CANDIDATES = [
+  '/home/openclaw/tmp/工作服领用管理总表.xlsx',
+  '/tmp/工作服领用管理总表.xlsx',
+  path.join(__dirname, '../../uploads/工作服领用管理总表.xlsx'),
+  path.join(__dirname, '../../uploads/workwear-management-source.xlsx')
+];
+const WORKWEAR_PURCHASE_EXPORT_TEMPLATE = path.join(__dirname, '../../uploads/workwear-purchase-export-template.xlsx');
+const WORKWEAR_ISSUE_EXPORT_TEMPLATE = path.join(__dirname, '../../uploads/workwear-issue-export-template.xlsx');
+const WORKWEAR_LEAVE_SELF_EXPORT_TEMPLATE = path.join(__dirname, '../../uploads/workwear-leave-self-export-template.xlsx');
+const WORKWEAR_MONTHLY_INVENTORY_TEMPLATE = path.join(__dirname, '../../uploads/workwear-monthly-inventory-template.xlsx');
+const WORKWEAR_PDF_MODE = normalizeText(process.env.WORKWEAR_PDF_MODE || '');
+const WORKWEAR_WINDOWS_PDF_URL = normalizeText(process.env.WORKWEAR_WINDOWS_PDF_URL || '');
+const WORKWEAR_WINDOWS_PDF_TOKEN = String(process.env.WORKWEAR_WINDOWS_PDF_TOKEN || '').trim();
+
+const WORKWEAR_SHEET_ITEMS = '基础-物品信息';
+const WORKWEAR_SHEET_PURCHASES = '采购录入';
+const WORKWEAR_SHEET_INVENTORY = '盘存2026';
+const FIRST_REAL_MONTH = '2026-06';
+const execFileAsync = promisify(execFile);
+
+function ensureWorkwearFeatureSchema() {
+  const ensureColumn = (table, name, definition) => {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+    if (!columns.some((column) => column.name === name)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+    }
+  };
+
+  ensureColumn('staff', 'workwear_special_permission', 'INTEGER DEFAULT 0');
+  ensureColumn('workwear_records', 'leave_date', 'TEXT');
+  ensureColumn('workwear_purchase_adjustments', 'approver_staff_id', 'INTEGER');
+  ensureColumn('workwear_purchase_adjustments', 'approver_name', 'TEXT');
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workwear_purchase_adjustments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      adjustment_group_id TEXT,
+      purchase_date TEXT NOT NULL,
+      item_id INTEGER,
+      item_name TEXT NOT NULL,
+      category TEXT,
+      model TEXT NOT NULL DEFAULT '',
+      unit TEXT,
+      unit_price REAL DEFAULT 0,
+      original_qty INTEGER DEFAULT 0,
+      adjusted_qty INTEGER DEFAULT 0,
+      diff_qty INTEGER DEFAULT 0,
+      remark TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      requested_by INTEGER,
+      requested_by_name TEXT,
+      approver_staff_id INTEGER,
+      approver_name TEXT,
+      requested_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      reviewed_by INTEGER,
+      reviewed_by_name TEXT,
+      reviewed_at DATETIME,
+      review_comment TEXT,
+      applied_entry_id INTEGER,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_workwear_purchase_adjustments_date ON workwear_purchase_adjustments(purchase_date);
+    CREATE INDEX IF NOT EXISTS idx_workwear_purchase_adjustments_status ON workwear_purchase_adjustments(status);
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workwear_inventory_count_adjustments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id INTEGER NOT NULL,
+      count_item_id INTEGER NOT NULL,
+      closing_month TEXT NOT NULL,
+      opening_month TEXT NOT NULL,
+      item_id INTEGER NOT NULL,
+      system_closing_qty INTEGER DEFAULT 0,
+      manual_total_qty INTEGER DEFAULT 0,
+      difference_qty INTEGER DEFAULT 0,
+      remark TEXT,
+      status TEXT DEFAULT 'approved',
+      submitted_by INTEGER,
+      approver_staff_id INTEGER,
+      approver_name TEXT,
+      reviewed_by INTEGER,
+      reviewed_at DATETIME,
+      review_comment TEXT,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      UNIQUE(count_item_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_workwear_inventory_count_adjustments_month ON workwear_inventory_count_adjustments(closing_month);
+    CREATE INDEX IF NOT EXISTS idx_workwear_inventory_count_adjustments_item ON workwear_inventory_count_adjustments(item_id);
+  `);
+}
+
+ensureWorkwearFeatureSchema();
+
+function getWorkbookPath() {
+  const workbookPath = WORKWEAR_INVENTORY_XLSX_CANDIDATES.find((candidate) => fs.existsSync(candidate));
+  if (!workbookPath) {
+    throw new Error('未找到工服领用管理总表.xlsx 数据源');
+  }
+  return workbookPath;
+}
+
+function readWorkbook() {
+  return XLSX.readFile(getWorkbookPath(), { cellDates: false });
+}
+
+function getSheetRows(sheetName) {
+  const workbook = readWorkbook();
+  const worksheet = workbook.Sheets[sheetName];
+  if (!worksheet) {
+    throw new Error(`未找到工作表：${sheetName}`);
+  }
+  return XLSX.utils.sheet_to_json(worksheet, {
+    header: 1,
+    raw: false,
+    defval: ''
+  });
+}
+
+function normalizeText(value) {
+  return String(value ?? '').trim();
+}
+
+const CATEGORY_ALIASES = new Map([
+  ['安全鞋', '鞋'],
+  ['劳保鞋', '鞋'],
+  ['工鞋', '鞋']
+]);
+
+function canonicalizeCategory(value) {
+  const category = normalizeText(value).replace(/\s+/g, '');
+  if (!category) return '';
+  return CATEGORY_ALIASES.get(category) || category;
+}
+
+function normalizeModel(value) {
+  const model = normalizeText(value);
+  return model === '-' ? '' : model;
+}
+
+function parseMoneyNumber(value) {
+  const raw = normalizeText(value)
+    .replace(/[￥¥,\s]/g, '')
+    .replace(/[^0-9.-]/g, '');
+  if (!raw) return 0;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function parseInteger(value) {
+  const raw = normalizeText(value).replace(/,/g, '');
+  if (!raw) return 0;
+  const numeric = Number(raw);
+  return Number.isFinite(numeric) ? Math.trunc(numeric) : 0;
+}
+
+function normalizeDate(value) {
+  if (value == null || value === '') return '';
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value) && value > 20000) {
+    const parsed = XLSX.SSF.parse_date_code(value);
+    if (parsed && parsed.y && parsed.m && parsed.d) {
+      return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
+    }
+  }
+
+  const raw = normalizeText(value);
+  if (!raw) return '';
+  if (/^\d{5,}$/.test(raw)) {
+    const numeric = Number(raw);
+    if (Number.isFinite(numeric) && numeric > 20000) {
+      const parsed = XLSX.SSF.parse_date_code(numeric);
+      if (parsed && parsed.y && parsed.m && parsed.d) {
+        return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
+      }
+    }
+  }
+  if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    return raw.slice(0, 10);
+  }
+  const normalized = raw.replace(/\./g, '/').replace(/-/g, '/');
+  const parts = normalized.split('/').map((item) => Number(item));
+  if (parts.length !== 3 || parts.some((item) => !Number.isFinite(item) || item <= 0)) {
+    return raw;
+  }
+  const [year, month, day] = parts;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function getLocalToday() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function getYearMonth(dateValue) {
+  return normalizeText(dateValue).slice(0, 7);
+}
+
+function getCurrentYearMonth() {
+  return getLocalToday().slice(0, 7);
+}
+
+function getPreviousYearMonth(yearMonth) {
+  const [yearRaw, monthRaw] = String(yearMonth || '').split('-');
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!year || !month) return '';
+  const date = new Date(year, month - 1, 1);
+  date.setMonth(date.getMonth() - 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function compareYearMonth(a, b) {
+  return normalizeText(a).localeCompare(normalizeText(b));
+}
+
+function getNextYearMonth(yearMonth) {
+  const [yearRaw, monthRaw] = String(yearMonth || '').split('-');
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  if (!year || !month) return '';
+  const date = new Date(year, month - 1, 1);
+  date.setMonth(date.getMonth() + 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function enumerateYearMonths(startYearMonth, endYearMonth) {
+  const months = [];
+  let cursor = normalizeText(startYearMonth);
+  const end = normalizeText(endYearMonth);
+  while (cursor && compareYearMonth(cursor, end) <= 0) {
+    months.push(cursor);
+    cursor = getNextYearMonth(cursor);
+  }
+  return months;
+}
+
+function parseNumberInput(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.trunc(numeric));
+}
+
+function parseDateTextToDate(value) {
+  const normalized = normalizeDate(value);
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function calculateLeaveDeductionRatio(hireDate, leaveDate) {
+  const hire = parseDateTextToDate(hireDate);
+  const leave = parseDateTextToDate(leaveDate);
+  if (!hire || !leave) return null;
+  if (leave.getTime() < hire.getTime()) return null;
+
+  let years = leave.getFullYear() - hire.getFullYear();
+  const leaveMonth = leave.getMonth();
+  const hireMonth = hire.getMonth();
+  if (
+    leaveMonth < hireMonth ||
+    (leaveMonth === hireMonth && leave.getDate() < hire.getDate())
+  ) {
+    years -= 1;
+  }
+
+  if (years >= 2) return 0;
+  if (years >= 1) return 50;
+  return 80;
+}
+
+function resolveSettlementStaff({ staffId, staffName }) {
+  const numericStaffId = Number(staffId || 0);
+  const exactStaffName = normalizeText(staffName);
+  if (numericStaffId) {
+    const byId = db.prepare(`
+      SELECT id, employee_id, name, department, position, hire_date, leave_date, status
+      FROM staff
+      WHERE id = ?
+      LIMIT 1
+    `).get(numericStaffId);
+    if (byId) return byId;
+  }
+  if (exactStaffName) {
+    return db.prepare(`
+      SELECT id, employee_id, name, department, position, hire_date, leave_date, status
+      FROM staff
+      WHERE TRIM(COALESCE(name, '')) = TRIM(COALESCE(?, ''))
+      ORDER BY id DESC
+      LIMIT 1
+    `).get(exactStaffName) || null;
+  }
+  return null;
+}
+
+function getSettlementRecordRows(staff) {
+  if (!staff) return [];
+  return db.prepare(`
+    SELECT *
+    FROM workwear_records
+    WHERE status = 'active'
+      AND (
+        staff_id = ?
+        OR (
+          staff_id IS NULL
+          AND TRIM(COALESCE(staff_name, '')) = TRIM(COALESCE(?, ''))
+        )
+      )
+    ORDER BY issue_date DESC, id DESC
+  `).all(Number(staff.id || 0), staff.name || '');
+}
+
+function buildLeaveSettlementPreview({ staffId, staffName, leaveDate }) {
+  const normalizedLeaveDate = normalizeDate(leaveDate);
+  if (!normalizedLeaveDate) {
+    throw new Error('请先选择离职日期');
+  }
+
+  const staff = resolveSettlementStaff({ staffId, staffName });
+  if (!staff) {
+    throw new Error('未找到对应人员档案');
+  }
+  if (!normalizeText(staff.hire_date)) {
+    throw new Error('该人员缺少入职日期，无法核算离职扣款');
+  }
+
+  const ratio = calculateLeaveDeductionRatio(staff.hire_date, normalizedLeaveDate);
+  if (ratio == null) {
+    throw new Error('离职日期不能早于入职日期');
+  }
+
+  const records = getSettlementRecordRows(staff).map((row) => {
+    const quantity = Number(row.quantity) || 0;
+    const unitPrice = Number(row.unit_price) || 0;
+    const selfPurchase = Number(row.self_purchase) || 0;
+    const chargeBase = selfPurchase > 0 ? 0 : (quantity * unitPrice);
+    const deductionRatio = chargeBase > 0 ? ratio : 0;
+    const deduction = chargeBase > 0 ? Number((chargeBase * (ratio / 100)).toFixed(2)) : 0;
+    return {
+      ...row,
+      leave_date: normalizedLeaveDate,
+      deduction_ratio: deductionRatio,
+      deduction,
+      self_purchase: selfPurchase
+    };
+  });
+
+  const totalDeduction = records.reduce((sum, row) => sum + (Number(row.deduction) || 0), 0);
+
+  return {
+    staff,
+    leave_date: normalizedLeaveDate,
+    deduction_ratio: ratio,
+    total_deduction: Number(totalDeduction.toFixed(2)),
+    records
+  };
+}
+
+function buildJsonResponseError(res, code, msg, status = 400) {
+  return res.status(status).json({ code, msg, data: null });
+}
+
+function getInventorySheetColumnMap(rows) {
+  const headerTop = rows[2] || [];
+  const headerBottom = rows[3] || [];
+  const openingByMonth = new Map();
+  const monthlyByMonth = new Map();
+
+  for (let index = 0; index < headerTop.length; index += 1) {
+    const top = normalizeText(headerTop[index]);
+    const bottom = normalizeText(headerBottom[index]);
+    let matched;
+
+    matched = top.match(/^(\d{1,2})月结转盘存$/);
+    if (matched) {
+      const carryMonth = Number(matched[1]);
+      const openingMonth = carryMonth === 12 ? 1 : carryMonth + 1;
+      openingByMonth.set(openingMonth, index);
+      continue;
+    }
+
+    matched = top.match(/^(\d{1,2})月份$/);
+    if (matched) {
+      const month = Number(matched[1]);
+      if (!monthlyByMonth.has(month)) monthlyByMonth.set(month, {});
+      monthlyByMonth.get(month).in = index;
+      continue;
+    }
+
+    if (!top && bottom && monthlyByMonth.size) {
+      const months = Array.from(monthlyByMonth.keys()).sort((a, b) => a - b);
+      const month = months[months.length - 1];
+      const target = monthlyByMonth.get(month);
+      if (bottom === '出库') target.out = index;
+      if (bottom === '结存') target.closing = index;
+    }
+  }
+
+  return { openingByMonth, monthlyByMonth };
+}
+
+function deriveCategory(itemName, model) {
+  const name = normalizeText(itemName);
+  const safeModel = normalizeModel(model);
+  if (!name) return '';
+  if (safeModel && name.endsWith(safeModel)) {
+    return canonicalizeCategory(normalizeText(name.slice(0, name.length - safeModel.length)) || name);
+  }
+  return canonicalizeCategory(name);
+}
+
+function buildItemName(category, model) {
+  const safeCategory = canonicalizeCategory(category);
+  const safeModel = normalizeModel(model);
+  return safeModel ? `${safeCategory} ${safeModel}` : safeCategory;
+}
+
+function normalizeLegacySizeToken(value) {
+  const token = normalizeText(value).toUpperCase();
+  if (token === 'XXL') return '2XL';
+  if (token === 'XXXL') return '3XL';
+  return token;
+}
+
+function getRawItemNameAliases(rawName) {
+  const value = normalizeText(rawName).replace(/\s+/g, '');
+  if (!value) return [];
+  const aliases = [value];
+
+  const safetyShoeMatch = value.match(/^(?:安全鞋|劳保鞋|工鞋)(\d+)$/);
+  if (safetyShoeMatch) {
+    aliases.push(`鞋${safetyShoeMatch[1]}`);
+  }
+
+  const oldSummerMatch = value.match(/^夏([A-Za-z0-9]+)$/);
+  if (oldSummerMatch) {
+    const normalizedSize = normalizeLegacySizeToken(oldSummerMatch[1]);
+    aliases.push(`车夏${normalizedSize}`);
+    aliases.push(`老款夏${normalizedSize}`);
+  }
+
+  return Array.from(new Set(aliases));
+}
+
+function deriveItemType(category, unit) {
+  const safeCategory = canonicalizeCategory(category);
+  const safeUnit = normalizeText(unit);
+  if (safeUnit === '双' || /鞋|靴/.test(safeCategory)) return '工鞋';
+  if (safeUnit === '顶' || /帽|盔/.test(safeCategory)) return '劳保';
+  return '工服';
+}
+
+function toItemKey(category, model) {
+  return `${canonicalizeCategory(category)}::${normalizeModel(model)}`;
+}
+
+function getEmployeeStaffByUser(user) {
+  if (!user) return null;
+  const fetchStaffById = db.prepare(`
+    SELECT id, employee_id, name, department, position, hire_date, gender, status,
+           workwear_permission, workwear_special_permission
+    FROM staff
+    WHERE id = ?
+    LIMIT 1
+  `);
+  const fetchStaffByEmployeeId = db.prepare(`
+    SELECT id, employee_id, name, department, position, hire_date, gender, status,
+           workwear_permission, workwear_special_permission
+    FROM staff
+    WHERE employee_id = ?
+    LIMIT 1
+  `);
+
+  if (user.type === 'employee') {
+    const staff = fetchStaffById.get(Number(user.id || 0));
+    if (staff) return staff;
+  } else if (Number(user.userId || 0) > 0) {
+    const boundUser = db.prepare(`
+      SELECT staff_id, username
+      FROM users
+      WHERE id = ?
+      LIMIT 1
+    `).get(Number(user.userId || 0));
+    if (Number(boundUser?.staff_id || 0) > 0) {
+      const linkedStaff = fetchStaffById.get(Number(boundUser.staff_id || 0));
+      if (linkedStaff) return linkedStaff;
+    }
+    if (normalizeText(boundUser?.username)) {
+      const matchedStaff = fetchStaffByEmployeeId.get(normalizeText(boundUser.username));
+      if (matchedStaff) return matchedStaff;
+    }
+  }
+
+  const student = db.prepare(`
+    SELECT id, employee_id, name, department
+    FROM student_roster
+    WHERE id = ?
+    LIMIT 1
+  `).get(Number(user.id || 0));
+  if (!student) return null;
+
+  return {
+    id: student.id,
+    employee_id: student.employee_id,
+    name: student.name,
+    department: student.department || '',
+    position: '实训生',
+    hire_date: '',
+    gender: '',
+    status: 'active',
+    workwear_permission: 0,
+    workwear_special_permission: 0
+  };
+}
+
+function getAuthPayloadFromRequest(req) {
+  if (req.user) return req.user;
+  const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+  return token ? verifyToken(token) : null;
+}
+
+function getRequestEmployeeStaff(req) {
+  return getEmployeeStaffByUser(getAuthPayloadFromRequest(req));
+}
+
+function canUseSpecialIssue(req) {
+  const payload = getAuthPayloadFromRequest(req);
+  if (payload?.role === 'admin') return true;
+  const staff = getRequestEmployeeStaff(req);
+  return Number(staff?.workwear_special_permission || 0) === 1;
+}
+
+function ensureEmployee(req, res, next) {
+  const staff = getEmployeeStaffByUser(req.user);
+  if (!staff || staff.status !== 'active') {
+    return buildJsonResponseError(res, -1, '未绑定有效员工档案，无法访问', 403);
+  }
+  req.employeeStaff = staff;
+  return next();
+}
+
+function ensureWorkwearPermission(req, res, next) {
+  const staff = req.employeeStaff || getEmployeeStaffByUser(req.user);
+  if (!staff || staff.status !== 'active') {
+    return buildJsonResponseError(res, -1, '员工信息不存在或已停用', 403);
+  }
+  if (Number(staff.workwear_permission || 0) !== 1) {
+    return buildJsonResponseError(res, -1, '暂无工服管理权限', 403);
+  }
+  req.employeeStaff = staff;
+  return next();
+}
+
+function parseBaseItemsFromExcel() {
+  const rows = getSheetRows(WORKWEAR_SHEET_ITEMS);
+  return rows
+    .slice(4)
+    .map((row) => {
+      const no = parseInteger(row[3]);
+      const name = normalizeText(row[4]);
+      const unit = normalizeText(row[5]);
+      const model = normalizeModel(row[6]);
+      const unitPrice = parseMoneyNumber(row[7]);
+      const remark = normalizeText(row[8]);
+      if (!name) return null;
+      const category = deriveCategory(name, model);
+      return {
+        source_no: no || null,
+        name,
+        category,
+        unit,
+        model,
+        unit_price: unitPrice,
+        remark,
+        item_type: deriveItemType(category, unit)
+      };
+    })
+    .filter(Boolean);
+}
+
+function parsePurchaseEntriesFromExcel() {
+  const rows = getSheetRows(WORKWEAR_SHEET_PURCHASES);
+  return rows
+    .slice(4)
+    .map((row) => {
+      const sourceNo = parseInteger(row[3]);
+      const purchaseDate = normalizeDate(row[4]);
+      const purchaser = normalizeText(row[5]);
+      const name = normalizeText(row[6]);
+      const unit = normalizeText(row[7]);
+      const model = normalizeModel(row[8]);
+      const unitPrice = parseMoneyNumber(row[9]);
+      const quantity = parseInteger(row[10]);
+      const amount = parseMoneyNumber(row[11]);
+      const remark = normalizeText(row[12]);
+      if (!purchaseDate || !name || !quantity) return null;
+      const category = deriveCategory(name, model);
+      return {
+        source_ref: `excel-purchase-${sourceNo || `${purchaseDate}-${name}-${model}`}`,
+        purchase_date: purchaseDate,
+        purchaser,
+        item_name: name,
+        category,
+        model,
+        unit,
+        unit_price: unitPrice,
+        quantity,
+        amount: amount || unitPrice * quantity,
+        remark,
+        item_type: deriveItemType(category, unit)
+      };
+    })
+    .filter(Boolean);
+}
+
+function parseHistoricalInventoryFromExcel(year = 2026, endMonth = 5) {
+  const rows = getSheetRows(WORKWEAR_SHEET_INVENTORY);
+  const { openingByMonth, monthlyByMonth } = getInventorySheetColumnMap(rows);
+
+  for (let month = 1; month <= endMonth + 1; month += 1) {
+    if (!openingByMonth.has(month)) {
+      throw new Error(`盘存表中未找到 ${month} 月期初结转列`);
+    }
+  }
+  for (let month = 1; month <= endMonth; month += 1) {
+    const monthly = monthlyByMonth.get(month) || {};
+    if (![monthly.in, monthly.out, monthly.closing].every((index) => Number.isInteger(index))) {
+      throw new Error(`盘存表中未找到 ${month} 月完整的入库/出库/结存列`);
+    }
+  }
+
+  return rows
+    .slice(4)
+    .map((row, rowIndex) => {
+      const itemName = normalizeText(row[3]);
+      const unitPrice = parseMoneyNumber(row[4]);
+      const unit = normalizeText(row[5]);
+      if (!itemName) return null;
+      const openings = {};
+      const monthly = {};
+      for (let month = 1; month <= endMonth + 1; month += 1) {
+        openings[month] = parseInteger(row[openingByMonth.get(month)]);
+      }
+      for (let month = 1; month <= endMonth; month += 1) {
+        const config = monthlyByMonth.get(month);
+        monthly[month] = {
+          in_qty: parseInteger(row[config.in]),
+          out_qty: parseInteger(row[config.out]),
+          closing_qty: parseInteger(row[config.closing])
+        };
+      }
+      return {
+        source_ref: `excel-history-${year}-${rowIndex + 4}`,
+        year,
+        raw_name: itemName,
+        unit,
+        unit_price: unitPrice,
+        openings,
+        monthly
+      };
+    })
+    .filter(Boolean);
+}
+
+function loadActiveItems() {
+  return db.prepare(`
+    SELECT id, source_no, category, model, unit, unit_price, item_type, remark, min_stock
+    FROM workwear_items
+    WHERE is_active = 1
+    ORDER BY source_no IS NULL, source_no ASC, id ASC
+  `).all();
+}
+
+function buildWorkwearItemPayload(item) {
+  return {
+    id: Number(item.id),
+    item_id: Number(item.id),
+    item_name: buildItemName(item.category, item.model),
+    category: item.category || '',
+    model: item.model || '',
+    unit: item.unit || '',
+    unit_price: Number(item.unit_price) || 0,
+    item_type: item.item_type || deriveItemType(item.category, item.unit)
+  };
+}
+
+function getPurchaseItemsForDate(purchaseDate) {
+  ensureWorkwearSeeds();
+  const items = loadActiveItems();
+  const qtyRows = db.prepare(`
+    SELECT
+      item_id,
+      COALESCE(SUM(quantity), 0) AS quantity,
+      GROUP_CONCAT(DISTINCT NULLIF(TRIM(COALESCE(purchaser, '')), '')) AS purchaser
+    FROM workwear_purchase_entries
+    WHERE purchase_date = ?
+    GROUP BY item_id
+  `).all(purchaseDate);
+  const qtyMap = new Map(qtyRows.map((row) => [
+    Number(row.item_id || 0),
+    {
+      quantity: Number(row.quantity) || 0,
+      purchaser: normalizeText(row.purchaser || '')
+    }
+  ]));
+  return items.map((item) => ({
+    ...buildWorkwearItemPayload(item),
+    quantity: qtyMap.get(Number(item.id))?.quantity || 0,
+    purchaser: qtyMap.get(Number(item.id))?.purchaser || ''
+  }));
+}
+
+function parseItemQuantityRows(rawItems, { allowNegative = false, allowZero = false } = {}) {
+  if (!Array.isArray(rawItems)) return [];
+  return rawItems
+    .map((entry) => ({
+      item_id: Number(entry.item_id ?? entry.id ?? 0),
+      quantity: Math.trunc(Number(entry.quantity ?? 0)),
+      purchaser: normalizeText(entry.purchaser || '')
+    }))
+    .filter((entry) => entry.item_id && Number.isFinite(entry.quantity))
+    .filter((entry) => {
+      if (allowZero) return true;
+      return allowNegative ? entry.quantity !== 0 : entry.quantity > 0;
+    });
+}
+
+function getExcelColumnWidth(key, header, values) {
+  const specialWidthMap = {
+    序号: 9,
+    月份: 11,
+    入库日期: 12,
+    领用日期: 12,
+    离职日期: 12,
+    领用人: 12,
+    录入人: 12,
+    部门: 12,
+    岗位: 16,
+    物品名称: 16,
+    类别: 12,
+    型号: 10,
+    单位: 8,
+    数量: 8,
+    入库数量: 10,
+    期初: 10,
+    入库: 10,
+    出库: 10,
+    结存: 10,
+    单价: 10,
+    金额: 12,
+    自购金额: 12,
+    扣款比例: 10,
+    离职扣款: 12,
+    自购: 10,
+    备注: 22,
+    提示: 28
+  };
+  if (specialWidthMap[key]) return specialWidthMap[key];
+  if (specialWidthMap[header]) return specialWidthMap[header];
+  const maxLength = [header, ...values]
+    .map((value) => String(value ?? ''))
+    .reduce((max, current) => Math.max(max, current.length), 0);
+  return Math.min(Math.max(maxLength + 4, 10), 24);
+}
+
+function isNumericColumn(key) {
+  return /(数量|单价|金额|扣款|比例|期初|入库|出库|结存|自购)$/.test(String(key || ''));
+}
+
+function shouldUseIntegerFormat(key) {
+  return /(数量|期初|入库|出库|结存)$/.test(String(key || ''));
+}
+
+function toExcelCellValue(key, value) {
+  if (value === '' || value === null || value === undefined) return '';
+  if (!isNumericColumn(key)) return value;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return value;
+  return numeric;
+}
+
+function clonePlainObject(value) {
+  return value ? JSON.parse(JSON.stringify(value)) : value;
+}
+
+function buildLeaveSelfExportDisplayRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map((row) => ({
+    NO: row?.NO ?? '',
+    领用人: row?.领用人 || '',
+    入职日期: row?.入职日期 || '',
+    所属部门: row?.所属部门 || row?.部门 || '',
+    岗位: row?.岗位 || '',
+    单位: row?.单位 || '',
+    离职日期: row?.离职日期 || '',
+    领用日期: row?.领用日期 || '',
+    工服工鞋: row?.工服工鞋 || row?.类别 || '',
+    型号: row?.型号 || '',
+    数量: row?.数量 ?? '',
+    单价: row?.单价 ?? '',
+    自购金额: row?.自购金额 ?? '',
+    扣款比例: row?.扣款比例 ?? '',
+    离职扣款: row?.离职扣款 ?? '',
+    备注: row?.备注 || ''
+  }));
+}
+
+function worksheetHasContent(worksheet) {
+  if (!worksheet) return false;
+  let hasContent = false;
+  worksheet.eachRow({ includeEmpty: false }, (row) => {
+    row.eachCell({ includeEmpty: false }, (cell) => {
+      const value = getStaticCellValue(cell);
+      if (value === '' || value === null || value === undefined) return;
+      hasContent = true;
+    });
+  });
+  return hasContent;
+}
+
+function getStaticCellValue(cell) {
+  const rawValue = cell?.value;
+  if (rawValue == null) return '';
+  if (rawValue instanceof Date) return rawValue;
+  if (typeof rawValue !== 'object') return rawValue;
+  if (rawValue.richText) return rawValue.richText.map((entry) => entry.text || '').join('');
+  if (rawValue.text != null) return rawValue.text;
+  if (rawValue.result != null) return rawValue.result;
+  if (rawValue.hyperlink) return rawValue.text || rawValue.hyperlink;
+  return '';
+}
+
+function flattenWorksheetFormulas(worksheet) {
+  worksheet.eachRow((row) => {
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      const rawValue = cell.value;
+      if (!rawValue || typeof rawValue !== 'object') return;
+      if (!rawValue.formula && !rawValue.sharedFormula) return;
+      cell.value = getStaticCellValue(cell);
+    });
+  });
+}
+
+function toExcelDateValue(value) {
+  const normalized = normalizeDate(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return value || null;
+  }
+  const [year, month, day] = normalized.split('-').map(Number);
+  if (!year || !month || !day) {
+    return value || null;
+  }
+  return Math.floor(Date.UTC(year, month - 1, day) / 86400000) + 25569;
+}
+
+function encodeDownloadFilename(filename) {
+  return encodeURIComponent(filename);
+}
+
+function sendExcelBuffer(res, buffer, filename) {
+  const encodedFilename = encodeDownloadFilename(filename);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFilename}`);
+  return res.send(buffer);
+}
+
+function sendPdfBuffer(res, buffer, filename) {
+  const encodedFilename = encodeDownloadFilename(filename);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodedFilename}`);
+  return res.send(buffer);
+}
+
+function safeTempBaseName(filename, ext = '.xlsx') {
+  const base = String(filename || 'workwear-export')
+    .replace(/\.[^.]+$/, '')
+    .replace(/[^\w.-]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 80) || 'workwear-export';
+  return `${base}${ext}`;
+}
+
+async function convertExcelBufferToPdf(buffer, filename) {
+  if ((WORKWEAR_PDF_MODE === 'windows_excel' || WORKWEAR_WINDOWS_PDF_URL) && WORKWEAR_WINDOWS_PDF_URL) {
+    return convertExcelBufferToPdfViaWindows(buffer, filename);
+  }
+  return convertExcelBufferToPdfViaLibreOffice(buffer, filename);
+}
+
+async function convertExcelBufferToPdfViaWindows(buffer, filename) {
+  try {
+    const response = await postBufferToUrl(WORKWEAR_WINDOWS_PDF_URL, buffer, {
+      'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'content-length': String(buffer.length),
+      'x-workwear-filename': encodeURIComponent(filename || 'workwear-export.xlsx'),
+      ...(WORKWEAR_WINDOWS_PDF_TOKEN ? { 'x-workwear-token': WORKWEAR_WINDOWS_PDF_TOKEN } : {})
+    }, 180000);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      const text = response.body.toString('utf8');
+      throw new Error(`Windows Excel PDF 服务返回失败: ${response.statusCode}${text ? ` - ${text.slice(0, 200)}` : ''}`);
+    }
+    return response.body;
+  } catch (error) {
+    if (WORKWEAR_PDF_MODE === 'windows_excel') {
+      throw error;
+    }
+    console.warn('Windows Excel PDF 服务不可用，回退 LibreOffice:', error.message);
+    return convertExcelBufferToPdfViaLibreOffice(buffer, filename);
+  }
+}
+
+function postBufferToUrl(targetUrl, buffer, headers = {}, timeoutMs = 180000) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(targetUrl);
+    const client = url.protocol === 'https:' ? https : http;
+    const req = client.request({
+      method: 'POST',
+      protocol: url.protocol,
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: `${url.pathname}${url.search || ''}`,
+      headers,
+      timeout: timeoutMs
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        resolve({
+          statusCode: Number(res.statusCode) || 0,
+          headers: res.headers,
+          body: Buffer.concat(chunks)
+        });
+      });
+    });
+    req.on('timeout', () => {
+      req.destroy(new Error('Windows Excel PDF 服务请求超时'));
+    });
+    req.on('error', reject);
+    req.write(buffer);
+    req.end();
+  });
+}
+
+async function convertExcelBufferToPdfViaLibreOffice(buffer, filename) {
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'workwear-pdf-'));
+  const sourceName = safeTempBaseName(filename, '.xlsx');
+  const sourcePath = path.join(tempDir, sourceName);
+  const pdfPath = path.join(tempDir, safeTempBaseName(filename, '.pdf'));
+
+  try {
+    await fs.promises.writeFile(sourcePath, buffer);
+    await execFileAsync('soffice', [
+      '--headless',
+      '--convert-to', 'pdf:calc_pdf_Export',
+      '--outdir', tempDir,
+      sourcePath
+    ], {
+      timeout: 120000,
+      maxBuffer: 20 * 1024 * 1024
+    });
+
+    const pdfBuffer = await fs.promises.readFile(pdfPath);
+    return pdfBuffer;
+  } finally {
+    await fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
+async function buildPurchaseWorkbookByTemplate(rows, range = {}) {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(WORKWEAR_PURCHASE_EXPORT_TEMPLATE);
+  workbook.definedNames.model = [];
+  const worksheet = workbook.getWorksheet('采购汇总') || workbook.worksheets[0];
+  if (!worksheet) {
+    throw new Error('采购入库模板缺少工作表');
+  }
+  flattenWorksheetFormulas(worksheet);
+  worksheet.dataValidations.model = {};
+  const purchaseMap = new Map();
+  const activeItems = loadActiveItems();
+  const itemOrderMap = new Map(
+    activeItems.map((item, index) => [
+      [buildItemName(item.category, item.model), normalizeText(item.unit), normalizeText(item.model)].join('||'),
+      Number(item.source_no ?? item.id ?? index + 1)
+    ])
+  );
+  rows.forEach((row) => {
+    const itemName = normalizeText(row.item_name);
+    const unit = normalizeText(row.unit);
+    const model = normalizeText(row.model);
+    if (!itemName) return;
+    const key = [itemName, unit, model].join('||');
+    const current = purchaseMap.get(key) || {
+      item_name: itemName,
+      unit,
+      model,
+      sort_order: itemOrderMap.get(key) ?? Number.MAX_SAFE_INTEGER,
+      quantity: 0,
+    };
+    current.quantity += Number(row.quantity) || 0;
+    purchaseMap.set(key, current);
+  });
+
+  const sortedDates = rows.map((row) => row.purchase_date).filter(Boolean).sort();
+  const dateFrom = range.fromDate || sortedDates[0] || '';
+  const dateTo = range.toDate || sortedDates[sortedDates.length - 1] || '';
+
+  worksheet.getCell('C4').value = dateFrom || '';
+  worksheet.getCell('C4').numFmt = 'yyyy/mm/dd;@';
+  worksheet.getCell('E4').value = dateTo || '';
+  worksheet.getCell('E4').numFmt = 'yyyy/mm/dd;@';
+
+  const templateRowIndex = 7;
+  const templateRow = worksheet.getRow(templateRowIndex);
+  const templateHeight = templateRow.height;
+  const templateStyles = Array.from({ length: Math.max(worksheet.columnCount, 6) }, (_, index) => {
+    const cell = templateRow.getCell(index + 1);
+    return {
+      style: clonePlainObject(cell.style),
+      numFmt: cell.numFmt || null
+    };
+  });
+  const templateCapacity = Math.max(worksheet.rowCount - templateRowIndex + 1, 0);
+
+  const aggregatedRows = Array.from(purchaseMap.values()).sort((a, b) => {
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+    return normalizeText(a.item_name).localeCompare(normalizeText(b.item_name))
+      || normalizeText(a.model).localeCompare(normalizeText(b.model));
+  });
+
+  const requiredRows = Math.max(aggregatedRows.length, templateCapacity);
+  for (let rowIndex = worksheet.rowCount + 1; rowIndex < templateRowIndex + requiredRows; rowIndex += 1) {
+    const excelRow = worksheet.getRow(rowIndex);
+    if (templateHeight) excelRow.height = templateHeight;
+    templateStyles.forEach((templateStyle, styleIndex) => {
+      const cell = excelRow.getCell(styleIndex + 1);
+      if (templateStyle.style) cell.style = clonePlainObject(templateStyle.style);
+      if (templateStyle.numFmt) cell.numFmt = templateStyle.numFmt;
+    });
+    worksheet.mergeCells(`D${rowIndex}:E${rowIndex}`);
+  }
+
+  for (let offset = 0; offset < requiredRows; offset += 1) {
+    const rowIndex = templateRowIndex + offset;
+    const excelRow = worksheet.getRow(rowIndex);
+    const dataRow = aggregatedRows[offset];
+    excelRow.getCell(1).value = dataRow?.item_name || '';
+    excelRow.getCell(2).value = dataRow?.unit || '';
+    excelRow.getCell(3).value = dataRow?.model || '';
+    excelRow.getCell(4).value = dataRow?.quantity || '';
+    excelRow.getCell(4).numFmt = '0';
+    excelRow.getCell(6).value = '';
+  }
+
+  const lastDataRow = Math.max(templateRowIndex + requiredRows - 1, templateRowIndex);
+  worksheet.autoFilter = undefined;
+  worksheet.pageSetup.printArea = `A1:F${lastDataRow}`;
+  worksheet.views = [
+    {
+      state: 'frozen',
+      xSplit: 0,
+      ySplit: 6,
+      topLeftCell: 'A7',
+      showGridLines: false,
+      showRowColHeaders: true,
+      zoomScale: 100,
+      zoomScaleNormal: 100
+    }
+  ];
+
+  return workbook.xlsx.writeBuffer();
+}
+
+async function sendPurchaseWorkbookByTemplate(res, rows, filename, range = {}) {
+  const buffer = await buildPurchaseWorkbookByTemplate(rows, range);
+  return sendExcelBuffer(res, buffer, filename);
+}
+
+async function buildIssueWorkbookByTemplate(rows) {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(WORKWEAR_ISSUE_EXPORT_TEMPLATE);
+  workbook.definedNames.model = [];
+  const detailSheet = workbook.getWorksheet('领用明细') || workbook.worksheets[0];
+  if (!detailSheet) {
+    throw new Error('领用明细模板缺少工作表');
+  }
+  const summarySheet = workbook.getWorksheet('领用汇总');
+
+  flattenWorksheetFormulas(detailSheet);
+  detailSheet.dataValidations.model = {};
+  if (summarySheet) {
+    flattenWorksheetFormulas(summarySheet);
+    summarySheet.dataValidations.model = {};
+  }
+
+  const templateRowIndex = 5;
+  const templateRow = detailSheet.getRow(templateRowIndex);
+  const templateHeight = templateRow.height;
+  const templateStyles = Array.from({ length: 16 }, (_, index) => {
+    const cell = templateRow.getCell(index + 1);
+    return {
+      style: clonePlainObject(cell.style),
+      numFmt: cell.numFmt || null
+    };
+  });
+
+  while (detailSheet.rowCount >= templateRowIndex) {
+    detailSheet.spliceRows(templateRowIndex, 1);
+  }
+
+  const safeRows = Array.isArray(rows) ? rows : [];
+  safeRows.forEach((row, index) => {
+    const selfPurchase = Number(row.self_purchase) || 0;
+    const deduction = Number(row.deduction) || 0;
+    const unitPrice = Number(row.unit_price) || 0;
+    const quantity = Number(row.quantity) || 0;
+    const deductionRatio = Number(row.deduction_ratio) || 0;
+    const modelText = normalizeText(row.model);
+    const modelValue = /^\d+$/.test(modelText) ? Number(modelText) : modelText;
+    const excelRow = detailSheet.addRow([
+      index + 1,
+      row.staff_name || '',
+      toExcelDateValue(row.hire_date),
+      row.department || '',
+      row.position || '',
+      toExcelDateValue(row.issue_date),
+      row.item_name || '',
+      row.unit || '',
+      modelValue,
+      unitPrice,
+      quantity,
+      row.deduction_ratio === '' || row.deduction_ratio == null ? null : deductionRatio / 100,
+      deduction > 0 ? deduction : null,
+      selfPurchase > 0 ? selfPurchase : null,
+      toExcelDateValue(row.leave_date),
+      row.remark || ''
+    ]);
+
+    if (templateHeight) {
+      excelRow.height = templateHeight;
+    }
+    templateStyles.forEach((templateStyle, styleIndex) => {
+      const cell = excelRow.getCell(styleIndex + 1);
+      if (templateStyle.style) cell.style = clonePlainObject(templateStyle.style);
+      if (templateStyle.numFmt) cell.numFmt = templateStyle.numFmt;
+    });
+
+    excelRow.getCell(11).numFmt = '0';
+    excelRow.getCell(12).numFmt = '0%';
+    excelRow.getCell(3).numFmt = 'yyyy/mm/dd;@';
+    excelRow.getCell(6).numFmt = 'yyyy/mm/dd;@';
+    excelRow.getCell(15).numFmt = 'yyyy/mm/dd;@';
+    if (!row.leave_date) {
+      excelRow.getCell(15).value = null;
+    }
+  });
+
+  detailSheet.pageSetup.printArea = `A1:P${Math.max(detailSheet.rowCount, 4)}`;
+  detailSheet.views = [
+    {
+      state: 'frozen',
+      xSplit: 1,
+      ySplit: 4,
+      topLeftCell: 'B5',
+      showGridLines: false,
+      showRowColHeaders: true,
+      zoomScale: 100,
+      zoomScaleNormal: 100
+    }
+  ];
+
+  if (summarySheet) {
+    const issueDates = safeRows
+      .map((row) => normalizeText(row.issue_date))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    summarySheet.getCell('C4').value = issueDates[0] ? toExcelDateValue(issueDates[0]) : null;
+    summarySheet.getCell('E4').value = issueDates[issueDates.length - 1] ? toExcelDateValue(issueDates[issueDates.length - 1]) : null;
+    summarySheet.getCell('C4').numFmt = 'yyyy/mm/dd;@';
+    summarySheet.getCell('E4').numFmt = 'yyyy/mm/dd;@';
+
+    const summaryTemplateRowIndex = 7;
+    const summaryTemplateRow = summarySheet.getRow(summaryTemplateRowIndex);
+    const summaryTemplateHeight = summaryTemplateRow.height;
+    const summaryTemplateStyles = Array.from({ length: 6 }, (_, index) => {
+      const cell = summaryTemplateRow.getCell(index + 1);
+      return {
+        style: clonePlainObject(cell.style),
+        numFmt: cell.numFmt || null
+      };
+    });
+
+    const summaryMap = new Map();
+    safeRows.forEach((row) => {
+      const itemName = row.item_name || '';
+      const unit = row.unit || '';
+      const model = row.model == null ? '' : String(row.model);
+      const key = [itemName, unit, model].join('||');
+      const quantity = Number(row.quantity) || 0;
+      const current = summaryMap.get(key) || {
+        item_name: itemName,
+        unit,
+        model,
+        quantity: 0
+      };
+      current.quantity += quantity;
+      summaryMap.set(key, current);
+    });
+
+    const summaryRows = Array.from(summaryMap.values()).sort((a, b) => {
+      return normalizeText(a.item_name).localeCompare(normalizeText(b.item_name))
+        || normalizeText(a.unit).localeCompare(normalizeText(b.unit))
+        || normalizeText(a.model).localeCompare(normalizeText(b.model));
+    });
+
+    const templateCapacity = Math.max(summarySheet.rowCount - summaryTemplateRowIndex + 1, 0);
+    const renderCount = Math.max(summaryRows.length, 1);
+    const extraRows = Math.max(renderCount - templateCapacity, 0);
+    if (extraRows > 0) {
+      summarySheet.spliceRows(
+        summaryTemplateRowIndex + templateCapacity,
+        0,
+        ...Array.from({ length: extraRows }, () => new Array(6).fill(null))
+      );
+    }
+    for (let offset = 0; offset < renderCount; offset += 1) {
+      const rowIndex = summaryTemplateRowIndex + offset;
+      const excelRow = summarySheet.getRow(rowIndex);
+      if (summaryTemplateHeight) excelRow.height = summaryTemplateHeight;
+      summaryTemplateStyles.forEach((templateStyle, styleIndex) => {
+        const cell = excelRow.getCell(styleIndex + 1);
+        if (templateStyle.style) cell.style = clonePlainObject(templateStyle.style);
+        if (templateStyle.numFmt) cell.numFmt = templateStyle.numFmt;
+        cell.value = null;
+      });
+      try {
+        summarySheet.unMergeCells(`D${rowIndex}:E${rowIndex}`);
+      } catch (error) {
+        // ignore if the row isn't merged yet
+      }
+      try {
+        summarySheet.mergeCells(`D${rowIndex}:E${rowIndex}`);
+      } catch (error) {
+        // ignore if merge already exists
+      }
+
+      const summaryRow = summaryRows[offset];
+      excelRow.getCell(1).value = summaryRow?.item_name || '';
+      excelRow.getCell(2).value = summaryRow?.unit || '';
+      excelRow.getCell(3).value = summaryRow?.model || '';
+      excelRow.getCell(4).value = summaryRow ? summaryRow.quantity : null;
+      excelRow.getCell(4).numFmt = '0';
+      excelRow.getCell(6).value = '';
+    }
+
+    if (summarySheet.rowCount > summaryTemplateRowIndex + renderCount - 1) {
+      for (let rowIndex = summaryTemplateRowIndex + renderCount; rowIndex <= summarySheet.rowCount; rowIndex += 1) {
+        const excelRow = summarySheet.getRow(rowIndex);
+        for (let cellIndex = 1; cellIndex <= 6; cellIndex += 1) {
+          excelRow.getCell(cellIndex).value = null;
+        }
+      }
+    }
+
+    summarySheet.pageSetup.printArea = `A1:F${summaryTemplateRowIndex + renderCount - 1}`;
+    summarySheet.views = [
+      {
+        state: 'frozen',
+        xSplit: 0,
+        ySplit: 6,
+        topLeftCell: 'A7',
+        showGridLines: false,
+        showRowColHeaders: true,
+        zoomScale: 100,
+        zoomScaleNormal: 100
+      }
+    ];
+  }
+
+  return workbook.xlsx.writeBuffer();
+}
+
+async function sendIssueWorkbookByTemplate(res, rows, filename) {
+  const buffer = await buildIssueWorkbookByTemplate(rows);
+  return sendExcelBuffer(res, buffer, filename);
+}
+
+async function buildLeaveSelfWorkbookFallback(rows) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('离职扣款+自费领用');
+  const displayRows = buildLeaveSelfExportDisplayRows(rows);
+  const columns = [
+    { header: 'NO:', key: 'NO', width: 8 },
+    { header: '领用人', key: '领用人', width: 12 },
+    { header: '入职日期', key: '入职日期', width: 12 },
+    { header: '所属部门', key: '所属部门', width: 12 },
+    { header: '岗位', key: '岗位', width: 16 },
+    { header: '领用日期', key: '领用日期', width: 12 },
+    { header: '工服/工鞋', key: '工服工鞋', width: 16 },
+    { header: '单位', key: '单位', width: 8 },
+    { header: '型号', key: '型号', width: 10 },
+    { header: '单价', key: '单价', width: 10 },
+    { header: '数量', key: '数量', width: 8 },
+    { header: '扣款比例', key: '扣款比例', width: 10 },
+    { header: '扣款结算', key: '离职扣款', width: 12 },
+    { header: '自购', key: '自购金额', width: 12 },
+    { header: '离职日期', key: '离职日期', width: 12 },
+    { header: '备注', key: '备注', width: 24 }
+  ];
+
+  worksheet.columns = columns;
+  const headerRow = worksheet.getRow(1);
+  columns.forEach((column, index) => {
+    headerRow.getCell(index + 1).value = column.header;
+  });
+
+  const safeRows = displayRows.length ? displayRows : [{ 备注: '暂无数据' }];
+  safeRows.forEach((row) => {
+    const excelRow = worksheet.addRow(columns.map((column) => toExcelCellValue(column.key, row[column.key])));
+    excelRow.getCell(3).numFmt = 'yyyy/mm/dd;@';
+    excelRow.getCell(6).numFmt = 'yyyy/mm/dd;@';
+    excelRow.getCell(10).numFmt = '0.00';
+    excelRow.getCell(11).numFmt = '0';
+    excelRow.getCell(12).numFmt = '0%';
+    excelRow.getCell(13).numFmt = '0.00';
+    excelRow.getCell(14).numFmt = '0.00';
+    excelRow.getCell(15).numFmt = 'yyyy/mm/dd;@';
+  });
+
+  worksheet.pageSetup.printArea = `A1:P${Math.max(worksheet.rowCount, 4)}`;
+
+  return workbook.xlsx.writeBuffer();
+}
+
+async function buildLeaveSelfWorkbookByTemplate(rows, range = {}) {
+  try {
+    await fs.promises.access(WORKWEAR_LEAVE_SELF_EXPORT_TEMPLATE, fs.constants.R_OK);
+  } catch (error) {
+    return buildLeaveSelfWorkbookFallback(rows);
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(WORKWEAR_LEAVE_SELF_EXPORT_TEMPLATE);
+  workbook.definedNames.model = [];
+  const worksheet = workbook.getWorksheet('离职扣款+自费领用') || workbook.worksheets[0];
+  if (!worksheet) {
+    return buildLeaveSelfWorkbookFallback(rows);
+  }
+
+  if (!worksheetHasContent(worksheet)) {
+    return buildLeaveSelfWorkbookFallback(rows);
+  }
+
+  const yearMonth = normalizeText(range.fromDate || '').slice(0, 7) || getCurrentYearMonth();
+  worksheet.getCell('A1').value = `${yearMonth}离职人员明细`;
+  worksheet.getCell('A8').value = `${yearMonth}自购人员明细`;
+
+  const allRows = buildLeaveSelfExportDisplayRows(rows);
+  const selfRows = allRows
+    .filter((row) => Number(row.自购金额) > 0 && String(row.领用日期 || '').slice(0, 7) === yearMonth)
+    .sort((a, b) => {
+      const dateCompare = String(a.领用日期 || '').localeCompare(String(b.领用日期 || ''));
+      if (dateCompare !== 0) return dateCompare;
+      return String(a.领用人 || '').localeCompare(String(b.领用人 || ''));
+    })
+    .map((row, index) => ({
+      ...row,
+      NO: index + 1,
+      扣款比例: '',
+      离职扣款: '-'
+    }));
+  const leaveRows = allRows
+    .filter((row) => String(row.离职日期 || '').slice(0, 7) === yearMonth)
+    .sort((a, b) => {
+      const leaveDateCompare = String(a.离职日期 || '').localeCompare(String(b.离职日期 || ''));
+      if (leaveDateCompare !== 0) return leaveDateCompare;
+      const issueDateCompare = String(a.领用日期 || '').localeCompare(String(b.领用日期 || ''));
+      if (issueDateCompare !== 0) return issueDateCompare;
+      return String(a.领用人 || '').localeCompare(String(b.领用人 || ''));
+    });
+  const leaveGroups = [];
+  const leaveGroupMap = new Map();
+  leaveRows.forEach((row) => {
+    const groupKey = `${normalizeText(row.领用人)}||${normalizeText(row.离职日期)}`;
+    if (!leaveGroupMap.has(groupKey)) {
+      const group = {
+        key: groupKey,
+        staff_name: row.领用人 || '',
+        leave_date: row.离职日期 || '',
+        rows: []
+      };
+      leaveGroupMap.set(groupKey, group);
+      leaveGroups.push(group);
+    }
+    leaveGroupMap.get(groupKey).rows.push(row);
+  });
+
+  const cloneRowStyles = (rowIndex) => {
+    const templateRow = worksheet.getRow(rowIndex);
+    return {
+      height: templateRow.height,
+      styles: Array.from({ length: 16 }, (_, index) => {
+        const cell = templateRow.getCell(index + 1);
+        return {
+          style: clonePlainObject(cell.style),
+          numFmt: cell.numFmt || null
+        };
+      })
+    };
+  };
+
+  const clearAndStyleRow = (rowIndex, rowTemplate) => {
+    const excelRow = worksheet.getRow(rowIndex);
+    if (rowTemplate.height) excelRow.height = rowTemplate.height;
+    for (let cellIndex = 1; cellIndex <= 16; cellIndex += 1) {
+      const cell = excelRow.getCell(cellIndex);
+      const templateStyle = rowTemplate.styles[cellIndex - 1];
+      if (templateStyle?.style) cell.style = clonePlainObject(templateStyle.style);
+      if (templateStyle?.numFmt) {
+        cell.numFmt = templateStyle.numFmt;
+      }
+      cell.value = null;
+    }
+  };
+
+  const ensureSubtotalMerge = (rowIndex) => {
+    try {
+      worksheet.unMergeCells(`K${rowIndex}:L${rowIndex}`);
+    } catch (error) {
+      // ignore when the range is not merged yet
+    }
+    try {
+      worksheet.mergeCells(`K${rowIndex}:L${rowIndex}`);
+    } catch (error) {
+      // ignore if already merged by template duplication
+    }
+  };
+
+  const fillDetailRow = (rowIndex, row) => {
+    const excelRow = worksheet.getRow(rowIndex);
+    const hasSelfPurchase = Number(row.自购金额) > 0;
+    excelRow.getCell(1).value = row.NO;
+    excelRow.getCell(2).value = row.领用人 || '';
+    excelRow.getCell(3).value = toExcelDateValue(row.入职日期);
+    excelRow.getCell(4).value = row.所属部门 || '';
+    excelRow.getCell(5).value = row.岗位 || '';
+    excelRow.getCell(6).value = toExcelDateValue(row.领用日期);
+    excelRow.getCell(7).value = row.工服工鞋 || '';
+    excelRow.getCell(8).value = row.单位 || '';
+    excelRow.getCell(9).value = row.型号 || '';
+    excelRow.getCell(10).value = row.单价 === '' ? null : Number(row.单价);
+    excelRow.getCell(11).value = row.数量 === '' ? null : Number(row.数量);
+    excelRow.getCell(12).value = hasSelfPurchase || row.扣款比例 === '' || row.扣款比例 == null
+      ? null
+      : Number(row.扣款比例) / 100;
+    if (hasSelfPurchase || row.离职扣款 === '-') {
+      excelRow.getCell(13).value = '-';
+    } else {
+      excelRow.getCell(13).value = row.离职扣款 === '' ? null : Number(row.离职扣款);
+    }
+    excelRow.getCell(14).value = row.自购金额 === '' ? null : Number(row.自购金额);
+    excelRow.getCell(15).value = toExcelDateValue(row.离职日期);
+    excelRow.getCell(16).value = row.备注 || '';
+    if (!row.入职日期) excelRow.getCell(3).value = null;
+    if (!row.领用日期) excelRow.getCell(6).value = null;
+    if (!row.离职日期) excelRow.getCell(15).value = null;
+  };
+
+  const fillEmptyRemarkRow = (rowIndex) => {
+    const excelRow = worksheet.getRow(rowIndex);
+    excelRow.getCell(16).value = '无';
+  };
+
+  const subtotalRowIndexes = [];
+
+  const leaveStartRow = 3;
+  const leaveEndRow = 6;
+  const leaveSubtotalBaseRow = 7;
+  const leaveTemplate = cloneRowStyles(leaveStartRow);
+  const leaveSubtotalTemplate = cloneRowStyles(leaveSubtotalBaseRow);
+  const leaveCapacity = leaveEndRow - leaveStartRow + 1;
+  const leaveRequiredRows = leaveGroups.length
+    ? leaveGroups.reduce((sum, group) => sum + group.rows.length + 1, 0)
+    : 1;
+  const leaveBlockCapacity = leaveCapacity + 1;
+  const extraLeaveRows = Math.max(leaveRequiredRows - leaveBlockCapacity, 0);
+  if (extraLeaveRows > 0) {
+    worksheet.spliceRows(leaveSubtotalBaseRow, 0, ...Array.from({ length: extraLeaveRows }, () => new Array(16).fill(null)));
+  }
+  const selfSectionOffset = extraLeaveRows;
+  const leaveBlockEndRow = leaveSubtotalBaseRow + extraLeaveRows;
+  for (let rowIndex = leaveStartRow; rowIndex <= leaveBlockEndRow; rowIndex += 1) {
+    clearAndStyleRow(rowIndex, leaveTemplate);
+  }
+  if (leaveGroups.length) {
+    let renderRowIndex = leaveStartRow;
+    let detailNo = 1;
+    leaveGroups.forEach((group) => {
+      const groupStartRow = renderRowIndex;
+      let groupSubtotal = 0;
+      group.rows.forEach((row) => {
+        clearAndStyleRow(renderRowIndex, leaveTemplate);
+        fillDetailRow(renderRowIndex, { ...row, NO: detailNo });
+        groupSubtotal += Number(row.离职扣款) || 0;
+        renderRowIndex += 1;
+        detailNo += 1;
+      });
+      clearAndStyleRow(renderRowIndex, leaveSubtotalTemplate);
+      const groupSubtotalRow = worksheet.getRow(renderRowIndex);
+      groupSubtotalRow.getCell(11).value = '扣款小计';
+      groupSubtotalRow.getCell(13).value = {
+        formula: `SUM(M${groupStartRow}:M${renderRowIndex - 1})`,
+        result: Number(groupSubtotal.toFixed(2))
+      };
+      subtotalRowIndexes.push(renderRowIndex);
+      renderRowIndex += 1;
+    });
+  } else {
+    fillEmptyRemarkRow(leaveStartRow);
+  }
+
+  const selfTitleRow = 8 + selfSectionOffset;
+  const selfHeaderRow = 9 + selfSectionOffset;
+  const selfStartRow = 10 + selfSectionOffset;
+  worksheet.getCell(`A${selfTitleRow}`).value = `${yearMonth}自购人员明细`;
+  const selfTemplate = cloneRowStyles(selfStartRow);
+  const selfCapacity = 1;
+  const extraSelfRows = Math.max(selfRows.length - selfCapacity, 0);
+  if (extraSelfRows > 0) {
+    worksheet.spliceRows(selfStartRow + selfCapacity, 0, ...Array.from({ length: extraSelfRows }, () => new Array(16).fill(null)));
+  }
+  const selfRenderCount = Math.max(selfRows.length, 1);
+  const selfLastRow = selfStartRow + selfRenderCount - 1;
+  for (let rowIndex = selfStartRow; rowIndex <= selfLastRow; rowIndex += 1) {
+    clearAndStyleRow(rowIndex, selfTemplate);
+  }
+  if (selfRows.length) {
+    selfRows.forEach((row, index) => fillDetailRow(selfStartRow + index, row));
+  } else {
+    fillEmptyRemarkRow(selfStartRow);
+  }
+
+  if (worksheet.rowCount > selfLastRow) {
+    worksheet.spliceRows(selfLastRow + 1, worksheet.rowCount - selfLastRow);
+  }
+
+  subtotalRowIndexes.forEach((rowIndex) => {
+    const mergeKey = `K${rowIndex}`;
+    if (!worksheet._merges?.[mergeKey]) {
+      try {
+        worksheet.unMergeCells(`K${rowIndex}:L${rowIndex}`);
+      } catch (error) {
+        // ignore when the range is not merged yet
+      }
+      try {
+        worksheet.mergeCells(`K${rowIndex}:L${rowIndex}`);
+      } catch (error) {
+        // keep export available even if exceljs reports a stale merged range
+      }
+    }
+    worksheet.getRow(rowIndex).getCell(11).value = '扣款小计';
+  });
+
+  worksheet.pageSetup.printArea = `A1:P${Math.max(selfLastRow, leaveBlockEndRow)}`;
+
+  const initialBuffer = await workbook.xlsx.writeBuffer();
+  const repairedWorkbook = new ExcelJS.Workbook();
+  await repairedWorkbook.xlsx.load(initialBuffer);
+  const repairedSheet = repairedWorkbook.getWorksheet('离职扣款+自费领用') || repairedWorkbook.worksheets[0];
+  if (repairedSheet && selfRows.length) {
+    selfRows.forEach((_, index) => {
+      const selfRow = repairedSheet.getRow(selfStartRow + index);
+      selfRow.getCell(12).value = null;
+      selfRow.getCell(13).value = '-';
+    });
+  }
+  subtotalRowIndexes.forEach((rowIndex) => {
+    const mergeKey = `K${rowIndex}`;
+    if (!repairedSheet._merges?.[mergeKey]) {
+      try {
+        repairedSheet.unMergeCells(`K${rowIndex}:L${rowIndex}`);
+      } catch (error) {
+        // ignore when the range is not merged yet
+      }
+      repairedSheet.mergeCells(`K${rowIndex}:L${rowIndex}`);
+      repairedSheet.getRow(rowIndex).getCell(11).value = '扣款小计';
+    }
+  });
+  return repairedWorkbook.xlsx.writeBuffer();
+}
+
+async function sendLeaveSelfWorkbookByTemplate(res, rows, filename, range = {}) {
+  const buffer = await buildLeaveSelfWorkbookByTemplate(rows, range);
+  return sendExcelBuffer(res, buffer, filename);
+}
+
+async function buildMonthlyInventoryWorkbookByTemplate(yearMonth) {
+  const normalizedYearMonth = normalizeText(yearMonth) || FIRST_REAL_MONTH;
+  const month = Number(normalizedYearMonth.slice(5, 7)) || 1;
+  const year = Number(normalizedYearMonth.slice(0, 4)) || Number(FIRST_REAL_MONTH.slice(0, 4));
+  const previousMonth = month === 1 ? 12 : month - 1;
+  const nextYearMonth = getNextYearMonth(normalizedYearMonth);
+  const completedClosingMonths = getCompletedInventoryClosingMonths(year);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(WORKWEAR_MONTHLY_INVENTORY_TEMPLATE);
+  workbook.definedNames.model = [];
+  const worksheet = workbook.getWorksheet('月盘存') || workbook.worksheets[0];
+  if (!worksheet) {
+    throw new Error('月盘存模板缺少工作表');
+  }
+
+  flattenWorksheetFormulas(worksheet);
+  worksheet.dataValidations.model = {};
+
+  const rows = getMonthlyInventoryRows(normalizedYearMonth);
+  const nextOpeningMap = new Map(
+    db.prepare(`
+      SELECT item_id, opening_qty
+      FROM workwear_inventory_opening
+      WHERE year_month = ?
+    `).all(nextYearMonth).map((row) => [Number(row.item_id), Number(row.opening_qty) || 0])
+  );
+  const carryReady = compareYearMonth(normalizedYearMonth, FIRST_REAL_MONTH) < 0
+    || completedClosingMonths.has(normalizedYearMonth);
+  const templateRowIndex = 4;
+  const templateRow = worksheet.getRow(templateRowIndex);
+  const templateHeight = templateRow.height;
+  const templateStyles = Array.from({ length: 8 }, (_, index) => {
+    const cell = templateRow.getCell(index + 1);
+    return {
+      style: clonePlainObject(cell.style),
+      numFmt: cell.numFmt || null
+    };
+  });
+
+  worksheet.getCell('A1').value = `${year}年${month}月工服/工鞋出入盘存`;
+  worksheet.getCell('D2').value = `${previousMonth}月结转盘存`;
+  worksheet.getCell('D3').value = `${previousMonth}月结转盘存`;
+  worksheet.getCell('E2').value = `${month}月份`;
+  worksheet.getCell('F2').value = `${month}月份`;
+  worksheet.getCell('G2').value = `${month}月份`;
+  worksheet.getCell('H2').value = `${month}月结转盘存`;
+  worksheet.getCell('H3').value = `${month}月结转盘存`;
+  worksheet.getColumn(9).hidden = true;
+
+  if (worksheet.columnCount > 9) {
+    for (let columnIndex = 10; columnIndex <= worksheet.columnCount; columnIndex += 1) {
+      worksheet.getColumn(columnIndex).hidden = true;
+    }
+  }
+
+  while (worksheet.rowCount >= templateRowIndex) {
+    worksheet.spliceRows(templateRowIndex, 1);
+  }
+
+  rows.forEach((row) => {
+    const excelRow = worksheet.addRow([
+      row.item_name || '',
+      Number(row.unit_price) || 0,
+      row.unit || '',
+      Number(row.opening_qty) || 0,
+      Number(row.in_qty) || '',
+      Number(row.out_qty) || '',
+      Number(row.closing_qty) || '',
+      carryReady && nextOpeningMap.has(Number(row.item_id))
+        ? Number(nextOpeningMap.get(Number(row.item_id)) || 0)
+        : ''
+    ]);
+
+    if (templateHeight) {
+      excelRow.height = templateHeight;
+    }
+    templateStyles.forEach((templateStyle, styleIndex) => {
+      const cell = excelRow.getCell(styleIndex + 1);
+      if (templateStyle.style) cell.style = clonePlainObject(templateStyle.style);
+      if (templateStyle.numFmt) cell.numFmt = templateStyle.numFmt;
+    });
+
+    excelRow.getCell(2).numFmt = '0.00';
+    excelRow.getCell(4).numFmt = '0';
+    excelRow.getCell(5).numFmt = '0';
+    excelRow.getCell(6).numFmt = '0';
+    excelRow.getCell(7).numFmt = '0';
+    excelRow.getCell(8).numFmt = '0';
+  });
+
+  worksheet.views = [
+    {
+      state: 'frozen',
+      xSplit: 0,
+      ySplit: 3,
+      topLeftCell: 'A4',
+      showGridLines: false,
+      showRowColHeaders: true
+    }
+  ];
+
+  return workbook.xlsx.writeBuffer();
+}
+
+async function sendMonthlyInventoryWorkbookByTemplate(res, yearMonth, filename) {
+  const buffer = await buildMonthlyInventoryWorkbookByTemplate(yearMonth);
+  return sendExcelBuffer(res, buffer, filename);
+}
+
+async function buildWorkbook(rows, sheetName = 'Sheet1') {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const normalizedRows = safeRows.length ? safeRows : [{ 提示: '暂无数据' }];
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(sheetName, {
+    views: [{ state: 'frozen', ySplit: 1 }]
+  });
+
+  const columns = Object.keys(normalizedRows[0] || {}).map((key) => {
+    const values = normalizedRows.map((row) => row?.[key]);
+    return {
+      header: key,
+      key,
+      width: getExcelColumnWidth(key, key, values)
+    };
+  });
+  worksheet.columns = columns;
+
+  normalizedRows.forEach((row) => {
+    const mapped = {};
+    columns.forEach((column) => {
+      mapped[column.key] = toExcelCellValue(column.key, row?.[column.key]);
+    });
+    worksheet.addRow(mapped);
+  });
+
+  worksheet.properties.defaultRowHeight = 24;
+  worksheet.getRow(1).height = 26;
+
+  const headerFill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: '4A90E2' }
+  };
+  const stripeFill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'F7FBFF' }
+  };
+  const border = {
+    top: { style: 'thin', color: { argb: 'D6E9FF' } },
+    left: { style: 'thin', color: { argb: 'D6E9FF' } },
+    bottom: { style: 'thin', color: { argb: 'D6E9FF' } },
+    right: { style: 'thin', color: { argb: 'D6E9FF' } }
+  };
+
+  worksheet.eachRow((row, rowNumber) => {
+    row.alignment = { vertical: 'middle', horizontal: 'center' };
+    row.eachCell((cell, colNumber) => {
+      cell.border = border;
+      if (rowNumber === 1) {
+        cell.fill = headerFill;
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      } else {
+        cell.font = { color: { argb: '1D2B5A' }, size: 10 };
+        if (rowNumber % 2 === 0) {
+          cell.fill = stripeFill;
+        }
+      }
+
+      const columnKey = columns[colNumber - 1]?.key || '';
+      if (columnKey === '备注' || columnKey === '提示') {
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+      }
+      if (isNumericColumn(columnKey) && rowNumber > 1 && cell.value !== '') {
+        cell.numFmt = shouldUseIntegerFormat(columnKey) ? '0' : '0.00';
+      }
+    });
+  });
+
+  worksheet.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: Math.max(columns.length, 1) }
+  };
+
+  return workbook.xlsx.writeBuffer();
+}
+
+async function sendWorkbook(res, rows, filename, sheetName = 'Sheet1') {
+  const buffer = await buildWorkbook(rows, sheetName);
+  return sendExcelBuffer(res, buffer, filename);
+}
+
+function buildItemLookup(items) {
+  const map = new Map();
+  items.forEach((item) => {
+    map.set(toItemKey(item.category, item.model), item);
+  });
+  return map;
+}
+
+function ensureBaseItemsSeeded() {
+  const count = db.prepare(`SELECT COUNT(*) AS count FROM workwear_items`).get().count || 0;
+  if (count > 0) return;
+
+  const items = parseBaseItemsFromExcel();
+  const insert = db.prepare(`
+    INSERT INTO workwear_items (
+      source_no, category, model, unit, unit_price, item_type, remark, is_active, min_stock,
+      created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, datetime('now', 'localtime'), datetime('now', 'localtime'))
+  `);
+
+  db.transaction(() => {
+    items.forEach((item) => {
+      insert.run(
+        item.source_no,
+        item.category,
+        item.model,
+        item.unit,
+        item.unit_price,
+        item.item_type,
+        item.remark || null
+      );
+    });
+  })();
+}
+
+function ensurePurchaseEntriesSeeded() {
+  const count = db.prepare(`SELECT COUNT(*) AS count FROM workwear_purchase_entries`).get().count || 0;
+  if (count > 0) return;
+
+  const items = loadActiveItems();
+  const itemLookup = buildItemLookup(items);
+  const entries = parsePurchaseEntriesFromExcel();
+  const insertEntry = db.prepare(`
+    INSERT OR IGNORE INTO workwear_purchase_entries (
+      source_ref, purchase_date, default_purchaser, purchaser, item_id, item_name, category, model, unit,
+      unit_price, quantity, amount, remark, item_type, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+  `);
+  const insertException = db.prepare(`
+    INSERT INTO workwear_inventory_exceptions (
+      year_month, source_type, source_id, raw_category, raw_model, raw_name, quantity, reason, created_at
+    ) VALUES (?, 'purchase_seed', ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+  `);
+
+  db.transaction(() => {
+    entries.forEach((entry) => {
+      const matchedItem = itemLookup.get(toItemKey(entry.category, entry.model));
+      if (!matchedItem) {
+        insertException.run(
+          getYearMonth(entry.purchase_date),
+          entry.source_ref,
+          entry.category,
+          entry.model,
+          entry.item_name,
+          entry.quantity,
+          '采购记录无法匹配基础物品'
+        );
+        return;
+      }
+      insertEntry.run(
+        entry.source_ref,
+        entry.purchase_date,
+        entry.purchaser || null,
+        entry.purchaser || null,
+        matchedItem.id,
+        entry.item_name,
+        entry.category,
+        entry.model,
+        entry.unit,
+        entry.unit_price,
+        entry.quantity,
+        entry.amount,
+        entry.remark || null,
+        entry.item_type
+      );
+    });
+  })();
+}
+
+function importHistoricalInventoryFromExcel(year = 2026, endMonth = 5) {
+  const items = loadActiveItems();
+  const itemLookup = buildItemLookup(items);
+  const itemNameLookup = new Map(items.map((item) => [buildItemName(item.category, item.model), item]));
+  const historyRows = parseHistoricalInventoryFromExcel(year, endMonth);
+  const monthsToSeed = Array.from({ length: endMonth }, (_, index) => `${year}-${String(index + 1).padStart(2, '0')}`);
+  const openingMonthsToSeed = Array.from({ length: endMonth + 1 }, (_, index) => `${year}-${String(index + 1).padStart(2, '0')}`);
+  const clearOpenings = db.prepare(`DELETE FROM workwear_inventory_opening WHERE year_month = ?`);
+  const clearMonthly = db.prepare(`DELETE FROM workwear_inventory_monthly WHERE year_month = ?`);
+  const clearExceptions = db.prepare(`
+    DELETE FROM workwear_inventory_exceptions
+    WHERE year_month = ? AND source_type IN ('opening_import', 'historical_import')
+  `);
+  const insertOpening = db.prepare(`
+    INSERT INTO workwear_inventory_opening (
+      year_month, item_id, opening_qty, source_type, remark, created_at, updated_at
+    ) VALUES (?, ?, ?, 'excel_opening', ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+  `);
+  const insertMonthly = db.prepare(`
+    INSERT INTO workwear_inventory_monthly (
+      year_month, item_id, opening_qty, in_qty, out_qty, closing_qty, computed_at, remark
+    ) VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), ?)
+  `);
+  const insertException = db.prepare(`
+    INSERT INTO workwear_inventory_exceptions (
+      year_month, source_type, source_id, raw_category, raw_model, raw_name, quantity, reason, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+  `);
+
+  const openingMap = new Map();
+  const monthlyMap = new Map();
+  const ensureMonthMap = (targetMonth) => {
+    const yearMonth = `${year}-${String(targetMonth).padStart(2, '0')}`;
+    if (!monthlyMap.has(yearMonth)) monthlyMap.set(yearMonth, new Map());
+    return monthlyMap.get(yearMonth);
+  };
+
+  items.forEach((item) => {
+    for (let month = 1; month <= endMonth + 1; month += 1) {
+      openingMap.set(`${year}-${String(month).padStart(2, '0')}:${item.id}`, 0);
+      if (month <= endMonth) {
+        ensureMonthMap(month).set(item.id, {
+          opening_qty: 0,
+          in_qty: 0,
+          out_qty: 0,
+          closing_qty: 0
+        });
+      }
+    }
+  });
+
+  db.transaction(() => {
+    openingMonthsToSeed.forEach((yearMonth) => {
+      clearOpenings.run(yearMonth);
+      clearExceptions.run(yearMonth);
+    });
+    monthsToSeed.forEach((yearMonth) => {
+      clearMonthly.run(yearMonth);
+    });
+
+    historyRows.forEach((entry) => {
+      const matchedByName = getRawItemNameAliases(entry.raw_name)
+        .map((alias) => itemNameLookup.get(alias))
+        .find(Boolean);
+      const matchedItem = matchedByName || itemLookup.get(toItemKey(deriveCategory(entry.raw_name, ''), ''));
+      if (!matchedItem) {
+        for (let month = 1; month <= endMonth + 1; month += 1) {
+          const yearMonth = `${year}-${String(month).padStart(2, '0')}`;
+          const openingQty = Number(entry.openings[month] || 0);
+          const monthData = entry.monthly[month];
+          const quantity = monthData
+            ? openingQty + Number(monthData.in_qty || 0) + Number(monthData.out_qty || 0) + Number(monthData.closing_qty || 0)
+            : openingQty;
+          if (!quantity) continue;
+          insertException.run(
+            yearMonth,
+            month <= endMonth ? 'historical_import' : 'opening_import',
+            entry.source_ref,
+            deriveCategory(entry.raw_name, ''),
+            '',
+            entry.raw_name,
+            quantity,
+            '历史盘存无法匹配基础物品'
+          );
+        }
+        return;
+      }
+
+      for (let month = 1; month <= endMonth + 1; month += 1) {
+        const yearMonth = `${year}-${String(month).padStart(2, '0')}`;
+        const openingQty = Number(entry.openings[month] || 0);
+        openingMap.set(`${yearMonth}:${matchedItem.id}`, openingQty);
+      }
+
+      for (let month = 1; month <= endMonth; month += 1) {
+        const yearMonth = `${year}-${String(month).padStart(2, '0')}`;
+        const currentMap = monthlyMap.get(yearMonth);
+        const current = currentMap.get(matchedItem.id) || {
+          opening_qty: 0,
+          in_qty: 0,
+          out_qty: 0,
+          closing_qty: 0
+        };
+        currentMap.set(matchedItem.id, {
+          opening_qty: Number(entry.openings[month] || 0),
+          in_qty: Number(entry.monthly[month]?.in_qty || 0),
+          out_qty: Number(entry.monthly[month]?.out_qty || 0),
+          closing_qty: Number(entry.monthly[month]?.closing_qty || 0)
+        });
+      }
+    });
+
+    openingMonthsToSeed.forEach((yearMonth) => {
+      items.forEach((item) => {
+        insertOpening.run(
+          yearMonth,
+          item.id,
+          Number(openingMap.get(`${yearMonth}:${item.id}`) || 0),
+          'excel_history'
+        );
+      });
+    });
+
+    monthsToSeed.forEach((yearMonth) => {
+      const currentMap = monthlyMap.get(yearMonth) || new Map();
+      items.forEach((item) => {
+        const row = currentMap.get(item.id) || {
+          opening_qty: Number(openingMap.get(`${yearMonth}:${item.id}`) || 0),
+          in_qty: 0,
+          out_qty: 0,
+          closing_qty: 0
+        };
+        insertMonthly.run(
+          yearMonth,
+          item.id,
+          Number(row.opening_qty || 0),
+          Number(row.in_qty || 0),
+          Number(row.out_qty || 0),
+          Number(row.closing_qty || 0),
+          Number(row.closing_qty || 0) < 0 ? '库存为负数' : 'excel_history'
+        );
+      });
+    });
+  })();
+}
+
+function ensureHistoricalInventorySeeded() {
+  const count = db.prepare(`
+    SELECT COUNT(*) AS count FROM workwear_inventory_monthly WHERE year_month IN ('2026-01', '2026-02', '2026-03', '2026-04', '2026-05')
+  `).get().count || 0;
+  if (count > 0) return;
+  importHistoricalInventoryFromExcel(2026, 5);
+}
+
+function ensureWorkwearSeeds() {
+  ensureBaseItemsSeeded();
+  ensurePurchaseEntriesSeeded();
+  ensureHistoricalInventorySeeded();
+}
+
+function findItemByNameModel(itemName, model) {
+  const category = deriveCategory(itemName, model);
+  return db.prepare(`
+    SELECT id, category, model, unit, unit_price, item_type, min_stock
+    FROM workwear_items
+    WHERE is_active = 1 AND category = ? AND model = ?
+    LIMIT 1
+  `).get(category, normalizeModel(model));
+}
+
+function rebuildMonthlyInventory(yearMonth = FIRST_REAL_MONTH) {
+  ensureWorkwearSeeds();
+  const normalizedYearMonth = normalizeText(yearMonth) || FIRST_REAL_MONTH;
+
+  const items = loadActiveItems();
+  const itemLookup = buildItemLookup(items);
+  const previousYearMonth = getPreviousYearMonth(normalizedYearMonth);
+  const openingRows = db.prepare(`
+    SELECT item_id, opening_qty
+    FROM workwear_inventory_opening
+    WHERE year_month = ?
+  `).all(normalizedYearMonth);
+  const hasFullOpeningRows = items.length > 0 && openingRows.length >= items.length;
+
+  const openingMap = new Map();
+  if (hasFullOpeningRows) {
+    openingRows.forEach((row) => {
+      openingMap.set(Number(row.item_id), Number(row.opening_qty) || 0);
+    });
+  } else if (previousYearMonth && normalizedYearMonth === FIRST_REAL_MONTH) {
+    db.prepare(`
+      SELECT item_id, closing_qty
+      FROM workwear_inventory_monthly
+      WHERE year_month = ?
+    `).all(previousYearMonth).forEach((row) => {
+      openingMap.set(Number(row.item_id), Number(row.closing_qty) || 0);
+    });
+  } else {
+    db.prepare(`DELETE FROM workwear_inventory_monthly WHERE year_month = ?`).run(normalizedYearMonth);
+    db.prepare(`DELETE FROM workwear_inventory_exceptions WHERE year_month = ?`).run(normalizedYearMonth);
+    return {
+      year_month: normalizedYearMonth,
+      pending_opening: true,
+      previous_year_month: previousYearMonth
+    };
+  }
+
+  const purchaseRows = db.prepare(`
+    SELECT id, purchase_date, item_id, item_name, category, model, quantity
+    FROM workwear_purchase_entries
+    WHERE substr(purchase_date, 1, 7) = ?
+  `).all(normalizedYearMonth);
+
+  const issueRows = db.prepare(`
+    SELECT id, issue_date, item_name, model, quantity, self_purchase
+    FROM workwear_records
+    WHERE status = 'active' AND substr(issue_date, 1, 7) = ?
+  `).all(normalizedYearMonth);
+
+  const inMap = new Map();
+  const outMap = new Map();
+  const exceptions = [];
+
+  const accumulate = (targetMap, itemId, qty) => {
+    const current = Number(targetMap.get(itemId) || 0);
+    targetMap.set(itemId, current + (Number(qty) || 0));
+  };
+
+  purchaseRows.forEach((row) => {
+    const itemId = Number(row.item_id || 0);
+    if (!itemId) {
+      exceptions.push({
+        source_type: 'purchase',
+        source_id: String(row.id),
+        raw_category: deriveCategory(row.item_name, row.model),
+        raw_model: normalizeModel(row.model),
+        raw_name: normalizeText(row.item_name),
+        quantity: Number(row.quantity) || 0,
+        reason: '采购记录缺少物品映射'
+      });
+      return;
+    }
+    accumulate(inMap, itemId, row.quantity);
+  });
+
+  issueRows.forEach((row) => {
+    const rawCategory = deriveCategory(row.item_name, row.model);
+    const rawModel = normalizeModel(row.model);
+    const matchedItem = itemLookup.get(toItemKey(rawCategory, rawModel));
+    if (!matchedItem) {
+      exceptions.push({
+        source_type: Number(row.self_purchase) > 0 ? 'self_purchase' : 'issue',
+        source_id: String(row.id),
+        raw_category: rawCategory,
+        raw_model: rawModel,
+        raw_name: normalizeText(row.item_name),
+        quantity: Number(row.quantity) || 0,
+        reason: '领用记录无法匹配基础物品'
+      });
+      return;
+    }
+    accumulate(outMap, matchedItem.id, row.quantity);
+  });
+
+  const clearMonthly = db.prepare(`DELETE FROM workwear_inventory_monthly WHERE year_month = ?`);
+  const clearExceptions = db.prepare(`DELETE FROM workwear_inventory_exceptions WHERE year_month = ?`);
+  const insertMonthly = db.prepare(`
+    INSERT INTO workwear_inventory_monthly (
+      year_month, item_id, opening_qty, in_qty, out_qty, closing_qty, computed_at, remark
+    ) VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), ?)
+  `);
+  const insertException = db.prepare(`
+    INSERT INTO workwear_inventory_exceptions (
+      year_month, source_type, source_id, raw_category, raw_model, raw_name, quantity, reason, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+  `);
+
+  db.transaction(() => {
+    clearMonthly.run(normalizedYearMonth);
+    clearExceptions.run(normalizedYearMonth);
+
+    items.forEach((item) => {
+      const openingQty = Number(openingMap.get(item.id) || 0);
+      const inQty = Number(inMap.get(item.id) || 0);
+      const outQty = Number(outMap.get(item.id) || 0);
+      const closingQty = openingQty + inQty - outQty;
+      insertMonthly.run(
+        normalizedYearMonth,
+        item.id,
+        openingQty,
+        inQty,
+        outQty,
+        closingQty,
+        closingQty < 0 ? '库存为负数' : null
+      );
+    });
+
+    exceptions.forEach((item) => {
+      insertException.run(
+        normalizedYearMonth,
+        item.source_type,
+        item.source_id,
+        item.raw_category,
+        item.raw_model,
+        item.raw_name,
+        item.quantity,
+        item.reason
+      );
+    });
+  })();
+
+  return { year_month: normalizedYearMonth, pending_opening: false };
+}
+
+function rebuildHistoricalInventoryChainFrom(startYearMonth) {
+  const normalizedStart = normalizeText(startYearMonth);
+  if (!normalizedStart) return;
+
+  const endMonth = compareYearMonth(FIRST_REAL_MONTH, normalizedStart) >= 0
+    ? FIRST_REAL_MONTH
+    : normalizedStart;
+
+  for (const month of enumerateYearMonths(normalizedStart, endMonth)) {
+    const result = rebuildMonthlyInventory(month);
+    if (result?.pending_opening) break;
+
+    const nextMonth = getNextYearMonth(month);
+    if (!nextMonth || compareYearMonth(nextMonth, FIRST_REAL_MONTH) > 0) {
+      continue;
+    }
+
+    getMonthlyInventoryRows(month).forEach((row) => {
+      upsertInventoryOpeningEntry(
+        nextMonth,
+        row.item_id,
+        Number(row.closing_qty) || 0,
+        'rebuild_carry',
+        `carry_from:${month}`
+      );
+    });
+  }
+}
+
+function buildInventorySheetColumns() {
+  const columns = [
+    { key: 'item_name', top: '物品名称', bottom: '' },
+    { key: 'unit_price', top: '单价', bottom: '' },
+    { key: 'unit', top: '单位', bottom: '' },
+    { key: 'carry_12', top: '12月结转盘存', bottom: '' }
+  ];
+  for (let month = 1; month <= 12; month += 1) {
+    columns.push(
+      { key: `month_${month}_in`, top: `${month}月份`, bottom: '入库' },
+      { key: `month_${month}_out`, top: '', bottom: '出库' },
+      { key: `month_${month}_closing`, top: '', bottom: '结存' }
+    );
+    if (month < 12) {
+      columns.push({ key: `carry_${month}`, top: `${month}月结转盘存`, bottom: '' });
+    }
+  }
+  return columns;
+}
+
+function buildInventorySheetPayload(targetYearMonth = FIRST_REAL_MONTH) {
+  ensureWorkwearSeeds();
+  const year = Number(String(targetYearMonth).slice(0, 4)) || Number(FIRST_REAL_MONTH.slice(0, 4));
+  const items = loadActiveItems();
+  const openingRows = getInventoryOpeningEntries(year);
+  const completedClosingMonths = getCompletedInventoryClosingMonths(year);
+  const monthlyRows = db.prepare(`
+    SELECT year_month, item_id, opening_qty, in_qty, out_qty, closing_qty
+    FROM workwear_inventory_monthly
+    WHERE substr(year_month, 1, 4) = ?
+  `).all(String(year));
+
+  const openingMap = new Map();
+  openingRows.forEach((row) => {
+    openingMap.set(`${row.year_month}:${row.item_id}`, Number(row.opening_qty) || 0);
+  });
+
+  const monthlyMap = new Map();
+  monthlyRows.forEach((row) => {
+    monthlyMap.set(`${row.year_month}:${row.item_id}`, {
+      opening_qty: Number(row.opening_qty) || 0,
+      in_qty: Number(row.in_qty) || 0,
+      out_qty: Number(row.out_qty) || 0,
+      closing_qty: Number(row.closing_qty) || 0
+    });
+  });
+
+  const columns = buildInventorySheetColumns();
+  const formatMovementValue = (value) => {
+    const numeric = Number(value) || 0;
+    return numeric === 0 ? '' : String(numeric);
+  };
+  const rows = items.map((item) => {
+    const row = [
+      buildItemName(item.category, item.model),
+      item.unit_price ? String(item.unit_price) : '0',
+      item.unit || ''
+    ];
+
+    const januaryOpening = openingMap.get(`${year}-01:${item.id}`);
+    row.push(String(januaryOpening || 0));
+
+    for (let month = 1; month <= 12; month += 1) {
+      const yearMonth = `${year}-${String(month).padStart(2, '0')}`;
+      const monthly = monthlyMap.get(`${yearMonth}:${item.id}`) || {
+        in_qty: 0,
+        out_qty: 0,
+        closing_qty: 0
+      };
+      row.push(
+        formatMovementValue(monthly.in_qty),
+        formatMovementValue(monthly.out_qty),
+        String(monthly.closing_qty || 0)
+      );
+      if (month < 12) {
+        const closingYearMonth = `${year}-${String(month).padStart(2, '0')}`;
+        const nextYearMonth = `${year}-${String(month + 1).padStart(2, '0')}`;
+        const carryReady = compareYearMonth(closingYearMonth, FIRST_REAL_MONTH) < 0
+          || completedClosingMonths.has(closingYearMonth);
+        if (carryReady && openingMap.has(`${nextYearMonth}:${item.id}`)) {
+          row.push(String(Number(openingMap.get(`${nextYearMonth}:${item.id}`) || 0)));
+        } else {
+          row.push('');
+        }
+      }
+    }
+    return row;
+  });
+
+  return {
+    sheet_name: `真实盘存${year}`,
+    title: `真实库存盘存（${year}）`,
+    columns,
+    rows
+  };
+}
+
+function getMonthlyInventoryRows(yearMonth) {
+  return db.prepare(`
+    SELECT
+      m.id,
+      m.year_month,
+      i.id AS item_id,
+      i.category,
+      i.model,
+      i.unit,
+      i.unit_price,
+      i.item_type,
+      i.min_stock,
+      m.opening_qty,
+      m.in_qty,
+      m.out_qty,
+      m.closing_qty,
+      m.computed_at,
+      m.remark
+    FROM workwear_inventory_monthly m
+    JOIN workwear_items i ON i.id = m.item_id
+    WHERE m.year_month = ? AND i.is_active = 1
+    ORDER BY i.id ASC
+  `).all(yearMonth).map((row) => ({
+    ...row,
+    item_name: buildItemName(row.category, row.model)
+  }));
+}
+
+function getInventoryOpeningEntries(yearPrefix) {
+  return db.prepare(`
+    SELECT year_month, item_id, opening_qty, source_type
+    FROM workwear_inventory_opening
+    WHERE substr(year_month, 1, 4) = ?
+  `).all(String(yearPrefix));
+}
+
+function upsertInventoryOpeningEntry(yearMonth, itemId, openingQty, sourceType, remark) {
+  db.prepare(`
+    INSERT INTO workwear_inventory_opening (
+      year_month, item_id, opening_qty, source_type, remark, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+    ON CONFLICT(year_month, item_id) DO UPDATE SET
+      opening_qty = excluded.opening_qty,
+      source_type = excluded.source_type,
+      remark = excluded.remark,
+      updated_at = datetime('now', 'localtime')
+  `).run(
+    normalizeText(yearMonth),
+    Number(itemId) || 0,
+    Number(openingQty) || 0,
+    normalizeText(sourceType) || 'manual_count',
+    normalizeText(remark) || null
+  );
+}
+
+function removeInventoryOpeningEntry(yearMonth, itemId) {
+  db.prepare(`
+    DELETE FROM workwear_inventory_opening
+    WHERE year_month = ? AND item_id = ?
+  `).run(normalizeText(yearMonth), Number(itemId) || 0);
+}
+
+function syncOpeningFromCountItem(itemId, { removeOnly = false } = {}) {
+  const row = db.prepare(`
+    SELECT
+      ci.id,
+      ci.item_id,
+      ci.manual_total_qty,
+      ci.status,
+      cs.closing_month,
+      cs.opening_month
+    FROM workwear_inventory_count_items ci
+    JOIN workwear_inventory_count_sessions cs ON cs.id = ci.session_id
+    WHERE ci.id = ?
+    LIMIT 1
+  `).get(Number(itemId) || 0);
+
+  if (!row) return null;
+
+  if (removeOnly || row.status !== 'confirmed') {
+    removeInventoryOpeningEntry(row.opening_month, row.item_id);
+    return row;
+  }
+
+  upsertInventoryOpeningEntry(
+    row.opening_month,
+    row.item_id,
+    Number(row.manual_total_qty) || 0,
+    'manual_count_item',
+    `manual_count_item:${row.closing_month}`
+  );
+  return row;
+}
+
+function upsertInventoryCountAdjustmentFromItem(itemId, reviewerStaffId, reviewComment) {
+  const row = db.prepare(`
+    SELECT
+      ci.id AS count_item_id,
+      ci.session_id,
+      ci.item_id,
+      ci.system_closing_qty,
+      ci.manual_total_qty,
+      ci.difference_qty,
+      ci.remark,
+      ci.status,
+      ci.submitted_by,
+      ci.approver_staff_id,
+      ci.approver_name,
+      cs.closing_month,
+      cs.opening_month
+    FROM workwear_inventory_count_items ci
+    JOIN workwear_inventory_count_sessions cs ON cs.id = ci.session_id
+    WHERE ci.id = ?
+    LIMIT 1
+  `).get(Number(itemId) || 0);
+
+  if (!row || row.status !== 'confirmed' || Number(row.difference_qty || 0) === 0) {
+    return null;
+  }
+
+  db.prepare(`
+    INSERT INTO workwear_inventory_count_adjustments (
+      session_id, count_item_id, closing_month, opening_month, item_id,
+      system_closing_qty, manual_total_qty, difference_qty, remark, status,
+      submitted_by, approver_staff_id, approver_name, reviewed_by, reviewed_at, review_comment,
+      created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?, ?, ?, datetime('now', 'localtime'), ?,
+      datetime('now', 'localtime'), datetime('now', 'localtime'))
+    ON CONFLICT(count_item_id) DO UPDATE SET
+      system_closing_qty = excluded.system_closing_qty,
+      manual_total_qty = excluded.manual_total_qty,
+      difference_qty = excluded.difference_qty,
+      remark = excluded.remark,
+      status = excluded.status,
+      submitted_by = excluded.submitted_by,
+      approver_staff_id = excluded.approver_staff_id,
+      approver_name = excluded.approver_name,
+      reviewed_by = excluded.reviewed_by,
+      reviewed_at = excluded.reviewed_at,
+      review_comment = excluded.review_comment,
+      updated_at = datetime('now', 'localtime')
+  `).run(
+    row.session_id,
+    row.count_item_id,
+    row.closing_month,
+    row.opening_month,
+    row.item_id,
+    Number(row.system_closing_qty) || 0,
+    Number(row.manual_total_qty) || 0,
+    Number(row.difference_qty) || 0,
+    normalizeText(row.remark) || null,
+    Number(row.submitted_by) || null,
+    Number(row.approver_staff_id) || null,
+    normalizeText(row.approver_name) || null,
+    Number(reviewerStaffId) || null,
+    normalizeText(reviewComment) || null
+  );
+
+  return row;
+}
+
+function removeInventoryCountAdjustmentByItem(itemId) {
+  db.prepare(`
+    DELETE FROM workwear_inventory_count_adjustments
+    WHERE count_item_id = ?
+  `).run(Number(itemId) || 0);
+}
+
+function getCompletedInventoryClosingMonths(yearPrefix) {
+  return new Set(
+    db.prepare(`
+      SELECT closing_month
+      FROM workwear_inventory_count_sessions
+      WHERE status = 'completed'
+        AND substr(closing_month, 1, 4) = ?
+    `).all(String(yearPrefix)).map((row) => normalizeText(row.closing_month))
+  );
+}
+
+const COUNT_LOCATION_DEFS = [
+  { code: 'admin_storage', name: '行政储藏室' },
+  { code: 'admin_office', name: '行政办公室' }
+];
+
+function getLatestHistoryRowsForStaff(staffId, staffName) {
+  const recordParams = [staffId, staffName || ''];
+  const recordWhere = `
+    status = 'active'
+    AND (
+      staff_id = ?
+      OR (
+        staff_id IS NULL
+        AND TRIM(COALESCE(staff_name, '')) = TRIM(COALESCE(?, ''))
+      )
+    )
+  `;
+
+  const issueRows = db.prepare(`
+    SELECT id, issue_date, item_name, model, quantity, self_purchase, department, position, remark
+    FROM workwear_records
+    WHERE ${recordWhere}
+    ORDER BY issue_date ASC, id ASC
+  `).all(...recordParams);
+
+  const recentRows = db.prepare(`
+    SELECT id, issue_date, item_name, model, quantity, self_purchase, department, position, remark
+    FROM workwear_records
+    WHERE ${recordWhere}
+    ORDER BY issue_date DESC, id DESC
+  `).all(...recordParams);
+
+  return { issueRows, recentRows };
+}
+
+function buildEntitlementPayloadForStaff(staff) {
+  const { issueRows, recentRows } = getLatestHistoryRowsForStaff(staff.id, staff.name || '');
+  const recentByCategory = { summer: null, winter: null, shoes: null };
+
+  recentRows.forEach((row) => {
+    const category = getIssueCategory(row.item_name);
+    if (category && !recentByCategory[category]) {
+      recentByCategory[category] = {
+        item_name: row.item_name || '',
+        model: row.model || '',
+        issue_date: row.issue_date || '',
+        quantity: Number(row.quantity) || 0,
+        self_purchase: Number(row.self_purchase || 0) > 0
+      };
+    }
+  });
+
+  const availability = calculateAvailability({
+    position: staff.position,
+    hireDate: staff.hire_date,
+    referenceDate: getLocalToday(),
+    issueRows
+  });
+
+  return {
+    staff: {
+      id: staff.id,
+      employee_id: staff.employee_id || '',
+      name: staff.name || '',
+      department: staff.department || '',
+      position: staff.position || '',
+      hire_date: staff.hire_date || '',
+      gender: staff.gender || '',
+      workwear_permission: Number(staff.workwear_permission || 0),
+      workwear_special_permission: Number(staff.workwear_special_permission || 0)
+    },
+    rule_key: availability.ruleKey || '',
+    rule_label: availability.ruleLabel || '',
+    rule_matched: availability.matched,
+    available: availability.available,
+    details: availability.details,
+    recent_by_category: recentByCategory,
+    history: recentRows.slice(0, 30).map((row) => ({
+      id: row.id,
+      issue_date: row.issue_date || '',
+      item_name: row.item_name || '',
+      model: row.model || '',
+      quantity: Number(row.quantity) || 0,
+      self_purchase: Number(row.self_purchase || 0) > 0,
+      remark: row.remark || ''
+    }))
+  };
+}
+
+function resolveDepartmentApprover(departmentName) {
+  const department = normalizeText(departmentName);
+  if (!department) return null;
+
+  const configured = db.prepare(`
+    SELECT approver_staff_id AS id, approver_name AS name
+    FROM workwear_department_approvers
+    WHERE department_name = ? AND is_active = 1
+    LIMIT 1
+  `).get(department);
+  if (configured?.id) return { id: Number(configured.id), name: configured.name || '' };
+
+  const candidates = db.prepare(`
+    SELECT id, name, position
+    FROM staff
+    WHERE status = 'active'
+      AND TRIM(COALESCE(department, '')) = TRIM(COALESCE(?, ''))
+      AND (
+        position LIKE '%部长%'
+        OR position LIKE '%主管%'
+        OR position LIKE '%组长%'
+        OR position LIKE '%科长%'
+        OR position LIKE '%领班%'
+      )
+    ORDER BY
+      CASE
+        WHEN position LIKE '%部长%' THEN 1
+        WHEN position LIKE '%主管%' THEN 2
+        WHEN position LIKE '%科长%' THEN 3
+        WHEN position LIKE '%组长%' THEN 4
+        WHEN position LIKE '%领班%' THEN 5
+        ELSE 9
+      END,
+      id ASC
+  `).all(department);
+
+  const first = candidates[0];
+  return first ? { id: Number(first.id), name: first.name || '' } : null;
+}
+
+function getPendingCountMonths() {
+  const currentYearMonth = getCurrentYearMonth();
+  const lastClosedMonth = getPreviousYearMonth(currentYearMonth);
+  if (!lastClosedMonth || compareYearMonth(lastClosedMonth, FIRST_REAL_MONTH) < 0) {
+    return [FIRST_REAL_MONTH];
+  }
+  return enumerateYearMonths(FIRST_REAL_MONTH, lastClosedMonth);
+}
+
+function getDefaultInventoryCountMonth() {
+  const months = getPendingCountMonths();
+  const completed = new Set(db.prepare(`
+    SELECT closing_month
+    FROM workwear_inventory_count_sessions
+    WHERE status = 'completed'
+  `).all().map((row) => row.closing_month));
+  return months.find((month) => !completed.has(month)) || months[months.length - 1] || FIRST_REAL_MONTH;
+}
+
+function ensureInventoryCountSession(closingMonth, employeeStaff) {
+  const normalizedClosingMonth = normalizeText(closingMonth);
+  const existing = db.prepare(`
+    SELECT *
+    FROM workwear_inventory_count_sessions
+    WHERE closing_month = ?
+    LIMIT 1
+  `).get(normalizedClosingMonth);
+  if (existing) return existing;
+
+  const monthlyRows = getMonthlyInventoryRows(normalizedClosingMonth);
+  if (!monthlyRows.length) {
+    throw new Error('该月份暂无可盘点的系统结存，请先完成上月结转盘存');
+  }
+
+  const openingMonth = getNextYearMonth(normalizedClosingMonth);
+  const insertSession = db.prepare(`
+    INSERT INTO workwear_inventory_count_sessions (
+      closing_month, opening_month, created_by, created_by_name, created_by_department, status, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, 'counting', datetime('now', 'localtime'), datetime('now', 'localtime'))
+  `);
+  const insertItem = db.prepare(`
+    INSERT INTO workwear_inventory_count_items (
+      session_id, item_id, department_name, system_closing_qty, manual_total_qty, difference_qty, status, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, 0, 0, 'draft', datetime('now', 'localtime'), datetime('now', 'localtime'))
+  `);
+  const insertLocation = db.prepare(`
+    INSERT INTO workwear_inventory_count_locations (
+      count_item_id, location_code, location_name, quantity, created_at, updated_at
+    ) VALUES (?, ?, ?, 0, datetime('now', 'localtime'), datetime('now', 'localtime'))
+  `);
+
+  const sessionId = db.transaction(() => {
+    const result = insertSession.run(
+      normalizedClosingMonth,
+      openingMonth,
+      employeeStaff.id,
+      employeeStaff.name || '',
+      employeeStaff.department || ''
+    );
+    const newSessionId = Number(result.lastInsertRowid);
+    monthlyRows.forEach((row) => {
+      const itemResult = insertItem.run(
+        newSessionId,
+        row.item_id,
+        employeeStaff.department || '',
+        Number(row.closing_qty) || 0
+      );
+      const countItemId = Number(itemResult.lastInsertRowid);
+      COUNT_LOCATION_DEFS.forEach((location) => {
+        insertLocation.run(countItemId, location.code, location.name);
+      });
+    });
+    return newSessionId;
+  })();
+
+  return db.prepare(`
+    SELECT *
+    FROM workwear_inventory_count_sessions
+    WHERE id = ?
+    LIMIT 1
+  `).get(sessionId);
+}
+
+function refreshInventoryCountSessionSnapshot(session) {
+  if (!session?.id || session.status === 'completed') {
+    return session;
+  }
+
+  const monthlyRows = getMonthlyInventoryRows(session.closing_month);
+  if (!monthlyRows.length) {
+    return session;
+  }
+
+  const latestQtyByItemId = new Map(
+    monthlyRows.map((row) => [Number(row.item_id) || 0, Number(row.closing_qty) || 0])
+  );
+  const existingItems = db.prepare(`
+    SELECT id, item_id, system_closing_qty, manual_total_qty, status
+    FROM workwear_inventory_count_items
+    WHERE session_id = ?
+    ORDER BY id ASC
+  `).all(session.id);
+
+  db.transaction(() => {
+    existingItems.forEach((item) => {
+      const nextClosingQty = latestQtyByItemId.has(Number(item.item_id) || 0)
+        ? (latestQtyByItemId.get(Number(item.item_id) || 0) || 0)
+        : 0;
+      const currentClosingQty = Number(item.system_closing_qty) || 0;
+      if (currentClosingQty === nextClosingQty) {
+        return;
+      }
+
+      const manualTotalQty = Number(item.manual_total_qty) || 0;
+      const nextDiffQty = manualTotalQty - nextClosingQty;
+      const shouldResetWorkflow = ['confirmed', 'pending_manager_review', 'rejected'].includes(item.status || '');
+
+      db.prepare(`
+        UPDATE workwear_inventory_count_items
+        SET system_closing_qty = ?,
+            difference_qty = ?,
+            status = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN 'draft'
+              ELSE status
+            END,
+            approver_staff_id = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE approver_staff_id
+            END,
+            approver_name = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE approver_name
+            END,
+            submitted_by = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE submitted_by
+            END,
+            submitted_at = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE submitted_at
+            END,
+            reviewed_by = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE reviewed_by
+            END,
+            reviewed_at = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE reviewed_at
+            END,
+            review_result = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE review_result
+            END,
+            review_comment = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE review_comment
+            END,
+            confirmed_at = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN NULL
+              ELSE confirmed_at
+            END,
+            updated_at = datetime('now', 'localtime')
+        WHERE id = ?
+      `).run(nextClosingQty, nextDiffQty, item.id);
+
+      if (shouldResetWorkflow) {
+        syncOpeningFromCountItem(item.id, { removeOnly: true });
+        removeInventoryCountAdjustmentByItem(item.id);
+      }
+    });
+  })();
+
+  return db.prepare(`
+    SELECT *
+    FROM workwear_inventory_count_sessions
+    WHERE id = ?
+    LIMIT 1
+  `).get(session.id);
+}
+
+function autoCompleteInventoryCountSession(session, employeeStaff) {
+  if (!session?.id || session.status === 'completed') {
+    return session;
+  }
+
+  const pending = db.prepare(`
+    SELECT COUNT(*) AS count
+    FROM workwear_inventory_count_items
+    WHERE session_id = ?
+      AND status != 'confirmed'
+  `).get(session.id);
+  if (Number(pending?.count || 0) > 0) {
+    return session;
+  }
+
+  const items = db.prepare(`
+    SELECT item_id, manual_total_qty
+    FROM workwear_inventory_count_items
+    WHERE session_id = ?
+    ORDER BY item_id ASC
+  `).all(session.id);
+
+  db.transaction(() => {
+    items.forEach((item) => {
+      upsertInventoryOpeningEntry(
+        session.opening_month,
+        item.item_id,
+        Number(item.manual_total_qty) || 0,
+        'manual_count',
+        `manual_count:${session.closing_month}`
+      );
+    });
+    db.prepare(`
+      UPDATE workwear_inventory_count_sessions
+      SET status = 'completed',
+          completed_by = ?,
+          completed_at = datetime('now', 'localtime'),
+          updated_at = datetime('now', 'localtime')
+      WHERE id = ?
+    `).run(Number(employeeStaff?.id || 0) || null, session.id);
+  })();
+
+  rebuildInventoryChainFrom(session.opening_month);
+
+  return db.prepare(`
+    SELECT *
+    FROM workwear_inventory_count_sessions
+    WHERE id = ?
+    LIMIT 1
+  `).get(session.id);
+}
+
+function getInventoryCountSessionPayload(closingMonth, employeeStaff) {
+  const session = autoCompleteInventoryCountSession(
+    refreshInventoryCountSessionSnapshot(
+    ensureInventoryCountSession(closingMonth, employeeStaff)
+    ),
+    employeeStaff
+  );
+  const locationRows = db.prepare(`
+    SELECT
+      ci.id AS count_item_id,
+      ci.item_id,
+      ci.system_closing_qty,
+      ci.manual_total_qty,
+      ci.difference_qty,
+      ci.remark,
+      ci.status,
+      ci.approver_name,
+      ci.review_comment,
+      ci.confirmed_at,
+      ci.submitted_at,
+      i.category,
+      i.model,
+      i.unit,
+      l.location_code,
+      l.location_name,
+      l.quantity
+    FROM workwear_inventory_count_items ci
+    JOIN workwear_items i ON i.id = ci.item_id
+    JOIN workwear_inventory_count_locations l ON l.count_item_id = ci.id
+    WHERE ci.session_id = ?
+    ORDER BY i.id ASC, l.id ASC
+  `).all(session.id);
+
+  const itemMap = new Map();
+  locationRows.forEach((row) => {
+    if (!itemMap.has(row.count_item_id)) {
+      itemMap.set(row.count_item_id, {
+        count_item_id: row.count_item_id,
+        item_id: row.item_id,
+        item_name: buildItemName(row.category, row.model),
+        category: row.category || '',
+        model: row.model || '',
+        unit: row.unit || '',
+        system_closing_qty: Number(row.system_closing_qty) || 0,
+        manual_total_qty: Number(row.manual_total_qty) || 0,
+        difference_qty: Number(row.difference_qty) || 0,
+        remark: row.remark || '',
+        status: row.status || 'draft',
+        approver_name: row.approver_name || '',
+        review_comment: row.review_comment || '',
+        confirmed_at: row.confirmed_at || '',
+        submitted_at: row.submitted_at || '',
+        locations: []
+      });
+    }
+    itemMap.get(row.count_item_id).locations.push({
+      code: row.location_code,
+      name: row.location_name,
+      quantity: Number(row.quantity) || 0
+    });
+  });
+
+  const items = Array.from(itemMap.values());
+  const totals = {
+    total: items.length,
+    confirmed: items.filter((item) => item.status === 'confirmed').length,
+    pending_review: items.filter((item) => item.status === 'pending_manager_review').length,
+    rejected: items.filter((item) => item.status === 'rejected').length
+  };
+
+  return {
+    session: {
+      id: session.id,
+      closing_month: session.closing_month,
+      opening_month: session.opening_month,
+      status: session.status,
+      created_by_name: session.created_by_name || '',
+      created_by_department: session.created_by_department || '',
+      completed_at: session.completed_at || ''
+    },
+    items,
+    totals,
+    available_months: getPendingCountMonths(),
+    default_month: getDefaultInventoryCountMonth()
+  };
+}
+
+function recalculateCountItem(itemId) {
+  const locationRows = db.prepare(`
+    SELECT quantity
+    FROM workwear_inventory_count_locations
+    WHERE count_item_id = ?
+  `).all(itemId);
+  const totalQty = locationRows.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0);
+  const item = db.prepare(`
+    SELECT system_closing_qty
+    FROM workwear_inventory_count_items
+    WHERE id = ?
+    LIMIT 1
+  `).get(itemId);
+  const diffQty = totalQty - (Number(item?.system_closing_qty) || 0);
+  db.prepare(`
+    UPDATE workwear_inventory_count_items
+    SET manual_total_qty = ?, difference_qty = ?, updated_at = datetime('now', 'localtime')
+    WHERE id = ?
+  `).run(totalQty, diffQty, itemId);
+  return { totalQty, diffQty };
+}
+
+function rebuildInventoryChainFrom(yearMonth) {
+  const currentYearMonth = getCurrentYearMonth();
+  for (const month of enumerateYearMonths(yearMonth, currentYearMonth)) {
+    const result = rebuildMonthlyInventory(month);
+    if (result?.pending_opening) break;
+  }
+}
+
+router.get('/access', authMiddleware, (req, res) => {
+  if (req.user?.role === 'admin') {
+    return res.json({
+      code: 0,
+      data: {
+        can_manage: true,
+        can_query: true,
+        can_special_issue: true,
+        workwear_permission: 1,
+        workwear_special_permission: 1
+      }
+    });
+  }
+  const staff = getEmployeeStaffByUser(req.user);
+  if (!staff || staff.status !== 'active') {
+    return buildJsonResponseError(res, -1, '员工信息不存在或已停用', 403);
+  }
+  res.json({
+    code: 0,
+    data: {
+      can_manage: Number(staff.workwear_permission || 0) === 1,
+      can_query: true,
+      can_special_issue: Number(staff.workwear_special_permission || 0) === 1,
+      workwear_permission: Number(staff.workwear_permission || 0),
+      workwear_special_permission: Number(staff.workwear_special_permission || 0)
+    }
+  });
+});
+
+router.get('/my-entitlement', authMiddleware, ensureEmployee, (req, res) => {
+  try {
+    res.json({
+      code: 0,
+      data: {
+        can_manage: Number(req.employeeStaff.workwear_permission || 0) === 1,
+        can_special_issue: Number(req.employeeStaff.workwear_special_permission || 0) === 1,
+        ...buildEntitlementPayloadForStaff(req.employeeStaff)
+      }
+    });
+  } catch (err) {
+    console.error('获取本人工服查询失败:', err);
+    res.status(500).json({ code: -1, msg: '获取本人工服查询失败', error: err.message });
+  }
+});
+
+router.get('/inventory-count/default-month', authMiddleware, ensureEmployee, ensureWorkwearPermission, (req, res) => {
+  res.json({
+    code: 0,
+    data: {
+      default_month: getDefaultInventoryCountMonth(),
+      available_months: getPendingCountMonths()
+    }
+  });
+});
+
+router.get('/inventory-count', authMiddleware, ensureEmployee, ensureWorkwearPermission, (req, res) => {
+  try {
+    const closingMonth = normalizeText(req.query.closing_month) || getDefaultInventoryCountMonth();
+    const monthlyResult = rebuildMonthlyInventory(closingMonth);
+    if (monthlyResult?.pending_opening) {
+      return res.status(400).json({
+        code: -1,
+        msg: `缺少 ${monthlyResult.previous_year_month || getPreviousYearMonth(closingMonth)} 结转盘存生成的期初，暂不能盘点该月份`,
+        data: {
+          pending_opening: true,
+          closing_month: closingMonth
+        }
+      });
+    }
+    res.json({ code: 0, data: getInventoryCountSessionPayload(closingMonth, req.employeeStaff) });
+  } catch (err) {
+    console.error('获取盘点会话失败:', err);
+    res.status(500).json({ code: -1, msg: err.message || '获取盘点会话失败', error: err.message });
+  }
+});
+
+router.put('/inventory-count/items/:id', authMiddleware, ensureEmployee, ensureWorkwearPermission, (req, res) => {
+  try {
+    const itemId = Number(req.params.id || 0);
+    if (!itemId) {
+      return buildJsonResponseError(res, -1, '缺少盘点项ID');
+    }
+
+    const item = db.prepare(`
+      SELECT ci.id, ci.status, cs.status AS session_status, cs.opening_month
+      FROM workwear_inventory_count_items ci
+      JOIN workwear_inventory_count_sessions cs ON cs.id = ci.session_id
+      WHERE ci.id = ?
+      LIMIT 1
+    `).get(itemId);
+    if (!item) {
+      return buildJsonResponseError(res, -1, '盘点项不存在', 404);
+    }
+    if (item.session_status === 'completed') {
+      return buildJsonResponseError(res, -1, '该月份结转已完成，不能再修改');
+    }
+
+    const updateLocation = db.prepare(`
+      UPDATE workwear_inventory_count_locations
+      SET quantity = ?, updated_at = datetime('now', 'localtime')
+      WHERE count_item_id = ? AND location_code = ?
+    `);
+    const locations = Array.isArray(req.body.locations) ? req.body.locations : [];
+    locations.forEach((location) => {
+      updateLocation.run(parseNumberInput(location.quantity), itemId, normalizeText(location.code));
+    });
+
+    const remark = req.body.remark !== undefined ? normalizeText(req.body.remark) : null;
+    const recalculated = recalculateCountItem(itemId);
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE workwear_inventory_count_items
+        SET remark = COALESCE(?, remark),
+            status = CASE
+              WHEN status IN ('confirmed', 'pending_manager_review', 'rejected') THEN 'draft'
+              ELSE status
+            END,
+            approver_staff_id = CASE
+              WHEN status IN ('pending_manager_review', 'rejected') THEN NULL
+              ELSE approver_staff_id
+            END,
+            approver_name = CASE
+              WHEN status IN ('pending_manager_review', 'rejected') THEN NULL
+              ELSE approver_name
+            END,
+            review_comment = CASE
+              WHEN status IN ('pending_manager_review', 'rejected') THEN NULL
+              ELSE review_comment
+            END,
+            updated_at = datetime('now', 'localtime')
+        WHERE id = ?
+      `).run(remark, itemId);
+
+      if (['confirmed', 'pending_manager_review', 'rejected'].includes(item.status || '')) {
+        syncOpeningFromCountItem(itemId, { removeOnly: true });
+        removeInventoryCountAdjustmentByItem(itemId);
+      }
+    })();
+
+    if (['confirmed', 'pending_manager_review', 'rejected'].includes(item.status || '')) {
+      rebuildInventoryChainFrom(item.opening_month);
+    }
+
+    res.json({ code: 0, msg: '盘点数量已保存', data: recalculated });
+  } catch (err) {
+    console.error('保存盘点项失败:', err);
+    res.status(500).json({ code: -1, msg: '保存盘点项失败', error: err.message });
+  }
+});
+
+router.post('/inventory-count/items/:id/confirm', authMiddleware, ensureEmployee, ensureWorkwearPermission, (req, res) => {
+  try {
+    const itemId = Number(req.params.id || 0);
+    const item = db.prepare(`
+      SELECT ci.id, ci.difference_qty, ci.status, cs.status AS session_status
+      FROM workwear_inventory_count_items ci
+      JOIN workwear_inventory_count_sessions cs ON cs.id = ci.session_id
+      WHERE ci.id = ?
+      LIMIT 1
+    `).get(itemId);
+    if (!item) {
+      return buildJsonResponseError(res, -1, '盘点项不存在', 404);
+    }
+    if (item.session_status === 'completed') {
+      return buildJsonResponseError(res, -1, '该月份结转已完成');
+    }
+    if (Number(item.difference_qty || 0) !== 0) {
+      return buildJsonResponseError(res, -1, '存在差异时请填写备注并提交主管审核');
+    }
+
+    const synced = db.transaction(() => {
+      db.prepare(`
+        UPDATE workwear_inventory_count_items
+        SET status = 'confirmed',
+            submitted_by = ?,
+            confirmed_at = datetime('now', 'localtime'),
+            updated_at = datetime('now', 'localtime')
+        WHERE id = ?
+      `).run(req.employeeStaff.id, itemId);
+      return syncOpeningFromCountItem(itemId);
+    })();
+
+    if (synced?.opening_month) {
+      rebuildInventoryChainFrom(synced.opening_month);
+    }
+
+    res.json({ code: 0, msg: '该项已确认' });
+  } catch (err) {
+    console.error('确认盘点项失败:', err);
+    res.status(500).json({ code: -1, msg: '确认盘点项失败', error: err.message });
+  }
+});
+
+router.post('/inventory-count/items/:id/submit-review', authMiddleware, ensureEmployee, ensureWorkwearPermission, (req, res) => {
+  try {
+    const itemId = Number(req.params.id || 0);
+    const item = db.prepare(`
+      SELECT ci.id, ci.remark, ci.difference_qty, ci.department_name, cs.status AS session_status
+      FROM workwear_inventory_count_items ci
+      JOIN workwear_inventory_count_sessions cs ON cs.id = ci.session_id
+      WHERE ci.id = ?
+      LIMIT 1
+    `).get(itemId);
+    if (!item) {
+      return buildJsonResponseError(res, -1, '盘点项不存在', 404);
+    }
+    if (item.session_status === 'completed') {
+      return buildJsonResponseError(res, -1, '该月份结转已完成');
+    }
+    if (Number(item.difference_qty || 0) === 0) {
+      return buildJsonResponseError(res, -1, '无差异项目请直接确认');
+    }
+
+    const remark = normalizeText(req.body.remark || item.remark);
+    if (!remark) {
+      return buildJsonResponseError(res, -1, '存在差异时必须填写备注');
+    }
+
+    const approver = resolveDepartmentApprover(item.department_name || req.employeeStaff.department || '');
+    if (!approver?.id) {
+      return buildJsonResponseError(res, -1, '当前部门未配置主管审核人');
+    }
+
+    db.prepare(`
+      UPDATE workwear_inventory_count_items
+      SET remark = ?,
+          status = 'pending_manager_review',
+          approver_staff_id = ?,
+          approver_name = ?,
+          submitted_by = ?,
+          submitted_at = datetime('now', 'localtime'),
+          updated_at = datetime('now', 'localtime')
+      WHERE id = ?
+    `).run(remark, approver.id, approver.name || '', req.employeeStaff.id, itemId);
+
+    res.json({ code: 0, msg: '已提交主管审核' });
+  } catch (err) {
+    console.error('提交主管审核失败:', err);
+    res.status(500).json({ code: -1, msg: '提交主管审核失败', error: err.message });
+  }
+});
+
+router.get('/inventory-count/review-tasks', authMiddleware, ensureEmployee, (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT
+        ci.id,
+        cs.closing_month,
+        cs.created_by_name,
+        cs.created_by_department,
+        i.category,
+        i.model,
+        i.unit,
+        ci.system_closing_qty,
+        ci.manual_total_qty,
+        ci.difference_qty,
+        ci.remark,
+        ci.status,
+        ci.submitted_at
+      FROM workwear_inventory_count_items ci
+      JOIN workwear_inventory_count_sessions cs ON cs.id = ci.session_id
+      JOIN workwear_items i ON i.id = ci.item_id
+      WHERE ci.status = 'pending_manager_review'
+        AND ci.approver_staff_id = ?
+      ORDER BY cs.closing_month ASC, i.id ASC
+    `).all(req.employeeStaff.id).map((row) => ({
+      ...row,
+      item_name: buildItemName(row.category, row.model)
+    }));
+    res.json({ code: 0, data: rows });
+  } catch (err) {
+    console.error('获取差异审核任务失败:', err);
+    res.status(500).json({ code: -1, msg: '获取差异审核任务失败', error: err.message });
+  }
+});
+
+router.get('/inventory-count/adjustments', authMiddleware, ensureEmployee, ensureWorkwearPermission, (req, res) => {
+  try {
+    const closingMonth = normalizeText(req.query.closing_month);
+    const params = [];
+    let where = `WHERE 1 = 1`;
+    if (closingMonth) {
+      where += ` AND a.closing_month = ?`;
+      params.push(closingMonth);
+    }
+
+    const rows = db.prepare(`
+      SELECT
+        a.id,
+        a.session_id,
+        a.count_item_id,
+        a.closing_month,
+        a.opening_month,
+        a.item_id,
+        i.category,
+        i.model,
+        i.unit,
+        a.system_closing_qty,
+        a.manual_total_qty,
+        a.difference_qty,
+        a.remark,
+        a.approver_name,
+        a.reviewed_at,
+        a.review_comment
+      FROM workwear_inventory_count_adjustments a
+      JOIN workwear_items i ON i.id = a.item_id
+      ${where}
+      ORDER BY a.closing_month ASC, a.reviewed_at ASC, a.id ASC
+    `).all(...params).map((row) => ({
+      ...row,
+      item_name: buildItemName(row.category, row.model)
+    }));
+
+    res.json({ code: 0, data: rows });
+  } catch (err) {
+    console.error('获取盘点差异调整记录失败:', err);
+    res.status(500).json({ code: -1, msg: '获取盘点差异调整记录失败', error: err.message });
+  }
+});
+
+router.post('/inventory-count/items/:id/review', authMiddleware, ensureEmployee, (req, res) => {
+  try {
+    const itemId = Number(req.params.id || 0);
+    const action = normalizeText(req.body.action);
+    const comment = normalizeText(req.body.comment);
+    const item = db.prepare(`
+      SELECT id, approver_staff_id, status
+      FROM workwear_inventory_count_items
+      WHERE id = ?
+      LIMIT 1
+    `).get(itemId);
+    if (!item) {
+      return buildJsonResponseError(res, -1, '盘点项不存在', 404);
+    }
+    if (Number(item.approver_staff_id || 0) !== Number(req.employeeStaff.id || 0)) {
+      return buildJsonResponseError(res, -1, '仅指定主管可审核该差异项', 403);
+    }
+    if (item.status !== 'pending_manager_review') {
+      return buildJsonResponseError(res, -1, '当前状态不可审核');
+    }
+    if (!['approved', 'rejected'].includes(action)) {
+      return buildJsonResponseError(res, -1, '审核动作无效');
+    }
+    if (action === 'rejected' && !comment) {
+      return buildJsonResponseError(res, -1, '驳回时请填写意见');
+    }
+
+    const synced = db.transaction(() => {
+      db.prepare(`
+        UPDATE workwear_inventory_count_items
+        SET status = ?,
+            reviewed_by = ?,
+            reviewed_at = datetime('now', 'localtime'),
+            review_result = ?,
+            review_comment = ?,
+            confirmed_at = CASE WHEN ? = 'approved' THEN datetime('now', 'localtime') ELSE confirmed_at END,
+            updated_at = datetime('now', 'localtime')
+        WHERE id = ?
+      `).run(action === 'approved' ? 'confirmed' : 'rejected', req.employeeStaff.id, action, comment || null, action, itemId);
+
+      if (action === 'approved') {
+        const syncedRow = syncOpeningFromCountItem(itemId);
+        upsertInventoryCountAdjustmentFromItem(itemId, req.employeeStaff.id, comment || null);
+        return syncedRow;
+      }
+      removeInventoryCountAdjustmentByItem(itemId);
+      return syncOpeningFromCountItem(itemId, { removeOnly: true });
+    })();
+
+    if (synced?.opening_month) {
+      rebuildInventoryChainFrom(synced.opening_month);
+    }
+
+    res.json({ code: 0, msg: action === 'approved' ? '审核已通过' : '已驳回该差异项' });
+  } catch (err) {
+    console.error('审核差异项失败:', err);
+    res.status(500).json({ code: -1, msg: '审核差异项失败', error: err.message });
+  }
+});
+
+router.post('/inventory-count/:id/complete', authMiddleware, ensureEmployee, ensureWorkwearPermission, (req, res) => {
+  try {
+    const sessionId = Number(req.params.id || 0);
+    const session = db.prepare(`
+      SELECT *
+      FROM workwear_inventory_count_sessions
+      WHERE id = ?
+      LIMIT 1
+    `).get(sessionId);
+    if (!session) {
+      return buildJsonResponseError(res, -1, '盘点会话不存在', 404);
+    }
+    if (session.status === 'completed') {
+      return buildJsonResponseError(res, -1, '该月份结转已完成');
+    }
+
+    const pending = db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM workwear_inventory_count_items
+      WHERE session_id = ?
+        AND status != 'confirmed'
+    `).get(sessionId);
+    if (Number(pending?.count || 0) > 0) {
+      return buildJsonResponseError(res, -1, '仍有未确认或待审核项目，不能完成本月结转');
+    }
+
+    const items = db.prepare(`
+      SELECT item_id, manual_total_qty
+      FROM workwear_inventory_count_items
+      WHERE session_id = ?
+      ORDER BY item_id ASC
+    `).all(sessionId);
+
+    db.transaction(() => {
+      items.forEach((item) => {
+        upsertInventoryOpeningEntry(
+          session.opening_month,
+          item.item_id,
+          Number(item.manual_total_qty) || 0,
+          'manual_count',
+          `manual_count:${session.closing_month}`
+        );
+      });
+      db.prepare(`
+        UPDATE workwear_inventory_count_sessions
+        SET status = 'completed',
+            completed_by = ?,
+            completed_at = datetime('now', 'localtime'),
+            updated_at = datetime('now', 'localtime')
+        WHERE id = ?
+      `).run(req.employeeStaff.id, sessionId);
+    })();
+
+    rebuildInventoryChainFrom(session.opening_month);
+
+    res.json({
+      code: 0,
+      msg: '本月结转盘存已完成，已生成下个月结转数据',
+      data: {
+        closing_month: session.closing_month,
+        opening_month: session.opening_month
+      }
+    });
+  } catch (err) {
+    console.error('完成结转盘存失败:', err);
+    res.status(500).json({ code: -1, msg: '完成结转盘存失败', error: err.message });
+  }
+});
+
+router.get('/', (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 50,
+      search,
+      staff_id,
+      staff_name,
+      department,
+      position,
+      date_from,
+      date_to,
+      type
+    } = req.query;
+    const offset = (page - 1) * limit;
+    const parseMulti = (value) => String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    let where = "WHERE status = 'active'";
+    const params = [];
+
+    if (search) {
+      const rawSearch = normalizeText(search);
+      const normalizedSearch = rawSearch.toLowerCase();
+      const normalizedModelSearch = normalizeModel(rawSearch).toUpperCase();
+      const isExactModelSearch = /^(?:\d{1,3}(?:码)?|XS|S|M|L|XL|2XL|3XL|4XL|5XL)$/i.test(normalizedModelSearch);
+      if (isExactModelSearch) {
+        const normalizedModelPlain = normalizedModelSearch.replace(/码$/i, '');
+        const normalizedModelWithSuffix = /码$/i.test(normalizedModelSearch)
+          ? normalizedModelSearch
+          : `${normalizedModelPlain}码`;
+        where += `
+          AND (
+            UPPER(TRIM(model)) = ?
+            OR UPPER(TRIM(model)) = ?
+          )
+        `;
+        params.push(normalizedModelPlain, normalizedModelWithSuffix);
+      } else {
+        where += `
+          AND (
+            staff_name LIKE ?
+            OR item_name LIKE ?
+            OR department LIKE ?
+            OR position LIKE ?
+            OR model LIKE ?
+            OR issue_date LIKE ?
+            OR COALESCE(remark, '') LIKE ?
+            OR EXISTS (
+              SELECT 1
+              FROM staff s
+              WHERE s.id = workwear_records.staff_id
+                AND s.employee_id LIKE ?
+            )
+            OR EXISTS (
+              SELECT 1
+              FROM staff s
+              WHERE workwear_records.staff_id IS NULL
+                AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(workwear_records.staff_name, ''))
+                AND s.employee_id LIKE ?
+            )
+            OR (? IN ('zg', '自购') AND self_purchase > 0)
+            OR (? IN ('lz', '离职') AND (
+              TRIM(COALESCE(workwear_records.leave_date, '')) != ''
+              OR EXISTS (
+                SELECT 1
+                FROM staff s
+                WHERE (
+                  s.id = workwear_records.staff_id
+                  OR (
+                    workwear_records.staff_id IS NULL
+                    AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(workwear_records.staff_name, ''))
+                  )
+                )
+                AND TRIM(COALESCE(s.leave_date, '')) != ''
+              )
+            ))
+          )
+        `;
+        const searchPattern = `%${search}%`;
+        params.push(
+          searchPattern,
+          searchPattern,
+          searchPattern,
+          searchPattern,
+          searchPattern,
+          searchPattern,
+          searchPattern,
+          searchPattern,
+          searchPattern,
+          normalizedSearch,
+          normalizedSearch
+        );
+      }
+    }
+
+    const numericStaffId = Number(staff_id || 0);
+    const exactStaffName = normalizeText(staff_name);
+    if (numericStaffId || exactStaffName) {
+      const exactStaffClauses = [];
+      if (numericStaffId) {
+        exactStaffClauses.push('staff_id = ?');
+        params.push(numericStaffId);
+      }
+      if (exactStaffName) {
+        exactStaffClauses.push("(staff_id IS NULL AND TRIM(COALESCE(staff_name, '')) = TRIM(COALESCE(?, '')))");
+        params.push(exactStaffName);
+      }
+      where += ` AND (${exactStaffClauses.join(' OR ')})`;
+    }
+
+    const departments = parseMulti(department);
+    if (departments.length) {
+      where += ` AND department IN (${departments.map(() => '?').join(',')})`;
+      params.push(...departments);
+    }
+
+    const positions = parseMulti(position);
+    if (positions.length) {
+      const normalPositions = positions.filter((item) => item !== '__empty__');
+      const positionClauses = [];
+      if (normalPositions.length) {
+        positionClauses.push(`position IN (${normalPositions.map(() => '?').join(',')})`);
+        params.push(...normalPositions);
+      }
+      if (positions.includes('__empty__')) {
+        positionClauses.push(`(position IS NULL OR TRIM(position) = '')`);
+      }
+      if (positionClauses.length) {
+        where += ` AND (${positionClauses.join(' OR ')})`;
+      }
+    }
+
+    if (date_from) {
+      where += ' AND issue_date >= ?';
+      params.push(date_from);
+    }
+
+    if (date_to) {
+      where += ' AND issue_date <= ?';
+      params.push(date_to);
+    }
+
+    const types = parseMulti(type);
+    if (types.length) {
+      const typeClauses = [];
+      if (types.includes('夏工服')) {
+        typeClauses.push("(item_type = '工服' AND item_name LIKE '%夏%')");
+      }
+      if (types.includes('冬工服')) {
+        typeClauses.push("(item_type = '工服' AND item_name LIKE '%冬%')");
+      }
+      if (types.includes('劳保鞋')) {
+        typeClauses.push("(item_type = '工鞋' OR item_name LIKE '%鞋%')");
+      }
+      if (typeClauses.length) {
+        where += ` AND (${typeClauses.join(' OR ')})`;
+      }
+    }
+
+    const countSql = `SELECT COUNT(*) as total FROM workwear_records ${where}`;
+    const { total } = db.prepare(countSql).get(...params);
+
+    const records = db.prepare(`
+      SELECT
+        workwear_records.*,
+        COALESCE(
+          NULLIF(TRIM(COALESCE(workwear_records.leave_date, '')), ''),
+          (
+            SELECT s.leave_date
+            FROM staff s
+            WHERE s.id = workwear_records.staff_id
+            LIMIT 1
+          ),
+          (
+            SELECT s.leave_date
+            FROM staff s
+            WHERE workwear_records.staff_id IS NULL
+              AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(workwear_records.staff_name, ''))
+            ORDER BY s.id DESC
+            LIMIT 1
+          ),
+          ''
+        ) AS leave_date
+      FROM workwear_records
+      ${where}
+      ORDER BY issue_date DESC, id DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, parseInt(limit, 10), parseInt(offset, 10));
+
+    const departmentPositions = {};
+    const appendDepartmentPositions = (rows) => {
+      rows.forEach((row) => {
+        const dept = normalizeText(row.department);
+        const pos = normalizeText(row.position);
+        if (!dept) return;
+        if (!departmentPositions[dept]) departmentPositions[dept] = new Set();
+        if (pos) departmentPositions[dept].add(pos);
+      });
+    };
+
+    appendDepartmentPositions(db.prepare(`
+      SELECT DISTINCT TRIM(department) AS department, TRIM(position) AS position
+      FROM staff
+      WHERE department IS NOT NULL AND TRIM(department) != ''
+      ORDER BY department, position
+    `).all());
+
+    appendDepartmentPositions(db.prepare(`
+      SELECT DISTINCT TRIM(department) AS department, TRIM(position) AS position
+      FROM workwear_records
+      WHERE status = 'active' AND department IS NOT NULL AND TRIM(department) != ''
+      ORDER BY department, position
+    `).all());
+
+    const preferredDepartmentOrder = [
+      '总经办', '财务部', '行政部', '市场部', '项目部', '技术部',
+      '品质部', '采购部', '生产部', '注塑部', '制品部', '迈卡蒂', '设计部'
+    ];
+    const preferredDepartmentIndex = new Map(preferredDepartmentOrder.map((name, index) => [name, index]));
+    const departmentTree = Object.keys(departmentPositions)
+      .sort((a, b) => {
+        const aIndex = preferredDepartmentIndex.has(a) ? preferredDepartmentIndex.get(a) : Number.MAX_SAFE_INTEGER;
+        const bIndex = preferredDepartmentIndex.has(b) ? preferredDepartmentIndex.get(b) : Number.MAX_SAFE_INTEGER;
+        if (aIndex !== bIndex) return aIndex - bIndex;
+        return a.localeCompare(b, 'zh-CN');
+      })
+      .map((name) => ({
+        name,
+        positions: Array.from(departmentPositions[name]).sort((a, b) => a.localeCompare(b, 'zh-CN'))
+      }));
+
+    res.json({
+      code: 0,
+      data: {
+        list: records,
+        total,
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        department_tree: departmentTree
+      }
+    });
+  } catch (err) {
+    console.error('获取工服记录失败:', err);
+    res.status(500).json({ code: -1, msg: '获取记录失败', error: err.message });
+  }
+});
+
+router.get('/items', (req, res) => {
+  try {
+    ensureBaseItemsSeeded();
+    const includeInactive = String(req.query.include_inactive || '1') === '1';
+    const items = db.prepare(`
+      SELECT id, source_no, category, model, unit, unit_price, item_type, remark, min_stock, is_active
+      FROM workwear_items
+      ${includeInactive ? '' : 'WHERE is_active = 1'}
+      ORDER BY is_active DESC, source_no IS NULL, source_no ASC, id ASC
+    `).all().map((item) => ({
+      id: item.id,
+      no: item.source_no || item.id,
+      name: buildItemName(item.category, item.model),
+      category: item.category,
+      model: item.model,
+      unit: item.unit,
+      price: Number(item.unit_price) || 0,
+      item_type: item.item_type,
+      remark: item.remark || '',
+      min_stock: Number(item.min_stock) || 0,
+      is_active: Number(item.is_active) === 1
+    }));
+    res.json({ code: 0, data: items });
+  } catch (err) {
+    console.error('获取基础物品失败:', err);
+    res.status(500).json({ code: -1, msg: '获取基础物品失败', error: err.message });
+  }
+});
+
+router.post('/items', (req, res) => {
+  try {
+    const category = normalizeText(req.body.category);
+    const model = normalizeModel(req.body.model);
+    const unit = normalizeText(req.body.unit);
+    const remark = normalizeText(req.body.remark);
+    const unitPrice = Number(req.body.unit_price ?? req.body.price ?? 0) || 0;
+    const isActive = req.body.is_active === false || String(req.body.is_active) === '0' ? 0 : 1;
+    if (!category || !unit) {
+      return res.status(400).json({ code: -1, msg: '类别和单位为必填项' });
+    }
+    const exists = db.prepare(`
+      SELECT id FROM workwear_items WHERE category = ? AND model = ? AND is_active = 1 LIMIT 1
+    `).get(category, model);
+    if (exists) {
+      return res.status(400).json({ code: -1, msg: '该类别和型号已存在' });
+    }
+    const result = db.prepare(`
+      INSERT INTO workwear_items (
+        category, model, unit, unit_price, item_type, remark, is_active, min_stock,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, datetime('now', 'localtime'), datetime('now', 'localtime'))
+    `).run(
+      category,
+      model,
+      unit,
+      unitPrice,
+      deriveItemType(category, unit),
+      remark || null,
+      isActive
+    );
+    rebuildMonthlyInventory(FIRST_REAL_MONTH);
+    res.json({ code: 0, msg: '新增物品成功', data: { id: result.lastInsertRowid } });
+  } catch (err) {
+    console.error('新增基础物品失败:', err);
+    res.status(500).json({ code: -1, msg: '新增基础物品失败', error: err.message });
+  }
+});
+
+router.put('/items/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id || 0);
+    const category = normalizeText(req.body.category);
+    const model = normalizeModel(req.body.model);
+    const unit = normalizeText(req.body.unit);
+    const remark = normalizeText(req.body.remark);
+    const unitPrice = Number(req.body.unit_price ?? req.body.price ?? 0) || 0;
+    const isActive = req.body.is_active === false || String(req.body.is_active) === '0' ? 0 : 1;
+    if (!id || !category || !unit) {
+      return res.status(400).json({ code: -1, msg: '参数不完整' });
+    }
+    const item = db.prepare(`SELECT id, is_active, source_no FROM workwear_items WHERE id = ? LIMIT 1`).get(id);
+    if (!item) {
+      return res.status(404).json({ code: -1, msg: '物品不存在' });
+    }
+    const duplicated = db.prepare(`
+      SELECT id FROM workwear_items
+      WHERE id != ? AND category = ? AND model = ? AND is_active = 1
+      LIMIT 1
+    `).get(id, category, model);
+    if (duplicated) {
+      return res.status(400).json({ code: -1, msg: '该类别和型号已存在' });
+    }
+    let nextSourceNo = item.source_no;
+    if (Number(item.is_active) !== 1 && isActive === 1) {
+      const maxSourceNo = db.prepare(`
+        SELECT COALESCE(MAX(source_no), 0) AS max_no
+        FROM workwear_items
+        WHERE is_active = 1
+      `).get();
+      nextSourceNo = Number(maxSourceNo?.max_no || 0) + 1;
+    }
+
+    db.prepare(`
+      UPDATE workwear_items
+      SET category = ?, model = ?, unit = ?, unit_price = ?, item_type = ?, remark = ?,
+          is_active = ?, source_no = ?,
+          updated_at = datetime('now', 'localtime')
+      WHERE id = ?
+    `).run(
+      category,
+      model,
+      unit,
+      unitPrice,
+      deriveItemType(category, unit),
+      remark || null,
+      isActive,
+      nextSourceNo,
+      id
+    );
+    rebuildMonthlyInventory(FIRST_REAL_MONTH);
+    res.json({ code: 0, msg: isActive ? '保存成功' : '物品已停用' });
+  } catch (err) {
+    console.error('编辑基础物品失败:', err);
+    res.status(500).json({ code: -1, msg: '编辑基础物品失败', error: err.message });
+  }
+});
+
+router.delete('/items/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id || 0);
+    if (!id) {
+      return res.status(400).json({ code: -1, msg: '缺少物品ID' });
+    }
+    const item = db.prepare(`
+      SELECT id, category, model
+      FROM workwear_items
+      WHERE id = ?
+      LIMIT 1
+    `).get(id);
+    if (!item) {
+      return res.status(404).json({ code: -1, msg: '物品不存在' });
+    }
+    const refs = {
+      purchase: db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM workwear_purchase_entries
+        WHERE item_id = ?
+           OR (TRIM(COALESCE(category, '')) = TRIM(COALESCE(?, ''))
+               AND TRIM(COALESCE(model, '')) = TRIM(COALESCE(?, '')))
+      `).get(id, item.category, item.model).count || 0,
+      opening: db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM workwear_inventory_opening
+        WHERE item_id = ?
+      `).get(id).count || 0,
+      monthly: db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM workwear_inventory_monthly
+        WHERE item_id = ?
+      `).get(id).count || 0,
+      records: db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM workwear_records
+        WHERE TRIM(COALESCE(category, '')) = TRIM(COALESCE(?, ''))
+          AND TRIM(COALESCE(model, '')) = TRIM(COALESCE(?, ''))
+      `).get(item.category, item.model).count || 0
+    };
+    if (refs.purchase || refs.opening || refs.monthly || refs.records) {
+      return res.status(400).json({
+        code: -1,
+        msg: '该物品已有库存或业务记录，不能删除，请使用停用'
+      });
+    }
+    db.prepare(`DELETE FROM workwear_items WHERE id = ?`).run(id);
+    rebuildMonthlyInventory(FIRST_REAL_MONTH);
+    res.json({ code: 0, msg: '物品已删除' });
+  } catch (err) {
+    console.error('删除基础物品失败:', err);
+    res.status(500).json({ code: -1, msg: '删除基础物品失败', error: err.message });
+  }
+});
+
+router.get('/stats', (req, res) => {
+  try {
+    const currentMonth = getCurrentYearMonth();
+    rebuildMonthlyInventory(currentMonth);
+    const staffCount = db.prepare(`
+      SELECT COUNT(DISTINCT staff_name) as count FROM workwear_records
+      WHERE issue_date LIKE ? AND status = 'active'
+    `).get(`${currentMonth}%`);
+    const itemCount = db.prepare(`
+      SELECT COALESCE(SUM(quantity), 0) as count FROM workwear_records
+      WHERE issue_date LIKE ? AND status = 'active'
+    `).get(`${currentMonth}%`);
+    const inventoryTotal = db.prepare(`
+      SELECT COALESCE(SUM(closing_qty), 0) as total
+      FROM workwear_inventory_monthly
+      WHERE year_month = ?
+    `).get(currentMonth);
+    const alertCount = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM workwear_inventory_monthly m
+      JOIN workwear_items i ON i.id = m.item_id
+      WHERE m.year_month = ? AND i.is_active = 1
+        AND m.closing_qty <= COALESCE(i.min_stock, 0)
+    `).get(currentMonth);
+    const deductionSum = db.prepare(`
+      SELECT COALESCE(SUM(deduction), 0) as total FROM workwear_records
+      WHERE status = 'active'
+    `).get();
+    const purchaseCount = db.prepare(`
+      SELECT COALESCE(SUM(quantity), 0) as count FROM workwear_purchase_entries
+      WHERE purchase_date LIKE ?
+    `).get(`${currentMonth}%`);
+    const alerts = db.prepare(`
+      SELECT i.category, i.model, i.min_stock, m.closing_qty as stock
+      FROM workwear_inventory_monthly m
+      JOIN workwear_items i ON i.id = m.item_id
+      WHERE m.year_month = ? AND i.is_active = 1
+        AND m.closing_qty <= COALESCE(i.min_stock, 0)
+      ORDER BY m.closing_qty ASC, i.id ASC
+    `).all(currentMonth).map((row) => ({
+      item_name: buildItemName(row.category, row.model),
+      model: row.model || '',
+      stock: Number(row.stock) || 0,
+      min_stock: Number(row.min_stock) || 0
+    }));
+
+    res.json({
+      code: 0,
+      data: {
+        staff_count: staffCount.count,
+        item_count: itemCount.count,
+        inventory_total: Number(inventoryTotal.total) || 0,
+        alert_count: alertCount.count,
+        deduction_total: Number(deductionSum.total) || 0,
+        purchase_count: Number(purchaseCount.count) || 0,
+        alerts
+      }
+    });
+  } catch (err) {
+    console.error('获取统计数据失败:', err);
+    res.status(500).json({ code: -1, msg: '获取统计失败', error: err.message });
+  }
+});
+
+router.get('/monthly-issue-details', (req, res) => {
+  try {
+    const yearMonth = normalizeText(req.query.year_month) || getCurrentYearMonth();
+    const rows = db.prepare(`
+      SELECT r.id, r.issue_date, r.staff_name, r.department, r.position,
+             r.item_name, r.item_type, r.model, r.quantity,
+             COALESCE(r.unit_price, 0) AS unit_price,
+             COALESCE(r.deduction, 0) AS deduction,
+             COALESCE(r.self_purchase, 0) AS self_purchase,
+             COALESCE(r.deduction_ratio, 0) AS deduction_ratio,
+             r.remark, r.status
+      FROM workwear_records r
+      WHERE r.issue_date LIKE ?
+        AND r.status = 'active'
+      ORDER BY r.issue_date DESC, r.id DESC
+    `).all(`${yearMonth}%`);
+
+    const summary = rows.reduce((acc, row) => {
+      acc.total_quantity += Number(row.quantity) || 0;
+      acc.total_self_purchase += Number(row.self_purchase) || 0;
+      const key = (row.staff_name || '').trim();
+      if (key && !acc.staff_set.has(key)) {
+        acc.staff_set.add(key);
+        acc.staff_count += 1;
+      }
+      return acc;
+    }, { total_quantity: 0, total_self_purchase: 0, staff_count: 0, staff_set: new Set() });
+
+    res.json({
+      code: 0,
+      data: {
+        year_month: yearMonth,
+        total_quantity: summary.total_quantity,
+        total_self_purchase: Math.round(summary.total_self_purchase * 100) / 100,
+        staff_count: summary.staff_count,
+        rows
+      }
+    });
+  } catch (err) {
+    console.error('获取本月领用明细失败:', err);
+    res.status(500).json({ code: -1, msg: '获取本月领用明细失败', error: err.message });
+  }
+});
+
+router.get('/monthly-purchases', (req, res) => {
+  try {
+    const yearMonth = normalizeText(req.query.year_month) || getCurrentYearMonth();
+    const rows = db.prepare(`
+      SELECT id, purchase_date, item_name, category, model, unit,
+             COALESCE(unit_price, 0) AS unit_price,
+             COALESCE(quantity, 0) AS quantity,
+             COALESCE(amount, 0) AS amount,
+             purchaser, remark
+      FROM workwear_purchase_entries
+      WHERE purchase_date LIKE ?
+      ORDER BY purchase_date DESC, id DESC
+    `).all(`${yearMonth}%`);
+    const summary = rows.reduce((acc, row) => {
+      acc.total_quantity += Number(row.quantity) || 0;
+      acc.total_amount += Number(row.amount) || 0;
+      return acc;
+    }, { total_quantity: 0, total_amount: 0 });
+    res.json({
+      code: 0,
+      data: {
+        year_month: yearMonth,
+        total_quantity: summary.total_quantity,
+        total_amount: Math.round(summary.total_amount * 100) / 100,
+        rows
+      }
+    });
+  } catch (err) {
+    console.error('获取本月采购明细失败:', err);
+    res.status(500).json({ code: -1, msg: '获取本月采购明细失败', error: err.message });
+  }
+});
+
+router.get('/inventory-sheet', (req, res) => {
+  try {
+    const yearMonth = normalizeText(req.query.year_month) || getCurrentYearMonth();
+    rebuildMonthlyInventory(yearMonth);
+    res.json({ code: 0, data: buildInventorySheetPayload(yearMonth) });
+  } catch (err) {
+    console.error('读取真实盘存失败:', err);
+    res.status(500).json({ code: -1, msg: '读取真实盘存失败', error: err.message });
+  }
+});
+
+router.post('/inventory-sheet/import', (req, res) => {
+  try {
+    ensureBaseItemsSeeded();
+    ensurePurchaseEntriesSeeded();
+    importHistoricalInventoryFromExcel(2026, 5);
+    rebuildMonthlyInventory(FIRST_REAL_MONTH);
+    res.json({ code: 0, msg: '真实库存初始化成功', data: buildInventorySheetPayload(FIRST_REAL_MONTH) });
+  } catch (err) {
+    console.error('初始化真实库存失败:', err);
+    res.status(500).json({ code: -1, msg: '初始化真实库存失败', error: err.message });
+  }
+});
+
+router.get('/inventory-monthly', (req, res) => {
+  try {
+    const yearMonth = normalizeText(req.query.year_month) || getCurrentYearMonth();
+    rebuildMonthlyInventory(yearMonth);
+    res.json({
+      code: 0,
+      data: {
+        year_month: yearMonth,
+        rows: getMonthlyInventoryRows(yearMonth),
+        sheet: buildInventorySheetPayload(yearMonth)
+      }
+    });
+  } catch (err) {
+    console.error('获取月度真实库存失败:', err);
+    res.status(500).json({ code: -1, msg: '获取月度真实库存失败', error: err.message });
+  }
+});
+
+router.post('/inventory-monthly/rebuild', (req, res) => {
+  try {
+    const yearMonth = normalizeText(req.body.year_month || req.query.year_month) || FIRST_REAL_MONTH;
+    if (compareYearMonth(yearMonth, FIRST_REAL_MONTH) < 0) {
+      rebuildHistoricalInventoryChainFrom(yearMonth);
+    } else {
+      rebuildMonthlyInventory(yearMonth);
+    }
+    res.json({
+      code: 0,
+      msg: '月度真实库存重算成功',
+      data: {
+        year_month: yearMonth,
+        rows: getMonthlyInventoryRows(yearMonth)
+      }
+    });
+  } catch (err) {
+    console.error('重算月度真实库存失败:', err);
+    res.status(500).json({ code: -1, msg: '重算月度真实库存失败', error: err.message });
+  }
+});
+
+router.get('/inventory-exceptions', (req, res) => {
+  try {
+    const yearMonth = normalizeText(req.query.year_month) || FIRST_REAL_MONTH;
+    const rows = db.prepare(`
+      SELECT id, year_month, source_type, source_id, raw_category, raw_model, raw_name, quantity, reason, created_at
+      FROM workwear_inventory_exceptions
+      WHERE year_month = ?
+      ORDER BY id DESC
+    `).all(yearMonth);
+    res.json({ code: 0, data: rows });
+  } catch (err) {
+    console.error('获取库存异常失败:', err);
+    res.status(500).json({ code: -1, msg: '获取库存异常失败', error: err.message });
+  }
+});
+
+router.get('/staff-issue-summary', (req, res) => {
+  try {
+    const staffId = Number(req.query.staff_id || 0);
+    if (!staffId) {
+      return res.status(400).json({ code: -1, msg: 'staff_id 不能为空', data: null });
+    }
+
+    const staff = db.prepare(`
+      SELECT id, name, department, position, hire_date, status
+      FROM staff
+      WHERE id = ?
+      LIMIT 1
+    `).get(staffId);
+
+    if (!staff || staff.status !== 'active') {
+      return res.status(404).json({ code: -1, msg: '人员不存在或已停用', data: null });
+    }
+
+    const recordParams = [staffId, staff.name || ''];
+    const recordWhere = `
+      status = 'active'
+      AND (
+        staff_id = ?
+        OR (
+          staff_id IS NULL
+          AND TRIM(COALESCE(staff_name, '')) = TRIM(COALESCE(?, ''))
+        )
+      )
+    `;
+
+    const lastIssue = db.prepare(`
+      SELECT issue_date, item_name, model, quantity
+      FROM workwear_records
+      WHERE ${recordWhere}
+      ORDER BY issue_date DESC, id DESC
+      LIMIT 1
+    `).get(...recordParams);
+
+    const issueRows = db.prepare(`
+      SELECT issue_date, item_name, quantity
+      FROM workwear_records
+      WHERE ${recordWhere}
+      ORDER BY issue_date ASC, id ASC
+    `).all(...recordParams);
+
+    const recentRows = db.prepare(`
+      SELECT issue_date, item_name, model, quantity
+      FROM workwear_records
+      WHERE ${recordWhere}
+      ORDER BY issue_date DESC, id DESC
+    `).all(...recordParams);
+
+    const recentByCategory = { summer: null, winter: null, shoes: null };
+    recentRows.forEach((row) => {
+      const category = getIssueCategory(row.item_name);
+      if (category && !recentByCategory[category]) {
+        recentByCategory[category] = {
+          item_name: row.item_name || '',
+          model: row.model || '',
+          issue_date: row.issue_date || '',
+          quantity: Number(row.quantity) || 0
+        };
+      }
+    });
+
+    const availability = calculateAvailability({
+      position: staff.position,
+      hireDate: staff.hire_date,
+      referenceDate: getLocalToday(),
+      issueRows
+    });
+
+    res.json({
+      code: 0,
+      msg: 'ok',
+      data: {
+        rule_key: availability.ruleKey || '',
+        rule_label: availability.ruleLabel || '',
+        rule_matched: availability.matched,
+        hire_date: staff.hire_date || '',
+        last_issue_date: lastIssue?.issue_date || '',
+        last_issue_text: lastIssue ? `${lastIssue.item_name || ''}${lastIssue.model ? ` ${lastIssue.model}` : ''}`.trim() : '',
+        available: availability.available,
+        details: availability.details,
+        recent_by_category: recentByCategory
+      }
+    });
+  } catch (err) {
+    console.error('获取快速录入摘要失败:', err);
+    res.status(500).json({ code: -1, msg: '获取人员工服摘要失败', error: err.message });
+  }
+});
+
+router.post('/leave-deduction/preview', (req, res) => {
+  try {
+    const preview = buildLeaveSettlementPreview({
+      staffId: req.body.staff_id,
+      staffName: req.body.staff_name,
+      leaveDate: req.body.leave_date
+    });
+    res.json({
+      code: 0,
+      msg: 'ok',
+      data: preview
+    });
+  } catch (err) {
+    res.status(400).json({ code: -1, msg: err.message || '离职扣款核算失败', data: null });
+  }
+});
+
+router.post('/leave-deduction/confirm', (req, res) => {
+  try {
+    const preview = buildLeaveSettlementPreview({
+      staffId: req.body.staff_id,
+      staffName: req.body.staff_name,
+      leaveDate: req.body.leave_date
+    });
+
+    const updateStaff = db.prepare(`
+      UPDATE staff
+      SET leave_date = ?
+      WHERE id = ?
+    `);
+    const updateRecord = db.prepare(`
+      UPDATE workwear_records
+      SET leave_date = ?, deduction_ratio = ?, deduction = ?, updated_at = datetime('now', 'localtime')
+      WHERE id = ?
+    `);
+
+    const transaction = db.transaction(() => {
+      updateStaff.run(preview.leave_date, preview.staff.id);
+      preview.records.forEach((row) => {
+        updateRecord.run(
+          preview.leave_date,
+          Number(row.deduction_ratio) || 0,
+          Number(row.deduction) || 0,
+          Number(row.id)
+        );
+      });
+    });
+
+    transaction();
+
+    const affectedMonths = Array.from(new Set(
+      preview.records
+        .map((row) => getYearMonth(row.issue_date))
+        .filter(Boolean)
+    ));
+    affectedMonths.forEach((yearMonth) => rebuildMonthlyInventory(yearMonth || FIRST_REAL_MONTH));
+
+    res.json({
+      code: 0,
+      msg: '离职扣款已确认',
+      data: {
+        leave_date: preview.leave_date,
+        deduction_ratio: preview.deduction_ratio,
+        total_deduction: preview.total_deduction,
+        record_count: preview.records.length
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ code: -1, msg: err.message || '确认离职扣款失败', data: null });
+  }
+});
+
+router.post('/', (req, res) => {
+  try {
+    const {
+      staff_id, staff_name,
+      department, position,
+      issue_date, item_name, item_type, model,
+      quantity = 1, unit_price = 0, self_purchase = 0, remark,
+      special_issue = false
+    } = req.body;
+
+    let snapshotStaffId = staff_id ? Number(staff_id) : null;
+    let snapshotStaffName = normalizeText(staff_name);
+    let snapshotDepartment = normalizeText(department) || null;
+    let snapshotPosition = normalizeText(position) || null;
+    let snapshotHireDate = null;
+    let snapshotLeaveDate = null;
+
+    if (snapshotStaffId) {
+      const currentStaff = db.prepare(`
+        SELECT id, name, department, position, hire_date, leave_date, status
+        FROM staff
+        WHERE id = ?
+        LIMIT 1
+      `).get(snapshotStaffId);
+
+      if (!currentStaff || currentStaff.status !== 'active') {
+        return res.status(400).json({ code: -1, msg: '所选领用人不存在或已停用' });
+      }
+
+      snapshotStaffId = currentStaff.id;
+      snapshotStaffName = normalizeText(currentStaff.name);
+      snapshotDepartment = normalizeText(currentStaff.department) || snapshotDepartment;
+      snapshotPosition = normalizeText(currentStaff.position) || snapshotPosition;
+      snapshotHireDate = normalizeText(currentStaff.hire_date) || null;
+      snapshotLeaveDate = normalizeText(currentStaff.leave_date) || null;
+    }
+
+    if (!snapshotStaffName || !item_name || !issue_date) {
+      return res.status(400).json({ code: -1, msg: '领用人、物品和领用日期为必填项' });
+    }
+
+    const issueDate = normalizeDate(issue_date);
+    const requestedQuantity = Math.trunc(Number(quantity));
+    const isSpecialIssue = special_issue === true || String(special_issue) === '1' || String(special_issue).toLowerCase() === 'true';
+    const normalizedRemark = normalizeText(remark);
+    if (!Number.isFinite(requestedQuantity) || requestedQuantity === 0) {
+      return res.status(400).json({ code: -1, msg: '领用数量不能为 0' });
+    }
+    if (requestedQuantity < 0 && !isSpecialIssue) {
+      return res.status(400).json({ code: -1, msg: '负数领用必须开启特殊领用' });
+    }
+    if (isSpecialIssue) {
+      if (!canUseSpecialIssue(req)) {
+        return res.status(403).json({ code: -1, msg: '暂无特殊领用权限' });
+      }
+      if (!normalizedRemark) {
+        return res.status(400).json({ code: -1, msg: '特殊领用必须填写备注' });
+      }
+    }
+    const deduction = 0;
+    const finalDeductionRatio = 0;
+    const finalRemark = isSpecialIssue
+      ? `特殊领用：${normalizedRemark}`
+      : (normalizedRemark || null);
+
+    const result = db.prepare(`
+      INSERT INTO workwear_records (
+        staff_id, staff_name, department, position, hire_date, leave_date,
+        issue_date, item_name, item_type, model, quantity, unit_price,
+        deduction, self_purchase, deduction_ratio, remark, status,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active',
+        datetime('now', 'localtime'), datetime('now', 'localtime'))
+    `).run(
+      snapshotStaffId,
+      snapshotStaffName,
+      snapshotDepartment,
+      snapshotPosition,
+      snapshotHireDate,
+      snapshotLeaveDate,
+      issueDate,
+      item_name,
+      item_type || deriveItemType(deriveCategory(item_name, model), ''),
+      normalizeModel(model),
+      requestedQuantity,
+      Number(unit_price) || 0,
+      deduction,
+      Number(self_purchase) || 0,
+      finalDeductionRatio,
+      finalRemark
+    );
+
+    rebuildInventoryChainFrom(getYearMonth(issueDate) || FIRST_REAL_MONTH);
+
+    res.json({
+      code: 0,
+      msg: '领用记录已创建',
+      data: { id: result.lastInsertRowid }
+    });
+  } catch (err) {
+    console.error('创建领用记录失败:', err);
+    res.status(500).json({ code: -1, msg: '创建记录失败', error: err.message });
+  }
+});
+
+router.put('/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id || 0);
+    const record = db.prepare('SELECT * FROM workwear_records WHERE id = ?').get(id);
+    if (!record) {
+      return res.status(404).json({ code: -1, msg: '记录不存在' });
+    }
+
+    const allowedFields = [
+      'staff_name', 'department', 'position', 'issue_date',
+      'item_name', 'item_type', 'model', 'quantity',
+      'unit_price', 'deduction', 'self_purchase', 'remark'
+    ];
+
+    const setClauses = [];
+    const values = [];
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        let value = req.body[field];
+        if (field === 'issue_date') value = normalizeDate(value);
+        if (field === 'model') value = normalizeModel(value);
+        if (typeof value === 'string') value = normalizeText(value);
+        setClauses.push(`${field} = ?`);
+        values.push(value);
+      }
+    });
+
+    if (req.body.self_purchase !== undefined) {
+      setClauses.push(`deduction = ?`);
+      values.push(0);
+      setClauses.push(`deduction_ratio = ?`);
+      values.push(0);
+    }
+
+    if (!setClauses.length) {
+      return res.status(400).json({ code: -1, msg: '没有可更新的字段' });
+    }
+
+    setClauses.push(`updated_at = datetime('now', 'localtime')`);
+    values.push(id);
+    db.prepare(`UPDATE workwear_records SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
+
+    const nextIssueDate = req.body.issue_date ? normalizeDate(req.body.issue_date) : record.issue_date;
+    const previousIssueMonth = getYearMonth(record.issue_date) || FIRST_REAL_MONTH;
+    const nextIssueMonth = getYearMonth(nextIssueDate) || FIRST_REAL_MONTH;
+    const rebuildFromMonth = compareYearMonth(previousIssueMonth, nextIssueMonth) <= 0
+      ? previousIssueMonth
+      : nextIssueMonth;
+    rebuildInventoryChainFrom(rebuildFromMonth);
+
+    res.json({ code: 0, msg: '更新成功' });
+  } catch (err) {
+    console.error('更新记录失败:', err);
+    res.status(500).json({ code: -1, msg: '更新失败', error: err.message });
+  }
+});
+
+router.delete('/:id', (req, res) => {
+  try {
+    const id = Number(req.params.id || 0);
+    const record = db.prepare('SELECT * FROM workwear_records WHERE id = ?').get(id);
+    if (!record) {
+      return res.status(404).json({ code: -1, msg: '记录不存在' });
+    }
+
+    db.prepare(`
+      UPDATE workwear_records
+      SET status = 'deleted', updated_at = datetime('now', 'localtime')
+      WHERE id = ?
+    `).run(id);
+
+    rebuildInventoryChainFrom(getYearMonth(record.issue_date) || FIRST_REAL_MONTH);
+
+    res.json({ code: 0, msg: '删除成功' });
+  } catch (err) {
+    console.error('删除记录失败:', err);
+    res.status(500).json({ code: -1, msg: '删除失败', error: err.message });
+  }
+});
+
+router.get('/inventory', (req, res) => {
+  try {
+    const yearMonth = normalizeText(req.query.year_month) || getCurrentYearMonth();
+    rebuildMonthlyInventory(yearMonth);
+    const inventory = getMonthlyInventoryRows(yearMonth).map((row) => ({
+      item_name: row.item_name,
+      item_type: row.item_type,
+      model: row.model,
+      quantity: row.closing_qty,
+      min_stock: row.min_stock,
+      unit_price: row.unit_price
+    }));
+    res.json({ code: 0, data: inventory });
+  } catch (err) {
+    console.error('获取库存失败:', err);
+    res.status(500).json({ code: -1, msg: '获取库存失败', error: err.message });
+  }
+});
+
+router.post('/inventory', (req, res) => {
+  try {
+    ensureWorkwearSeeds();
+    const itemName = normalizeText(req.body.item_name);
+    const model = normalizeModel(req.body.model);
+    const quantity = Number(req.body.quantity) || 0;
+    if (!itemName || !quantity) {
+      return res.status(400).json({ code: -1, msg: '物品和数量为必填项' });
+    }
+
+    const matchedItem = findItemByNameModel(itemName, model);
+    if (!matchedItem) {
+      return res.status(400).json({ code: -1, msg: '采购物品未在基础物品中维护，请先新增基础物品' });
+    }
+
+    const purchaseDate = normalizeDate(req.body.purchase_date || getLocalToday());
+    const purchaser = normalizeText(req.body.purchaser || req.body.staff_name || '');
+    const remark = normalizeText(req.body.remark);
+    const unitPrice = Number(req.body.unit_price) || Number(matchedItem.unit_price) || 0;
+    const sourceRef = `manual-purchase-${purchaseDate}-${matchedItem.id}-${Date.now()}`;
+
+    db.prepare(`
+      INSERT INTO workwear_purchase_entries (
+        source_ref, purchase_date, purchaser, item_id, item_name, category, model, unit,
+        unit_price, quantity, amount, remark, item_type, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+    `).run(
+      sourceRef,
+      purchaseDate,
+      purchaser || null,
+      matchedItem.id,
+      itemName,
+      matchedItem.category,
+      matchedItem.model,
+      matchedItem.unit,
+      unitPrice,
+      quantity,
+      unitPrice * quantity,
+      remark || null,
+      matchedItem.item_type
+    );
+
+    rebuildMonthlyInventory(getYearMonth(purchaseDate) || FIRST_REAL_MONTH);
+
+    res.json({ code: 0, msg: '采购入库成功' });
+  } catch (err) {
+    console.error('采购入库失败:', err);
+    res.status(500).json({ code: -1, msg: '采购入库失败', error: err.message });
+  }
+});
+
+router.get('/purchase-day', (req, res) => {
+  try {
+    const purchaseDate = normalizeDate(req.query.date || getLocalToday());
+    const summary = db.prepare(`
+      SELECT
+        GROUP_CONCAT(DISTINCT NULLIF(TRIM(COALESCE(default_purchaser, purchaser, '')), '')) AS default_purchasers,
+        GROUP_CONCAT(DISTINCT NULLIF(TRIM(COALESCE(purchaser, '')), '')) AS purchasers
+      FROM workwear_purchase_entries
+      WHERE purchase_date = ?
+    `).get(purchaseDate) || {};
+    const defaultPurchaser = normalizeText(summary.default_purchasers || '');
+    const purchasers = normalizeText(summary.purchasers || '');
+    res.json({
+      code: 0,
+      data: {
+        date: purchaseDate,
+        default_purchaser: defaultPurchaser,
+        purchasers,
+        items: getPurchaseItemsForDate(purchaseDate)
+      }
+    });
+  } catch (err) {
+    console.error('获取当日采购入库失败:', err);
+    res.status(500).json({ code: -1, msg: '获取当日采购入库失败', error: err.message });
+  }
+});
+
+router.get('/purchase-dates', (req, res) => {
+  try {
+    const month = normalizeText(req.query.month || getCurrentYearMonth()).slice(0, 7);
+    const rows = db.prepare(`
+      SELECT purchase_date, COUNT(*) AS entry_count, COALESCE(SUM(quantity), 0) AS total_quantity
+      FROM workwear_purchase_entries
+      WHERE substr(purchase_date, 1, 7) = ?
+      GROUP BY purchase_date
+      ORDER BY purchase_date ASC
+    `).all(month);
+    res.json({ code: 0, data: rows });
+  } catch (err) {
+    console.error('获取采购日期标记失败:', err);
+    res.status(500).json({ code: -1, msg: '获取采购日期标记失败', error: err.message });
+  }
+});
+
+router.post('/purchase-batch', (req, res) => {
+  try {
+    ensureWorkwearSeeds();
+    const purchaseDate = normalizeDate(req.body.purchase_date || getLocalToday());
+    const purchaser = normalizeText(req.body.purchaser || req.body.staff_name || '');
+    const remark = normalizeText(req.body.remark);
+    const entries = parseItemQuantityRows(req.body.items);
+    if (!purchaseDate) {
+      return res.status(400).json({ code: -1, msg: '请选择入库时间' });
+    }
+    if (!entries.length) {
+      return res.status(400).json({ code: -1, msg: '请至少填写一项采购数量' });
+    }
+
+    const itemById = new Map(loadActiveItems().map((item) => [Number(item.id), item]));
+    const insertEntry = db.prepare(`
+      INSERT INTO workwear_purchase_entries (
+        source_ref, purchase_date, default_purchaser, purchaser, item_id, item_name, category, model, unit,
+        unit_price, quantity, amount, remark, item_type, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+    `);
+
+    const result = db.transaction(() => {
+      let inserted = 0;
+      entries.forEach((entry) => {
+        const item = itemById.get(entry.item_id);
+        if (!item) {
+          throw new Error('采购物品未在基础物品中维护，请先新增基础物品');
+        }
+        const itemName = buildItemName(item.category, item.model);
+        const unitPrice = Number(item.unit_price) || 0;
+        const sourceRef = `manual-purchase-${purchaseDate}-${item.id}-${Date.now()}-${inserted}`;
+        insertEntry.run(
+          sourceRef,
+          purchaseDate,
+          purchaser || null,
+          entry.purchaser || purchaser || null,
+          item.id,
+          itemName,
+          item.category,
+          item.model,
+          item.unit,
+          unitPrice,
+          entry.quantity,
+          unitPrice * entry.quantity,
+          remark || null,
+          item.item_type || deriveItemType(item.category, item.unit)
+        );
+        inserted += 1;
+      });
+      return { inserted };
+    })();
+
+    rebuildInventoryChainFrom(getYearMonth(purchaseDate) || FIRST_REAL_MONTH);
+
+    res.json({
+      code: 0,
+      msg: '采购入库完成',
+      data: { date: purchaseDate, inserted: result.inserted }
+    });
+  } catch (err) {
+    console.error('批量采购入库失败:', err);
+    res.status(500).json({ code: -1, msg: err.message || '批量采购入库失败', error: err.message });
+  }
+});
+
+router.post('/purchase-adjustments', (req, res) => {
+  try {
+    ensureWorkwearSeeds();
+    const purchaseDate = normalizeDate(req.body.purchase_date || '');
+    const remark = normalizeText(req.body.remark);
+    const entries = parseItemQuantityRows(req.body.items, { allowNegative: true, allowZero: true });
+    if (!purchaseDate) {
+      return res.status(400).json({ code: -1, msg: '请选择需要更改的入库日期' });
+    }
+    if (!remark) {
+      return res.status(400).json({ code: -1, msg: '采购入库更改必须填写备注' });
+    }
+    if (!entries.length) {
+      return res.status(400).json({ code: -1, msg: '请至少填写一项更改数量' });
+    }
+
+    const originalMap = new Map(getPurchaseItemsForDate(purchaseDate).map((item) => [Number(item.item_id), item]));
+    const itemById = new Map(loadActiveItems().map((item) => [Number(item.id), item]));
+    const requester = getRequestEmployeeStaff(req);
+    const approver = resolveDepartmentApprover(requester?.department || '');
+    const groupId = `purchase-adjust-${purchaseDate}-${Date.now()}`;
+    const insertAdjustment = db.prepare(`
+      INSERT INTO workwear_purchase_adjustments (
+        adjustment_group_id, purchase_date, item_id, item_name, category, model, unit, unit_price,
+        original_qty, adjusted_qty, diff_qty, remark, status, requested_by, requested_by_name,
+        approver_staff_id, approver_name,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?,
+        datetime('now', 'localtime'), datetime('now', 'localtime'))
+    `);
+
+    const inserted = db.transaction(() => {
+      let count = 0;
+      entries.forEach((entry) => {
+        const item = itemById.get(entry.item_id);
+        if (!item) {
+          throw new Error('更改物品未在基础物品中维护');
+        }
+        const originalQty = Number(originalMap.get(entry.item_id)?.quantity || 0);
+        const diffQty = Number(entry.quantity) - originalQty;
+        if (!diffQty) return;
+        insertAdjustment.run(
+          groupId,
+          purchaseDate,
+          item.id,
+          buildItemName(item.category, item.model),
+          item.category,
+          item.model,
+          item.unit,
+          Number(item.unit_price) || 0,
+          originalQty,
+          entry.quantity,
+          diffQty,
+          remark,
+          requester?.id || null,
+          requester?.name || null,
+          approver?.id || null,
+          approver?.name || null
+        );
+        count += 1;
+      });
+      return count;
+    })();
+
+    if (!inserted) {
+      return res.status(400).json({ code: -1, msg: '更改数量与原数量一致，无需提交' });
+    }
+
+    res.json({
+      code: 0,
+      msg: '已提交部门负责人审批',
+      data: {
+        adjustment_group_id: groupId,
+        count: inserted,
+        approver_name: approver?.name || ''
+      }
+    });
+  } catch (err) {
+    console.error('提交采购更改失败:', err);
+    res.status(500).json({ code: -1, msg: err.message || '提交采购更改失败', error: err.message });
+  }
+});
+
+router.post('/purchase-adjustments/:id/review', authMiddleware, ensureEmployee, ensureWorkwearPermission, (req, res) => {
+  try {
+    const id = Number(req.params.id || 0);
+    const status = normalizeText(req.body.status);
+    const comment = normalizeText(req.body.comment);
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ code: -1, msg: '审批状态不正确' });
+    }
+    const adjustment = db.prepare(`
+      SELECT *
+      FROM workwear_purchase_adjustments
+      WHERE id = ?
+      LIMIT 1
+    `).get(id);
+    if (!adjustment) {
+      return res.status(404).json({ code: -1, msg: '更改记录不存在' });
+    }
+    if (adjustment.status !== 'pending') {
+      return res.status(400).json({ code: -1, msg: '该更改记录已处理' });
+    }
+
+    const applyAdjustment = db.transaction(() => {
+      let appliedEntryId = null;
+      if (status === 'approved') {
+        const sourceRef = `purchase-adjust-${adjustment.id}-${Date.now()}`;
+        const result = db.prepare(`
+          INSERT INTO workwear_purchase_entries (
+            source_ref, purchase_date, default_purchaser, purchaser, item_id, item_name, category, model, unit,
+            unit_price, quantity, amount, remark, item_type, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+        `).run(
+          sourceRef,
+          adjustment.purchase_date,
+          adjustment.requested_by_name || null,
+          adjustment.requested_by_name || null,
+          adjustment.item_id,
+          adjustment.item_name,
+          adjustment.category,
+          adjustment.model,
+          adjustment.unit,
+          Number(adjustment.unit_price) || 0,
+          Number(adjustment.diff_qty) || 0,
+          (Number(adjustment.unit_price) || 0) * (Number(adjustment.diff_qty) || 0),
+          `采购更改审批通过：${adjustment.remark || ''}`.trim(),
+          deriveItemType(adjustment.category, adjustment.unit)
+        );
+        appliedEntryId = Number(result.lastInsertRowid);
+      }
+      db.prepare(`
+        UPDATE workwear_purchase_adjustments
+        SET status = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = datetime('now', 'localtime'),
+            review_comment = ?, applied_entry_id = ?, updated_at = datetime('now', 'localtime')
+        WHERE id = ?
+      `).run(status, req.employeeStaff.id, req.employeeStaff.name || '', comment || null, appliedEntryId, id);
+      return appliedEntryId;
+    });
+
+    applyAdjustment();
+    if (status === 'approved') {
+      rebuildInventoryChainFrom(getYearMonth(adjustment.purchase_date) || FIRST_REAL_MONTH);
+    }
+    res.json({ code: 0, msg: status === 'approved' ? '审批通过，入库数量已更新' : '已驳回采购更改' });
+  } catch (err) {
+    console.error('审批采购更改失败:', err);
+    res.status(500).json({ code: -1, msg: err.message || '审批采购更改失败', error: err.message });
+  }
+});
+
+router.get('/export', async (req, res) => {
+  try {
+    const {
+      department,
+      position,
+      date_from,
+      date_to,
+      report_type = 'issue',
+      format
+    } = req.query;
+    const reportType = normalizeText(report_type) || 'issue';
+    const fromDate = normalizeDate(date_from || `${getCurrentYearMonth()}-01`);
+    const toDate = normalizeDate(date_to || getLocalToday());
+    const wantJSON = normalizeText(format) === 'json';
+    const wantPDF = normalizeText(format) === 'pdf';
+
+    if (reportType === 'purchase') {
+      const rows = db.prepare(`
+        SELECT
+          purchase_date,
+          item_name,
+          category,
+          model,
+          unit,
+          quantity,
+          unit_price,
+          amount,
+          purchaser,
+          remark
+        FROM workwear_purchase_entries
+        WHERE purchase_date >= ? AND purchase_date <= ?
+        ORDER BY purchase_date DESC, id DESC
+      `).all(fromDate, toDate);
+      if (wantJSON) return res.json({ code: 0, data: rows });
+      if (wantPDF) {
+        const xlsxBuffer = await buildPurchaseWorkbookByTemplate(rows, { fromDate, toDate });
+        const pdfBuffer = await convertExcelBufferToPdf(xlsxBuffer, `工服采购入库_${fromDate}_${toDate}.xlsx`);
+        return sendPdfBuffer(res, pdfBuffer, `工服采购入库_${fromDate}_${toDate}.pdf`);
+      }
+      return await sendPurchaseWorkbookByTemplate(
+        res,
+        rows,
+        `工服采购入库_${fromDate}_${toDate}.xlsx`,
+        { fromDate, toDate }
+      );
+    }
+
+    if (reportType === 'inventory') {
+      const startMonth = fromDate.slice(0, 7);
+      const endMonth = toDate.slice(0, 7);
+      if (wantJSON) {
+        const months = enumerateYearMonths(startMonth, endMonth);
+        const rows = [];
+        months.forEach((month) => {
+          if (compareYearMonth(month, FIRST_REAL_MONTH) >= 0) rebuildMonthlyInventory(month);
+          getMonthlyInventoryRows(month).forEach((row) => {
+            rows.push({ ...row, year_month: month });
+          });
+        });
+        return res.json({ code: 0, data: rows });
+      }
+      if (startMonth && startMonth === endMonth) {
+        if (compareYearMonth(startMonth, FIRST_REAL_MONTH) >= 0) {
+          rebuildMonthlyInventory(startMonth);
+        }
+        if (wantPDF) {
+          const xlsxBuffer = await buildMonthlyInventoryWorkbookByTemplate(startMonth);
+          const pdfBuffer = await convertExcelBufferToPdf(xlsxBuffer, `工服月盘存_${startMonth}.xlsx`);
+          return sendPdfBuffer(res, pdfBuffer, `工服月盘存_${startMonth}.pdf`);
+        }
+        return await sendMonthlyInventoryWorkbookByTemplate(
+          res,
+          startMonth,
+          `工服月盘存_${startMonth}.xlsx`
+        );
+      }
+      const months = enumerateYearMonths(startMonth, endMonth);
+      const rows = [];
+      months.forEach((month) => {
+        if (compareYearMonth(month, FIRST_REAL_MONTH) >= 0) rebuildMonthlyInventory(month);
+        getMonthlyInventoryRows(month).forEach((row) => {
+          rows.push({
+            月份: month,
+            物品名称: row.item_name,
+            类别: row.category,
+            型号: row.model,
+            单位: row.unit,
+            单价: row.unit_price,
+            期初: row.opening_qty,
+            入库: row.in_qty || '',
+            出库: row.out_qty || '',
+            结存: row.closing_qty || '',
+            备注: row.remark || ''
+          });
+        });
+      });
+      if (wantPDF) {
+        const xlsxBuffer = await buildWorkbook(rows, '盘存表');
+        const pdfBuffer = await convertExcelBufferToPdf(xlsxBuffer, `工服盘存表_${startMonth}_${endMonth}.xlsx`);
+        return sendPdfBuffer(res, pdfBuffer, `工服盘存表_${startMonth}_${endMonth}.pdf`);
+      }
+      return await sendWorkbook(res, rows, `工服盘存表_${startMonth}_${endMonth}.xlsx`, '盘存表');
+    }
+
+    if (reportType === 'leave_self') {
+      const params = [fromDate, toDate];
+      const rows = db.prepare(`
+        SELECT *
+        FROM (
+          SELECT
+            wr.staff_name AS 领用人,
+            COALESCE(
+              (SELECT s.hire_date FROM staff s WHERE s.id = wr.staff_id LIMIT 1),
+              (SELECT s.hire_date FROM staff s
+               WHERE wr.staff_id IS NULL
+                 AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(wr.staff_name, ''))
+               ORDER BY s.id DESC LIMIT 1),
+              ''
+            ) AS 入职日期,
+            wr.department AS 所属部门,
+            wr.position AS 岗位,
+            COALESCE(
+              NULLIF(TRIM(COALESCE(wr.leave_date, '')), ''),
+              (SELECT s.leave_date FROM staff s WHERE s.id = wr.staff_id LIMIT 1),
+              (SELECT s.leave_date FROM staff s
+               WHERE wr.staff_id IS NULL
+                 AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(wr.staff_name, ''))
+               ORDER BY s.id DESC LIMIT 1),
+              ''
+            ) AS 离职日期,
+            wr.issue_date AS 领用日期,
+            wr.item_name AS 工服工鞋,
+            COALESCE(
+              (SELECT i.unit FROM workwear_items i
+               WHERE TRIM(COALESCE(i.category, '')) = TRIM(COALESCE(wr.item_name, ''))
+                 AND TRIM(COALESCE(i.model, '')) = TRIM(COALESCE(wr.model, ''))
+               ORDER BY i.is_active DESC, i.id ASC LIMIT 1),
+              CASE
+                WHEN wr.item_name LIKE '%鞋%' THEN '双'
+                ELSE '件'
+              END
+            ) AS 单位,
+            wr.model AS 型号,
+            wr.quantity AS 数量,
+            wr.unit_price AS 单价,
+            wr.self_purchase AS 自购金额,
+            wr.deduction_ratio AS 扣款比例,
+            wr.deduction AS 离职扣款,
+            wr.remark AS 备注
+          FROM workwear_records wr
+          WHERE wr.status = 'active'
+            AND (
+              (wr.issue_date >= ? AND wr.issue_date <= ? AND COALESCE(wr.self_purchase, 0) > 0)
+              OR (
+                COALESCE(
+                  NULLIF(TRIM(COALESCE(wr.leave_date, '')), ''),
+                  (SELECT s.leave_date FROM staff s WHERE s.id = wr.staff_id LIMIT 1),
+                  (SELECT s.leave_date FROM staff s
+                   WHERE wr.staff_id IS NULL
+                     AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(wr.staff_name, ''))
+                   ORDER BY s.id DESC LIMIT 1),
+                  ''
+                ) >= ?
+                AND COALESCE(
+                  NULLIF(TRIM(COALESCE(wr.leave_date, '')), ''),
+                  (SELECT s.leave_date FROM staff s WHERE s.id = wr.staff_id LIMIT 1),
+                  (SELECT s.leave_date FROM staff s
+                   WHERE wr.staff_id IS NULL
+                     AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(wr.staff_name, ''))
+                   ORDER BY s.id DESC LIMIT 1),
+                  ''
+                ) <= ?
+              )
+            )
+        )
+        WHERE 自购金额 > 0 OR TRIM(COALESCE(离职日期, '')) != ''
+        ORDER BY CASE WHEN TRIM(COALESCE(离职日期, '')) != '' THEN 离职日期 ELSE 领用日期 END ASC, 领用日期 ASC, 领用人 ASC
+      `).all(fromDate, toDate, fromDate, toDate)
+        .sort((a, b) => {
+          const leftPrimaryDate = String((a?.离职日期 || '').trim() || (a?.领用日期 || '').trim());
+          const rightPrimaryDate = String((b?.离职日期 || '').trim() || (b?.领用日期 || '').trim());
+          const primaryCompare = leftPrimaryDate.localeCompare(rightPrimaryDate);
+          if (primaryCompare !== 0) return primaryCompare;
+
+          const issueDateCompare = String(a?.领用日期 || '').localeCompare(String(b?.领用日期 || ''));
+          if (issueDateCompare !== 0) return issueDateCompare;
+
+          return String(a?.领用人 || '').localeCompare(String(b?.领用人 || ''));
+        });
+      if (wantJSON) return res.json({ code: 0, data: buildLeaveSelfExportDisplayRows(rows) });
+      if (wantPDF) {
+        const xlsxBuffer = await buildLeaveSelfWorkbookByTemplate(rows, { fromDate, toDate });
+        const pdfBuffer = await convertExcelBufferToPdf(xlsxBuffer, `离职自费报表_${fromDate}_${toDate}.xlsx`);
+        return sendPdfBuffer(res, pdfBuffer, `离职自费报表_${fromDate}_${toDate}.pdf`);
+      }
+      return await sendLeaveSelfWorkbookByTemplate(
+        res,
+        rows,
+        `离职自费报表_${fromDate}_${toDate}.xlsx`,
+        { fromDate, toDate }
+      );
+    }
+
+    let where = "WHERE status = 'active'";
+    const params = [];
+
+    if (department) {
+      where += ' AND department = ?';
+      params.push(department);
+    }
+    if (position) {
+      where += ' AND position = ?';
+      params.push(position);
+    }
+    if (date_from) {
+      where += ' AND issue_date >= ?';
+      params.push(fromDate);
+    }
+    if (date_to) {
+      where += ' AND issue_date <= ?';
+      params.push(toDate);
+    }
+
+    const records = db.prepare(`
+      SELECT *
+      FROM (
+        SELECT
+               wr.staff_name,
+               COALESCE(
+                 (SELECT s.hire_date FROM staff s WHERE s.id = wr.staff_id LIMIT 1),
+                 (SELECT s.hire_date FROM staff s
+                  WHERE wr.staff_id IS NULL
+                    AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(wr.staff_name, ''))
+                  ORDER BY s.id DESC LIMIT 1),
+                 ''
+               ) AS hire_date,
+               wr.department,
+               wr.position,
+               wr.issue_date,
+               wr.item_name,
+               COALESCE(
+                 (SELECT i.unit FROM workwear_items i
+                  WHERE TRIM(COALESCE(i.category, '')) = TRIM(COALESCE(wr.item_name, ''))
+                    AND TRIM(COALESCE(i.model, '')) = TRIM(COALESCE(wr.model, ''))
+                  ORDER BY i.is_active DESC, i.id ASC LIMIT 1),
+                 CASE
+                   WHEN wr.item_name LIKE '%鞋%' THEN '双'
+                   ELSE '件'
+                 END
+               ) AS unit,
+               wr.model,
+               wr.unit_price,
+               wr.quantity,
+               wr.deduction_ratio,
+               wr.deduction,
+               wr.self_purchase,
+               COALESCE(
+                 NULLIF(TRIM(COALESCE(wr.leave_date, '')), ''),
+                 (SELECT s.leave_date FROM staff s WHERE s.id = wr.staff_id LIMIT 1),
+                 (SELECT s.leave_date FROM staff s
+                  WHERE wr.staff_id IS NULL
+                    AND TRIM(COALESCE(s.name, '')) = TRIM(COALESCE(wr.staff_name, ''))
+                  ORDER BY s.id DESC LIMIT 1),
+                 ''
+               ) AS leave_date,
+               wr.remark,
+               wr.status
+        FROM workwear_records wr
+      )
+      ${where}
+      ORDER BY issue_date ASC
+    `).all(...params);
+
+    if (wantJSON) return res.json({ code: 0, data: records });
+    if (wantPDF) {
+      const xlsxBuffer = await buildIssueWorkbookByTemplate(records);
+      const pdfBuffer = await convertExcelBufferToPdf(xlsxBuffer, `工服领用明细_${fromDate}_${toDate}.xlsx`);
+      return sendPdfBuffer(res, pdfBuffer, `工服领用明细_${fromDate}_${toDate}.pdf`);
+    }
+    return await sendIssueWorkbookByTemplate(res, records, `工服领用明细_${fromDate}_${toDate}.xlsx`);
+  } catch (err) {
+    console.error('导出数据失败:', err);
+    res.status(500).json({ code: -1, msg: '导出失败', error: err.message });
+  }
+});
+
+module.exports = router;

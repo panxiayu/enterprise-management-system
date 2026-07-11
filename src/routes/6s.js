@@ -788,21 +788,18 @@ router.post("/", authMiddleware, s6Perm, upload.fields([{name:"before_image",max
     const cbUsername = req.user.username || req.user.name || "";
     const now = "datetime('now','localtime')";
 
-    // 如果没有指定截止日期，默认3天
-    let finalDeadline = deadline;
-    if (!finalDeadline && check_date) {
-      finalDeadline = check_date; // 让SQL计算3天后的日期
-    }
+    // 前端传入的 deadline 已经是最终截止日期，只有未传时才按检查日期默认 +3 天
+    const finalDeadline = normalizeCheckDate(deadline);
+    const fallbackBaseDate = normalizeCheckDate(check_date) || normalizedCheckDate;
 
-    // 计算截止日期：如果有check_date则默认+3天
     let deadlineSql = "NULL";
     let deadlineParams = [];
     if (finalDeadline) {
-      deadlineSql = "date(?, '+3 days')";
+      deadlineSql = "date(?)";
       deadlineParams = [finalDeadline];
-    } else if (check_date) {
+    } else if (fallbackBaseDate) {
       deadlineSql = "date(?, '+3 days')";
-      deadlineParams = [check_date];
+      deadlineParams = [fallbackBaseDate];
     }
 
     // 照片时间戳

@@ -3,6 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
+    image: staff-server:latest
     container_name: exam-system-api
     restart: unless-stopped
     ports:
@@ -24,9 +25,13 @@ services:
       - WECHAT_MINIAPP_APP_ID=${WECHAT_MINIAPP_APP_ID:-wx4a0fd7786a7ece59}
       - WECHAT_MINIAPP_APP_SECRET=${WECHAT_MINIAPP_APP_SECRET:-}
       - SIX_S_UPLOAD_DIR=${SIX_S_UPLOAD_DIR:-/app/uploads/6s}
+      # Windows Excel 原生导出 PDF
+      - WORKWEAR_PDF_MODE=${WORKWEAR_PDF_MODE:-windows_excel}
+      - WORKWEAR_WINDOWS_PDF_URL=${WORKWEAR_WINDOWS_PDF_URL:-http://192.168.110.4:3010/convert/excel-to-pdf}
+      - WORKWEAR_WINDOWS_PDF_TOKEN=${WORKWEAR_WINDOWS_PDF_TOKEN:-XLmould}
     volumes:
-      # 持久化数据库文件
-      - exam_data:/app/data
+      # 持久化数据库文件（必须使用 bind mount，避免重建后跑到旧 volume）
+      - ./data/exam.db:/app/data/exam.db
       # 开发时挂载源码和静态文件（热重载）
       - ./src:/app/src
       - ./public:/app/public
@@ -44,7 +49,3 @@ services:
 networks:
   exam-network:
     driver: bridge
-
-volumes:
-  exam_data:
-    driver: local
