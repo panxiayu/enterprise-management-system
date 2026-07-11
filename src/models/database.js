@@ -55,6 +55,7 @@ function initDatabase() {
       initNotificationCenter();
       initMiniAppIntegration();
       initWorkwearTables();
+      initTravelExpenseTables();
       migrateTimestampsToLocaltime();
       return;
     }
@@ -79,6 +80,7 @@ function initDatabase() {
       initNotificationCenter();
       initMiniAppIntegration();
       initWorkwearTables();
+      initTravelExpenseTables();
       migrateTimestampsToLocaltime();
     } else {
       console.error('❌ 未找到 init.sql');
@@ -1236,6 +1238,107 @@ function initWorkwearTables() {
     console.log('✅ 工服管理索引已创建');
   } catch (err) {
     console.error('❌ initWorkwearTables 失败:', err.message);
+  }
+}
+
+function initTravelExpenseTables() {
+  try {
+    ensureColumn('staff', 'travel_view_permission', 'INTEGER DEFAULT 0');
+    ensureColumn('staff', 'travel_manage_permission', 'INTEGER DEFAULT 0');
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS travel_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_no TEXT UNIQUE,
+        staff_id INTEGER NOT NULL,
+        staff_name_snapshot TEXT NOT NULL,
+        employee_id_snapshot TEXT,
+        company_snapshot TEXT,
+        department_snapshot TEXT,
+        position_snapshot TEXT,
+        trip_type TEXT DEFAULT '出差',
+        start_time TEXT NOT NULL,
+        end_time TEXT,
+        destination TEXT NOT NULL,
+        trip_reason TEXT,
+        status TEXT DEFAULT 'draft',
+        reimbursement_status TEXT DEFAULT 'pending',
+        reimbursement_no TEXT,
+        reimbursement_date TEXT,
+        invoice_status TEXT DEFAULT 'not_received',
+        created_by_staff_id INTEGER,
+        created_by_name TEXT,
+        remark TEXT,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime'))
+      )
+    `);
+    console.log('✅ travel_orders 差旅主表已创建/存在');
+    ensureColumn('travel_orders', 'traveler_members_json', 'TEXT');
+    ensureColumn('travel_orders', 'xingli_mould_amount', 'REAL DEFAULT 0');
+    ensureColumn('travel_orders', 'xingli_auto_amount', 'REAL DEFAULT 0');
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS travel_order_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL,
+        item_type TEXT NOT NULL,
+        item_subtype TEXT,
+        title TEXT,
+        from_location TEXT,
+        to_location TEXT,
+        start_time TEXT,
+        end_time TEXT,
+        vendor_name TEXT,
+        order_ref_no TEXT,
+        payment_method TEXT DEFAULT 'company_paid',
+        amount REAL DEFAULT 0,
+        quantity INTEGER DEFAULT 1,
+        unit_price REAL DEFAULT 0,
+        nights INTEGER DEFAULT 0,
+        item_status TEXT,
+        invoice_status TEXT,
+        remark TEXT,
+        sort_index INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        updated_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        FOREIGN KEY(order_id) REFERENCES travel_orders(id) ON DELETE CASCADE
+      )
+    `);
+    console.log('✅ travel_order_items 差旅明细表已创建/存在');
+    ensureColumn('travel_order_items', 'traveler_allocations_json', 'TEXT');
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS travel_order_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL,
+        action_type TEXT NOT NULL,
+        action_desc TEXT,
+        operator_staff_id INTEGER,
+        operator_name TEXT,
+        created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+        FOREIGN KEY(order_id) REFERENCES travel_orders(id) ON DELETE CASCADE
+      )
+    `);
+    console.log('✅ travel_order_logs 差旅操作日志表已创建/存在');
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_travel_orders_staff ON travel_orders(staff_id);
+      CREATE INDEX IF NOT EXISTS idx_travel_orders_status ON travel_orders(status);
+      CREATE INDEX IF NOT EXISTS idx_travel_orders_reimbursement_status ON travel_orders(reimbursement_status);
+      CREATE INDEX IF NOT EXISTS idx_travel_orders_start_time ON travel_orders(start_time);
+      CREATE INDEX IF NOT EXISTS idx_travel_orders_department ON travel_orders(department_snapshot);
+      CREATE INDEX IF NOT EXISTS idx_travel_orders_company ON travel_orders(company_snapshot);
+      CREATE INDEX IF NOT EXISTS idx_travel_items_order ON travel_order_items(order_id, item_type);
+      CREATE INDEX IF NOT EXISTS idx_travel_logs_order ON travel_order_logs(order_id, created_at DESC);
+    `);
+    console.log('✅ 差旅管理索引已创建');
+
+    db.prepare(`
+      INSERT OR IGNORE INTO schema_migrations (name) VALUES (?)
+    `).run('20260707_travel_expense_module');
+  } catch (err) {
+    console.error('❌ initTravelExpenseTables 失败:', err.message);
   }
 }
 

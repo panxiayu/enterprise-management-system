@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>差旅费用管理工作台</title>
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    height:100%;
+    scrollbar-width:none;
+    -ms-overflow-style:none
+  }
+  html::-webkit-scrollbar,body::-webkit-scrollbar{width:0;height:0}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 8% 8%,rgba(101,179,255,.18),transparent 28%),
+      linear-gradient(135deg,#f4f9ff 0%,#eef7ff 52%,#f8fbff 100%);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;
+    overflow:hidden
+  }
+  .container{
+    max-width:1760px;
+    height:100%;
+    margin:0 auto;
+    padding:18px 26px 30px;
+    display:flex;
+    flex-direction:column;
+    min-height:0
+  }
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px}
+  .title-wrap{display:flex;align-items:center;gap:14px}
+  .mark{
+    width:48px;height:48px;border-radius:16px;
+    background:linear-gradient(135deg,#4a90e2,#22c58d);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:22px;font-weight:800;
+    box-shadow:0 14px 30px rgba(74,144,226,.24)
+  }
+  .page-title{font-size:25px;font-weight:800;color:#14245a}
+  .page-subtitle{font-size:13px;color:var(--text-soft);margin-top:3px}
+  .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{
+    border:0;border-radius:12px;padding:10px 15px;font-size:13px;font-weight:700;
+    cursor:pointer;transition:.18s;background:#fff;color:var(--text);
+    box-shadow:0 8px 20px rgba(74,144,226,.10);
+    border:1px solid rgba(214,233,255,.95)
+  }
+  .btn.primary{background:linear-gradient(135deg,#4a90e2,#65b3ff);color:#fff;border-color:transparent}
+  .btn.success{background:linear-gradient(135deg,#22c58d,#5dd9aa);color:#fff;border-color:transparent}
+  .content-layout{
+    display:grid;
+    grid-template-columns:minmax(900px,1fr) 420px;
+    gap:16px;
+    min-height:0;
+    flex:1
+  }
+  .left-column{display:flex;flex-direction:column;gap:10px;min-height:0}
+  .metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .metric{
+    min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;background:rgba(255,255,255,.82);border:1px solid rgba(214,233,255,.9);
+    border-radius:14px;padding:8px;box-shadow:0 6px 14px rgba(74,144,226,.08)
+  }
+  .metric-label{font-size:11px;color:var(--text-soft);font-weight:700}
+  .metric-value{font-size:22px;font-weight:850;margin-top:4px;color:#14245a;line-height:1}
+  .metric.blue .metric-value{color:#4a90e2}
+  .metric.green .metric-value{color:#16a765}
+  .metric.orange .metric-value{color:#b77900}
+  .panel{
+    background:rgba(255,255,255,.9);
+    border:1px solid rgba(214,233,255,.95);
+    border-radius:24px;
+    box-shadow:0 18px 48px rgba(52,96,160,.14)
+  }
+  .panel-head{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:17px 20px;border-bottom:1px solid rgba(214,233,255,.9);
+    background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(248,251,255,.78))
+  }
+  .panel-title{font-size:16px;font-weight:900;color:#14245a}
+  .muted{color:var(--text-soft);font-size:12px}
+  .summary-box{
+    padding:14px 16px;
+    margin-bottom:0;
+    line-height:1.8;
+    color:#4f6487;
+    font-size:13px
+  }
+  .filter-bar{
+    display:grid;
+    grid-template-columns:1.1fr .95fr .95fr .95fr .9fr 154px;
+    gap:8px;
+    align-items:end;
+    padding:12px 14px;
+    border-bottom:1px solid rgba(214,233,255,.9);
+    background:rgba(248,251,255,.86)
+  }
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11px;color:var(--text-soft);font-weight:700}
+  .input{
+    height:38px;border:1px solid var(--border);border-radius:12px;background:#fff;
+    padding:0 11px;color:var(--text);font-size:13px;outline:none
+  }
+  .table-wrap{overflow:auto;flex:1}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{
+    background:#F8FAFF;color:#5B72A9;font-weight:700;padding:12px 14px;text-align:left;
+    border-bottom:1px solid #E8EEF7;font-size:12px;white-space:nowrap
+  }
+  tbody td{
+    padding:12px 14px;border-bottom:1px solid #F0F4FA;color:#1D2B5A;vertical-align:middle
+  }
+  tbody tr:hover{background:#F8FBFF}
+  tbody tr.active-row{background:#EEF6FF}
+  .amount{color:#4A90E2;font-weight:700;font-family:"Courier New",monospace}
+  .badge{
+    display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;
+    font-size:11px;font-weight:700
+  }
+  .badge.pending{background:rgba(255,193,7,.18);color:#B77900}
+  .badge.done{background:rgba(34,197,141,.12);color:#22C58D}
+  .badge.reimb{background:rgba(74,144,226,.12);color:#4A90E2}
+  .ops{display:flex;gap:6px;flex-wrap:wrap}
+  .ops span{
+    padding:4px 8px;border-radius:10px;background:#F0F7FF;color:#4A90E2;
+    font-size:11px;font-weight:700
+  }
+  .ops button{
+    padding:4px 8px;border-radius:10px;background:#F0F7FF;color:#4A90E2;
+    font-size:11px;font-weight:700;border:0;cursor:pointer
+  }
+  .right-column{display:flex;flex-direction:column;gap:12px;min-height:0}
+  .note-card{padding:16px}
+  .note-title{font-size:15px;font-weight:800;color:#14245a;margin-bottom:10px}
+  .note-text{font-size:12px;color:#5B72A9;line-height:1.8}
+  .note-list{display:grid;gap:8px}
+  .note-item{
+    padding:11px 12px;border-radius:14px;background:#F8FBFF;
+    border:1px solid rgba(74,144,226,.08)
+  }
+  .detail-card{display:flex;flex-direction:column;min-height:0}
+  .detail-body{padding:16px;display:grid;gap:12px}
+  .detail-empty{
+    padding:34px 16px;
+    text-align:center;
+    color:#5B72A9;
+    font-size:13px;
+  }
+  .detail-order-no{
+    display:inline-flex;
+    align-items:center;
+    padding:6px 11px;
+    border-radius:999px;
+    background:#EEF6FF;
+    color:#4A90E2;
+    font-size:12px;
+    font-weight:800;
+  }
+  .detail-main-title{font-size:20px;font-weight:900;color:#14245A}
+  .detail-subtitle{font-size:12px;color:#5B72A9;line-height:1.7}
+  .detail-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .detail-meta{
+    padding:11px 12px;
+    border-radius:14px;
+    background:#F8FBFF;
+    border:1px solid rgba(74,144,226,.08);
+  }
+  .detail-meta span{display:block;font-size:11px;color:#5B72A9;font-weight:700}
+  .detail-meta strong{display:block;margin-top:6px;font-size:14px;color:#14245A;line-height:1.45}
+  .detail-section-title{font-size:13px;font-weight:900;color:#14245A}
+  .detail-items,.detail-logs{display:grid;gap:8px}
+  .detail-item,.detail-log{
+    padding:11px 12px;
+    border-radius:14px;
+    background:linear-gradient(180deg,#FCFEFF 0%,#F5FAFF 100%);
+    border:1px solid rgba(74,144,226,.10);
+  }
+  .detail-actions{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .detail-action-btn{
+    border:0;
+    border-radius:12px;
+    padding:10px 12px;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+    background:#EEF6FF;
+    color:#4A90E2;
+  }
+  .detail-action-btn.success{background:#EAF9F2;color:#16A765}
+  .detail-action-btn.warn{background:#FFF6E5;color:#B77900}
+  .detail-action-btn.danger{background:#FFF1F0;color:#D94841}
+  .detail-item-top,.detail-log-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .detail-item-name,.detail-log-action{font-size:13px;font-weight:800;color:#14245A}
+  .detail-item-meta,.detail-log-meta{margin-top:5px;font-size:12px;color:#5B72A9;line-height:1.7}
+  .detail-item-amount{font-size:14px;font-weight:900;color:#4A90E2}
+  .empty-row td{padding:32px 14px;text-align:center;color:#5B72A9}
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="title-wrap">
+        <div class="mark">差</div>
+        <div>
+          <div class="page-title">差旅费用管理工作台</div>
+          <div class="page-subtitle">用于专职差旅管理人代订票务、住宿记账、导出台账和跟踪报销</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="permissionBtn">权限配置</button>
+        <button class="btn" id="exportOrdersBtn">导出明细</button>
+        <button class="btn success" id="exportReimbBtn">导出报销台账</button>
+        <button class="btn primary" id="newOrderBtn">新增差旅单</button>
+      </div>
+    </div>
+
+    <div class="content-layout">
+      <div class="left-column">
+        <div class="metrics">
+          <div class="metric blue"><div class="metric-label">本月差旅单</div><div class="metric-value" id="metricOrders">-</div></div>
+          <div class="metric blue"><div class="metric-label">本月总费用</div><div class="metric-value" id="metricAmount">-</div></div>
+          <div class="metric orange"><div class="metric-label">待出行</div><div class="metric-value" id="metricUpcoming">-</div></div>
+          <div class="metric"><div class="metric-label">待报销</div><div class="metric-value" id="metricPendingReimb">-</div></div>
+          <div class="metric green"><div class="metric-label">已报销</div><div class="metric-value" id="metricReimbursed">-</div></div>
+        </div>
+
+        <div class="panel" style="display:flex;flex-direction:column;min-height:0">
+          <div class="panel-head">
+            <div class="panel-title">差旅单列表</div>
+            <div class="muted">支持按公司、部门、状态导出</div>
+          </div>
+          <div class="filter-bar">
+            <div class="field">
+              <label>出发日期</label>
+              <input class="input" id="dateRangeInput" placeholder="YYYY-MM-DD ~ YYYY-MM-DD">
+            </div>
+            <div class="field">
+              <label>出差人</label>
+              <input class="input" id="staffNameInput" placeholder="姓名">
+            </div>
+            <div class="field">
+              <label>所属公司快照</label>
+              <input class="input" id="companyInput" placeholder="公司">
+            </div>
+            <div class="field">
+              <label>部门快照</label>
+              <input class="input" id="departmentInput" placeholder="部门">
+            </div>
+            <div class="field">
+              <label>状态</label>
+              <input class="input" id="statusInput" placeholder="draft/upcoming/completed/cancelled">
+            </div>
+            <button class="btn primary" id="searchBtn" style="height:38px;padding:0 12px">查询</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>单号</th>
+                  <th>出差人</th>
+                  <th>组织快照</th>
+                  <th>行程</th>
+                  <th>票务</th>
+                  <th>住宿</th>
+                  <th>其他</th>
+                  <th>合计</th>
+                  <th>状态</th>
+                  <th>报销</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody">
+                <tr class="empty-row"><td colspan="11">正在加载差旅单...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-column">
+        <div class="panel detail-card">
+          <div class="panel-head">
+            <div class="panel-title">差旅单详情</div>
+            <div class="muted">点击左侧单据查看</div>
+          </div>
+          <div class="detail-body" id="detailPanelBody">
+            <div class="detail-empty">请选择一张差旅单查看主单、费用明细和操作记录。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>window.__AUTH_GUARD_MODE = 'admin';</script>
+  <script src="/js/auth-guard.js"></script>
+  <script>
+    const API = window.location.origin + '/api';
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    let currentDetailId = 0;
+
+    function money(value) {
+      return '¥' + Number(value || 0).toFixed(2).replace(/\.00$/, '');
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+    }
+
+    function badgeClass(status) {
+      if (status === 'upcoming') return 'pending';
+      if (status === 'completed') return 'done';
+      if (status === 'reimbursed') return 'reimb';
+      return 'pending';
+    }
+
+    function statusLabel(status) {
+      return ({
+        draft: '草稿',
+        upcoming: '待出行',
+        completed: '已完成',
+        cancelled: '已作废',
+        pending: '待报销',
+        processing: '报销中',
+        reimbursed: '已报销'
+      })[status] || status || '-';
+    }
+
+    function readFilters() {
+      const range = document.getElementById('dateRangeInput').value.trim();
+      const [dateFrom, dateTo] = range.includes('~') ? range.split('~').map(v => v.trim()) : ['', ''];
+      return {
+        staff_name: document.getElementById('staffNameInput').value.trim(),
+        company_snapshot: document.getElementById('companyInput').value.trim(),
+        department_snapshot: document.getElementById('departmentInput').value.trim(),
+        status: document.getElementById('statusInput').value.trim(),
+        date_from: dateFrom,
+        date_to: dateTo
+      };
+    }
+
+    function localMonthPrefix() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      return res.json();
+    }
+
+    async function fetchJsonWithOptions(url, options = {}) {
+      const headers = Object.assign({ Authorization: `Bearer ${token}` }, options.headers || {});
+      const res = await fetch(url, Object.assign({}, options, { headers }));
+      return res.json();
+    }
+
+    function buildQuery(params) {
+      const search = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) search.set(key, value);
+      });
+      return search.toString();
+    }
+
+    function renderOrders(rows) {
+      const body = document.getElementById('ordersTableBody');
+      if (!rows.length) {
+        body.innerHTML = '<tr class="empty-row"><td colspan="11">暂无差旅单数据</td></tr>';
+        document.getElementById('detailPanelBody').innerHTML = '<div class="detail-empty">当前筛选条件下没有差旅单。</div>';
+        currentDetailId = 0;
+        return;
+      }
+      body.innerHTML = rows.map(row => `
+        <tr data-row-id="${row.id}" class="${Number(currentDetailId) === Number(row.id) ? 'active-row' : ''}">
+          <td>${row.order_no || '-'}</td>
+          <td>${row.staff_name_snapshot || '-'}<br><span style="color:#5B72A9;font-size:11px">${row.employee_id_snapshot || ''}</span></td>
+          <td>${row.company_snapshot || '-'}<br><span style="color:#5B72A9;font-size:11px">${row.department_snapshot || '-'} · ${row.position_snapshot || '-'}</span></td>
+          <td>${row.destination || '-'}<br><span style="color:#5B72A9;font-size:11px">${row.start_time || '-'}${row.end_time ? ' 至 ' + row.end_time : ''}</span></td>
+          <td class="amount">${Number(row.ticket_amount || 0).toFixed(2)}</td>
+          <td class="amount">${Number(row.hotel_amount || 0).toFixed(2)}</td>
+          <td class="amount">${Number(row.other_amount || 0).toFixed(2)}</td>
+          <td class="amount">${Number(row.total_amount || 0).toFixed(2)}</td>
+          <td><span class="badge ${badgeClass(row.status)}">${statusLabel(row.status)}</span></td>
+          <td>${statusLabel(row.reimbursement_status)}${row.reimbursement_no ? '<br><span style="color:#5B72A9;font-size:11px">' + row.reimbursement_no + '</span>' : ''}</td>
+          <td><div class="ops"><button type="button" data-id="${row.id}" class="view-btn">查看</button></div></td>
+        </tr>
+      `).join('');
+      body.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => openDetail(btn.dataset.id));
+      });
+      openDetail(rows[0].id);
+    }
+
+    function markActiveRow(id) {
+      currentDetailId = Number(id || 0);
+      document.querySelectorAll('#ordersTableBody tr[data-row-id]').forEach(row => {
+        row.classList.toggle('active-row', Number(row.dataset.rowId) === currentDetailId);
+      });
+    }
+
+    function renderMetrics(rows) {
+      const currentMonth = localMonthPrefix();
+      const monthRows = rows.filter(row => String(row.start_time || '').slice(0, 7) === currentMonth);
+      const totalAmount = monthRows.reduce((sum, row) => sum + Number(row.total_amount || 0), 0);
+      document.getElementById('metricOrders').textContent = String(monthRows.length || 0);
+      document.getElementById('metricAmount').textContent = money(totalAmount);
+      document.getElementById('metricUpcoming').textContent = String(rows.filter(row => row.status === 'upcoming').length);
+      document.getElementById('metricPendingReimb').textContent = String(rows.filter(row => row.reimbursement_status === 'pending').length);
+      document.getElementById('metricReimbursed').textContent = String(rows.filter(row => row.reimbursement_status === 'reimbursed').length);
+    }
+
+    async function loadOrders() {
+      const query = buildQuery(readFilters());
+      const data = await fetchJson(`${API}/travel/orders${query ? '?' + query : ''}`);
+      if (data.code !== 0) throw new Error(data.msg || '加载失败');
+      const rows = data.data || [];
+      renderOrders(rows);
+      renderMetrics(rows);
+    }
+
+    async function openDetail(id) {
+      markActiveRow(id);
+      const data = await fetchJson(`${API}/travel/orders/${id}`);
+      if (data.code !== 0) {
+        document.getElementById('detailPanelBody').innerHTML = `<div class="detail-empty">${escapeHtml(data.msg || '加载详情失败')}</div>`;
+        return;
+      }
+      const order = data.data || {};
+      const items = Array.isArray(order.items) ? order.items : [];
+      const logs = Array.isArray(order.logs) ? order.logs : [];
+      document.getElementById('detailPanelBody').innerHTML = `
+        <div class="detail-order-no">${escapeHtml(order.order_no || '-')}</div>
+        <div>
+          <div class="detail-main-title">${escapeHtml(order.staff_name_snapshot || '-')} · ${escapeHtml(order.destination || '差旅安排')}</div>
+          <div class="detail-subtitle">${escapeHtml(order.company_snapshot || '-')} / ${escapeHtml(order.department_snapshot || '-')} / ${escapeHtml(order.position_snapshot || '-')}</div>
+        </div>
+        <div class="detail-actions">
+          <button type="button" class="detail-action-btn" data-status-action="upcoming">标记待出行</button>
+          <button type="button" class="detail-action-btn success" data-status-action="completed">标记已完成</button>
+          <button type="button" class="detail-action-btn warn" data-reimb-action="processing">改为报销中</button>
+          <button type="button" class="detail-action-btn danger" data-reimb-action="reimbursed">改为已报销</button>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-meta"><span>出发时间</span><strong>${escapeHtml(order.start_time || '-')}</strong></div>
+          <div class="detail-meta"><span>返程时间</span><strong>${escapeHtml(order.end_time || '-')}</strong></div>
+          <div class="detail-meta"><span>行程状态</span><strong>${escapeHtml(statusLabel(order.status))}</strong></div>
+          <div class="detail-meta"><span>报销状态</span><strong>${escapeHtml(statusLabel(order.reimbursement_status))}</strong></div>
+          <div class="detail-meta"><span>发票状态</span><strong>${escapeHtml(statusLabel(order.invoice_status))}</strong></div>
+          <div class="detail-meta"><span>总费用</span><strong>${escapeHtml(money(order.total_amount || 0))}</strong></div>
+        </div>
+        <div>
+          <div class="detail-section-title">费用明细</div>
+          <div class="detail-items" style="margin-top:8px">
+            ${items.length ? items.map(item => `
+              <div class="detail-item">
+                <div class="detail-item-top">
+                  <div class="detail-item-name">${escapeHtml(item.title || item.item_subtype || item.item_type || '费用明细')}</div>
+                  <div class="detail-item-amount">${escapeHtml(money(item.amount || 0))}</div>
+                </div>
+                <div class="detail-item-meta">
+                  ${escapeHtml(item.item_type || '-')} · ${escapeHtml(item.vendor_name || '未填写平台')}<br>
+                  ${escapeHtml(item.from_location || '')}${item.to_location ? ' → ' + escapeHtml(item.to_location) : ''}${item.order_ref_no ? ' · ' + escapeHtml(item.order_ref_no) : ''}
+                </div>
+              </div>
+            `).join('') : '<div class="detail-empty" style="padding:18px 12px">暂无费用明细</div>'}
+          </div>
+        </div>
+        <div>
+          <div class="detail-section-title">操作记录</div>
+          <div class="detail-logs" style="margin-top:8px">
+            ${logs.length ? logs.map(log => `
+              <div class="detail-log">
+                <div class="detail-log-top">
+                  <div class="detail-log-action">${escapeHtml(log.action_desc || log.action_type || '-')}</div>
+                  <div class="muted">${escapeHtml(log.created_at || '-')}</div>
+                </div>
+                <div class="detail-log-meta">${escapeHtml(log.operator_name || '-')}</div>
+              </div>
+            `).join('') : '<div class="detail-empty" style="padding:18px 12px">暂无操作记录</div>'}
+          </div>
+        </div>
+      `;
+      document.querySelectorAll('[data-status-action]').forEach(btn => {
+        btn.addEventListener('click', () => updateOrderStatus(order.id, btn.dataset.statusAction).catch(err => alert(err.message || '状态更新失败')));
+      });
+      document.querySelectorAll('[data-reimb-action]').forEach(btn => {
+        btn.addEventListener('click', () => updateReimbursement(order.id, btn.dataset.reimbAction, order.reimbursement_no || '').catch(err => alert(err.message || '报销状态更新失败')));
+      });
+    }
+
+    async function updateOrderStatus(id, status) {
+      const ok = window.confirm(`确认将差旅单状态改为“${statusLabel(status)}”吗？`);
+      if (!ok) return;
+      const data = await fetchJsonWithOptions(`${API}/travel/orders/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (data.code !== 0) throw new Error(data.msg || '状态更新失败');
+      await loadOrders();
+      await openDetail(id);
+    }
+
+    async function updateReimbursement(id, reimbursementStatus, currentNo) {
+      const reimbursementNo = reimbursementStatus === 'reimbursed'
+        ? (window.prompt('请输入报销单号，可留空', currentNo || '') || '').trim()
+        : (currentNo || '').trim();
+      const data = await fetchJsonWithOptions(`${API}/travel/orders/${id}/reimbursement`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reimbursement_status: reimbursementStatus,
+          reimbursement_no: reimbursementNo,
+          invoice_status: reimbursementStatus === 'reimbursed' ? 'complete' : undefined
+        })
+      });
+      if (data.code !== 0) throw new Error(data.msg || '报销状态更新失败');
+      await loadOrders();
+      await openDetail(id);
+    }
+
+    async function exportRows(type) {
+      const path = type === 'reimb' ? '/travel/export/reimbursements' : '/travel/export/orders';
+      const query = buildQuery(readFilters());
+      const data = await fetchJson(`${API}${path}${query ? '?' + query : ''}`);
+      if (data.code !== 0) throw new Error(data.msg || '导出失败');
+      const rows = data.data || [];
+      const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = type === 'reimb' ? 'travel-reimbursements.json' : 'travel-orders.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function initAccess() {
+      const data = await fetchJson(`${API}/travel/access`);
+      if (data.code !== 0) throw new Error(data.msg || '权限加载失败');
+      if (!data.data?.can_manage) throw new Error('暂无差旅管理权限');
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', () => loadOrders().catch(err => alert(err.message || '加载失败')));
+    document.getElementById('permissionBtn').addEventListener('click', () => { window.location.href = 'permission-list.html'; });
+    document.getElementById('newOrderBtn').addEventListener('click', () => { window.location.href = 'mobile-travel-entry.html'; });
+    document.getElementById('exportOrdersBtn').addEventListener('click', () => exportRows('orders').catch(err => alert(err.message || '导出失败')));
+    document.getElementById('exportReimbBtn').addEventListener('click', () => exportRows('reimb').catch(err => alert(err.message || '导出失败')));
+
+    initAccess()
+      .then(loadOrders)
+      .catch(err => {
+        document.getElementById('ordersTableBody').innerHTML = `<tr class="empty-row"><td colspan="11">${err.message || '加载失败'}</td></tr>`;
+      });
+  </script>
+</body>
+</html>

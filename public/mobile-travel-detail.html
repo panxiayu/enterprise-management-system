@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>差旅费用详情</title>
+<script>
+  window.__AUTH_GUARD_MODE = 'employee';
+</script>
+<script src="/js/auth-guard.js"></script>
+<style>
+  :root {
+    --bg: #eef4fb;
+    --ink: #111d35;
+    --muted: #6d7a90;
+    --line: #dbe2ec;
+    --paper: #fffdfa;
+    --green: #087f78;
+    --green-2: #0fa093;
+    --blue: #0867c9;
+    --orange: #e17b0e;
+    --danger: #d94841;
+  }
+
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: .22s;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 16% 0%, rgba(255, 255, 255, .98), transparent 30%),
+      radial-gradient(circle at 88% 4%, rgba(255, 255, 255, .86), transparent 22%),
+      linear-gradient(180deg, #f8fbff 0%, #edf3fb 78%, #e7eef8 100%);
+    font-family: Inter, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .shell {
+    position: relative;
+    width: min(100%, 430px);
+    margin: 0 auto;
+    padding: 12px 14px 104px;
+  }
+
+  .magic-shell {
+    display: none;
+    padding-bottom: 0;
+  }
+
+  body.has-magic-ticket .magic-shell {
+    display: block;
+  }
+
+  body.has-magic-ticket #app {
+    padding-top: 0;
+  }
+
+  body.has-magic-ticket #app > .trip-card {
+    display: none;
+  }
+
+  .magic-ticket-slot {
+    margin-bottom: 16px;
+  }
+
+  .magic-ticket-slot .ticket {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(210, 219, 231, .82);
+    border-radius: 28px;
+    background: var(--paper);
+    box-shadow: 0 18px 36px rgba(29, 43, 68, .10), 0 1px 0 rgba(255, 255, 255, .82) inset;
+    cursor: default;
+  }
+
+  .magic-ticket-slot .ticket-head {
+    position: relative;
+    display: flex;
+    height: 150px;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 16px;
+    color: #fff;
+    box-shadow: inset 0 -1px rgba(255,255,255,.14);
+  }
+
+  .magic-ticket-slot .ticket-head > div:first-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .magic-ticket-slot .ticket-head::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    opacity: 1;
+    pointer-events: none;
+    mix-blend-mode: soft-light;
+    background-image:
+      radial-gradient(circle at 14% 20%, rgba(255,238,205,.18) 0 1.2px, transparent 1.6px),
+      radial-gradient(circle at 70% 34%, rgba(255,228,186,.14) 0 1.3px, transparent 1.8px),
+      repeating-linear-gradient(12deg, rgba(247,229,198,.10) 0 1px, transparent 1px 8px),
+      repeating-linear-gradient(102deg, rgba(255,244,221,.07) 0 1px, transparent 1px 11px),
+      radial-gradient(circle at 82% 72%, rgba(255,231,188,.16), transparent 24%),
+      linear-gradient(180deg, rgba(255,244,219,.14), rgba(255,238,208,.05) 48%, rgba(86,57,31,.14));
+    background-size: 24px 24px, 30px 30px, 96px 96px, 128px 128px, 100% 100%, 100% 100%;
+  }
+
+  .magic-ticket-slot .ticket-green .ticket-head {
+    background: radial-gradient(circle at 88% 74%, rgba(255,255,255,.11), transparent 14%), linear-gradient(135deg, #15978f 0%, #0b7f77 100%);
+  }
+
+  .magic-ticket-slot .ticket-blue .ticket-head {
+    background: radial-gradient(circle at 86% 73%, rgba(255,255,255,.12), transparent 14%), linear-gradient(135deg, #1986dd 0%, #0c6fce 100%);
+  }
+
+  .magic-ticket-slot .ticket-indigo .ticket-head {
+    background: radial-gradient(circle at 86% 73%, rgba(255,255,255,.12), transparent 14%), linear-gradient(135deg, #5472de 0%, #3857c2 100%);
+  }
+
+  .magic-ticket-slot .ticket-orange .ticket-head {
+    background: radial-gradient(circle at 86% 73%, rgba(255,255,255,.12), transparent 14%), linear-gradient(135deg, #f4a623 0%, #db6d11 100%);
+  }
+
+  .magic-ticket-slot .ticket-grey .ticket-head {
+    background: radial-gradient(circle at 86% 73%, rgba(255,255,255,.12), transparent 14%), linear-gradient(135deg, #8997ae 0%, #5f7287 100%);
+  }
+
+  .magic-ticket-slot .route {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-width: 0;
+    align-items: baseline;
+    gap: 8px;
+    margin-top: 12px;
+    padding-left: 2ch;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .magic-ticket-slot .route strong {
+    max-width: 150px;
+    overflow: hidden;
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .magic-ticket-slot .route span {
+    font-size: 13px;
+    font-weight: 900;
+    opacity: .9;
+  }
+
+  .magic-ticket-slot .head-person {
+    position: absolute;
+    left: 42px;
+    right: 24px;
+    top: 68%;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: .5ch;
+    align-items: start;
+    margin: 0;
+    font-family: "SimHei", "STHeiti", "Microsoft YaHei", sans-serif;
+    font-size: 17px;
+    font-weight: 900;
+    line-height: 1.35;
+    transform: translateY(-50%);
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .magic-ticket-slot .head-person-label {
+    white-space: nowrap;
+  }
+
+  .magic-ticket-slot .head-person-lines {
+    min-width: 0;
+  }
+
+  .magic-ticket-slot .head-person-line {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .magic-ticket-slot .head-right {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    justify-items: end;
+    gap: 8px;
+    align-self: flex-start;
+  }
+
+  .magic-ticket-slot .status {
+    display: inline-flex;
+    min-width: 70px;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 10px;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+    backdrop-filter: blur(10px);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .magic-ticket-slot .head-right small,
+  .magic-ticket-slot .flight-path,
+  .magic-ticket-slot .cityline {
+    display: none;
+  }
+
+  .magic-ticket-slot .perforation {
+    position: relative;
+    height: 10px;
+    margin: -5px 18px -5px;
+    background-image:
+      radial-gradient(circle, #eef4fb 0 4.2px, transparent 4.4px),
+      linear-gradient(90deg, rgba(151,170,199,.15) 0 7px, transparent 7px 14px);
+    background-position: center, center;
+    background-repeat: repeat-x;
+    background-size: 12px 12px, 14px 1px;
+  }
+
+  .magic-ticket-slot .perforation::before {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    content: "";
+    border-top: 1px dashed rgba(189,201,220,.95);
+    transform: translateY(-50%);
+  }
+
+  .magic-ticket-slot .ticket-body {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    column-gap: 14px;
+    row-gap: 8px;
+    min-height: 92px;
+    padding: 15px 16px 13px;
+    align-items: start;
+    background: radial-gradient(circle at 14% 18%, rgba(255,255,255,.95), transparent 22%), linear-gradient(180deg, #fffefd 0%, #fffdfa 100%);
+  }
+
+  .magic-ticket-slot .ticket-body::before {
+    position: absolute;
+    top: 16px;
+    bottom: 14px;
+    left: calc(40% - .5px);
+    width: 1px;
+    content: "";
+    background-image: linear-gradient(#cfd8e6 48%, transparent 0);
+    background-size: 1px 6px;
+    background-repeat: repeat-y;
+  }
+
+  .magic-ticket-slot .ticket-label {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    color: #69778b;
+    font-size: 10px;
+    font-weight: 850;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .magic-ticket-slot .ticket-label svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .magic-ticket-slot .date-label,
+  .magic-ticket-slot .date-value {
+    grid-column: 1 / span 2;
+  }
+
+  .magic-ticket-slot .amount-label,
+  .magic-ticket-slot .amount-value {
+    grid-column: 3 / span 3;
+  }
+
+  .magic-ticket-slot .ticket-value {
+    display: flex;
+    min-width: 0;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    color: #17305f;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.15;
+  }
+
+  .magic-ticket-slot .date-value {
+    justify-self: stretch;
+    justify-content: center;
+    padding: 0 12px 0 0;
+    font-family: "SimHei", "STHeiti", "Microsoft YaHei", sans-serif;
+    font-size: 17px;
+    font-weight: 950;
+    text-align: center;
+    transform: translateY(-2px);
+  }
+
+  .magic-ticket-slot .amount-value > div {
+    position: relative;
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    align-items: start;
+    transform: translateY(-4px);
+  }
+
+  .magic-ticket-slot .amount-value > div::before {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 50%;
+    width: 1px;
+    content: "";
+    background: rgba(207,216,230,.9);
+    transform: translateX(-50%);
+  }
+
+  .magic-ticket-slot .amount-line {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    white-space: nowrap;
+  }
+
+  .magic-ticket-slot .amount-company {
+    color: #526279;
+    font-size: 10px;
+    font-weight: 760;
+    line-height: 1.1;
+  }
+
+  .magic-ticket-slot .amount-value strong {
+    color: #10224d;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .trip-card,
+  .panel,
+  .expense-card,
+  .summary-card {
+    border: 1px solid rgba(210, 219, 231, .82);
+    border-radius: 26px;
+    background: var(--paper);
+    box-shadow: 0 18px 36px rgba(29, 43, 68, .10), 0 1px 0 rgba(255, 255, 255, .82) inset;
+  }
+
+  .trip-card {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 16px;
+    transform-origin: top center;
+  }
+
+  .trip-head {
+    position: relative;
+    min-height: 184px;
+    padding: 22px 18px 18px;
+    color: #fff;
+    background:
+      radial-gradient(circle at 82% 20%, rgba(255, 255, 255, .16), transparent 28%),
+      linear-gradient(135deg, #0a8d83 0%, #087f78 55%, #0fa093 100%);
+  }
+
+  .trip-head.blue {
+    background:
+      radial-gradient(circle at 82% 20%, rgba(255, 255, 255, .16), transparent 28%),
+      linear-gradient(135deg, #2388e8 0%, #0867c9 100%);
+  }
+
+  .trip-head.orange {
+    background:
+      radial-gradient(circle at 82% 20%, rgba(255, 255, 255, .16), transparent 28%),
+      linear-gradient(135deg, #f59e0b 0%, #e17b0e 100%);
+  }
+
+  .trip-head::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    opacity: .52;
+    background-image:
+      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  .trip-head > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .head-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 22px;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 950;
+    letter-spacing: .14em;
+    opacity: .9;
+  }
+
+  .status {
+    flex: none;
+    padding: 7px 13px;
+    border: 1px solid rgba(255,255,255,.26);
+    border-radius: 999px;
+    background: rgba(255,255,255,.13);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .route {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .route strong {
+    font-size: 34px;
+    line-height: 1;
+    font-weight: 950;
+  }
+
+  .route span {
+    font-size: 13px;
+    font-weight: 950;
+    opacity: .9;
+  }
+
+  .head-meta {
+    margin-top: 18px;
+    font-size: 15px;
+    font-family: "SimHei", "Microsoft YaHei", sans-serif;
+    font-weight: 950;
+    line-height: 1.45;
+  }
+
+  .perforation {
+    position: relative;
+    height: 13px;
+    margin-top: -7px;
+    background:
+      radial-gradient(circle at 6px 50%, transparent 0 5px, var(--paper) 5.5px) left / 12px 13px repeat-x;
+    z-index: 2;
+  }
+
+  .trip-body {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 0;
+    padding: 13px 14px 16px;
+    background: var(--paper);
+  }
+
+  .trip-body::before {
+    position: absolute;
+    content: "";
+  }
+
+  .info-box {
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .info-box + .info-box {
+    border-left: 1px dashed #d7dfeb;
+  }
+
+  .label {
+    display: block;
+    color: #728096;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .value {
+    display: block;
+    margin-top: 8px;
+    color: #10214a;
+    font-size: 17px;
+    font-weight: 950;
+    line-height: 1.25;
+  }
+
+  .subvalue {
+    display: block;
+    margin-top: 5px;
+    color: #68768d;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .panel,
+  .summary-card {
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .section-head h2 {
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .section-head span {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .summary-item {
+    padding: 10px 8px;
+    border-radius: 16px;
+    background: #f5f8fc;
+    text-align: center;
+  }
+
+  .summary-item span {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .summary-item strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 16px;
+    font-weight: 950;
+  }
+
+  .summary-item.total {
+    color: #fff;
+    background: linear-gradient(135deg, #0a8d83, #087f78);
+  }
+
+  .summary-item.total span {
+    color: rgba(255,255,255,.8);
+  }
+
+  .traveler-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .traveler-chip {
+    max-width: 100%;
+    padding: 9px 11px;
+    border: 1px solid #dde6f0;
+    border-radius: 15px;
+    background: #fbfdff;
+  }
+
+  .traveler-chip strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .traveler-chip span {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  .expense-list {
+    display: grid;
+    gap: 14px;
+  }
+
+  .expense-card {
+    overflow: hidden;
+  }
+
+  .expense-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px;
+    color: #fff;
+    background:
+      radial-gradient(circle at 88% 18%, rgba(255,255,255,.16), transparent 28%),
+      linear-gradient(135deg, #2388e8, #0867c9);
+  }
+
+  .expense-card.hotel .expense-head {
+    background:
+      radial-gradient(circle at 88% 18%, rgba(255,255,255,.16), transparent 28%),
+      linear-gradient(135deg, #0a8d83, #087f78);
+  }
+
+  .expense-card.other .expense-head {
+    background:
+      radial-gradient(circle at 88% 18%, rgba(255,255,255,.16), transparent 28%),
+      linear-gradient(135deg, #e99128, #d87012);
+  }
+
+  .expense-head strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 950;
+  }
+
+  .expense-head small {
+    display: block;
+    margin-top: 5px;
+    opacity: .84;
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .expense-money {
+    flex: none;
+    font-size: 20px;
+    font-weight: 950;
+  }
+
+  .alloc-list {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px 14px;
+  }
+
+  .alloc-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e0e8f2;
+    border-radius: 16px;
+    background: #fbfdff;
+  }
+
+  .alloc-row strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .alloc-row span {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  .alloc-row b {
+    color: #10214a;
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .remark {
+    padding: 13px;
+    border: 1px dashed rgba(225, 123, 14, .26);
+    border-radius: 18px;
+    color: #75532a;
+    background: rgba(225, 123, 14, .06);
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.65;
+  }
+
+  .log-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .log-row {
+    padding: 10px;
+    border: 1px solid #e0e8f2;
+    border-radius: 16px;
+    background: #fbfdff;
+  }
+
+  .log-row strong {
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .log-row span {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  .empty {
+    padding: 24px 14px;
+    color: var(--muted);
+    background: #f8fbff;
+    border: 1px dashed #dce5f1;
+    border-radius: 18px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .loading {
+    padding: 64px 20px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .loading::before {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 8px;
+    border: 2px solid #dce5f1;
+    border-top-color: var(--green);
+    border-radius: 50%;
+    content: "";
+    animation: spin .8s linear infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    width: min(100%, 430px);
+    margin: 0 auto;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(238,244,251,0), rgba(238,244,251,.96) 28%);
+    backdrop-filter: blur(12px);
+  }
+
+  .footer button {
+    width: 100%;
+    height: 48px;
+    border: 0;
+    border-radius: 17px;
+    color: #fff;
+    background: linear-gradient(135deg, #0c8d84, #087f78);
+    box-shadow: 0 16px 30px rgba(8, 127, 120, .25);
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  #app.detail-stage > .trip-card,
+  #app.detail-stage > .summary-card,
+  #app.detail-stage > .panel,
+  .footer {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  .detail-ready #app.detail-stage > .trip-card {
+    animation: detailCardSettle .46s cubic-bezier(.18,.9,.2,1) forwards;
+  }
+
+  .detail-ready #app.detail-stage > .summary-card {
+    animation: detailContentIn .48s cubic-bezier(.2,.8,.2,1) .14s forwards;
+  }
+
+  .detail-ready #app.detail-stage > .detail-step-1 {
+    animation: detailContentIn .48s cubic-bezier(.2,.8,.2,1) .20s forwards;
+  }
+
+  .detail-ready #app.detail-stage > .detail-step-2 {
+    animation: detailContentIn .48s cubic-bezier(.2,.8,.2,1) .27s forwards;
+  }
+
+  .detail-ready #app.detail-stage > .detail-step-3 {
+    animation: detailContentIn .48s cubic-bezier(.2,.8,.2,1) .34s forwards;
+  }
+
+  .detail-ready #app.detail-stage > .detail-step-4 {
+    animation: detailContentIn .48s cubic-bezier(.2,.8,.2,1) .41s forwards;
+  }
+
+  .detail-ready .footer {
+    animation: detailFooterIn .46s cubic-bezier(.2,.8,.2,1) .48s forwards;
+  }
+
+  @keyframes detailCardSettle {
+    from {
+      opacity: 1;
+      transform: translateY(-4px) scale(1.015);
+      filter: saturate(1.02);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: saturate(1);
+    }
+  }
+
+  @keyframes detailContentIn {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+      filter: blur(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes detailFooterIn {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #app.detail-stage > .trip-card,
+    #app.detail-stage > .summary-card,
+    #app.detail-stage > .panel,
+    .footer {
+      opacity: 1;
+      transform: none;
+      animation: none !important;
+    }
+  }
+
+  button[onclick*="window.location.replace('/')"],
+  button[onclick*="redirectToLogin"],
+  [class*="auth-home"],
+  [id*="auth-home"] {
+    display: none !important;
+  }
+</style>
+</head>
+<body>
+  <main class="shell magic-shell" id="magicTicketShell" aria-hidden="true">
+    <div class="magic-ticket-slot" id="magicTicketSlot"></div>
+  </main>
+  <div id="loading" class="loading">正在加载差旅费用详情...</div>
+  <script>
+    (function restoreMagicTicket() {
+      try {
+        const id = new URLSearchParams(location.search).get('id') || '';
+        const raw = sessionStorage.getItem('travel_magic_ticket');
+        if (!raw) return;
+        const snapshot = JSON.parse(raw);
+        if (String(snapshot.id || '') !== String(id)) return;
+        if (Date.now() - Number(snapshot.createdAt || 0) > 20000) return;
+        const slot = document.getElementById('magicTicketSlot');
+        if (!slot || !snapshot.html) return;
+        slot.innerHTML = snapshot.html;
+        slot.querySelectorAll('[data-view-id]').forEach(node => node.removeAttribute('data-view-id'));
+        const ticket = slot.querySelector('.ticket');
+        if (ticket && snapshot.transitionName) {
+          ticket.style.viewTransitionName = snapshot.transitionName;
+        }
+        document.body.classList.add('has-magic-ticket');
+        document.getElementById('loading').style.display = 'none';
+      } catch (err) {
+        sessionStorage.removeItem('travel_magic_ticket');
+      }
+    })();
+  </script>
+  <main class="shell detail-stage" id="app" style="display:none">
+    <section class="trip-card">
+      <div class="trip-head" id="tripHead">
+        <div class="head-row">
+          <span class="eyebrow">TRAVEL EXPENSE</span>
+          <span class="status" id="statusText">--</span>
+        </div>
+        <div class="route">
+          <strong id="destText">--</strong>
+          <span id="cityCode">---</span>
+        </div>
+        <div class="head-meta" id="travelerLine">出差人：--</div>
+      </div>
+      <div class="perforation" aria-hidden="true"></div>
+      <div class="trip-body">
+        <div class="info-box">
+          <span class="label">日期</span>
+          <strong class="value" id="dateRange">--</strong>
+          <span class="subvalue" id="dateHint">结束时间可后补</span>
+        </div>
+        <div class="info-box">
+          <span class="label">金额</span>
+          <strong class="value" id="headAmount">¥0</strong>
+          <span class="subvalue" id="itemCount">0 条费用明细</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="summary-card">
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span>兴利模具</span>
+          <strong id="mouldTotal">¥0</strong>
+        </div>
+        <div class="summary-item">
+          <span>兴利汽车模具</span>
+          <strong id="autoTotal">¥0</strong>
+        </div>
+        <div class="summary-item total">
+          <span>总计</span>
+          <strong id="grandTotal">¥0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel detail-step-1">
+      <div class="section-head">
+        <h2>出差人员</h2>
+        <span id="travelerCount">0 人</span>
+      </div>
+      <div class="traveler-list" id="travelerList"></div>
+    </section>
+
+    <section class="panel detail-step-2">
+      <div class="section-head">
+        <h2>费用明细</h2>
+        <span>按明细分摊</span>
+      </div>
+      <div class="expense-list" id="expenseList"></div>
+    </section>
+
+    <section class="panel detail-step-3" id="remarkPanel" style="display:none">
+      <div class="section-head">
+        <h2>备注</h2>
+        <span>记录说明</span>
+      </div>
+      <div class="remark" id="remarkText"></div>
+    </section>
+
+    <section class="panel detail-step-4">
+      <div class="section-head">
+        <h2>操作日志</h2>
+        <span id="logCount">0 条</span>
+      </div>
+      <div class="log-list" id="logList"></div>
+    </section>
+  </main>
+
+  <div class="footer" id="footer" style="display:none">
+    <button type="button" onclick="goBack()">返回差旅管理</button>
+  </div>
+
+<script>
+  const API = window.location.origin + '/api';
+  const token = localStorage.getItem('employee_token') || '';
+
+  function authHeaders() {
+    return { Authorization: 'Bearer ' + token };
+  }
+
+  async function fetchJson(path, opts = {}) {
+    const response = await fetch(API + path, {
+      ...opts,
+      headers: { ...authHeaders(), 'Content-Type': 'application/json', ...(opts.headers || {}) }
+    });
+    let data = {};
+    try { data = await response.json(); } catch (err) {}
+    if (!response.ok || data.code !== 0) {
+      throw new Error((data && data.msg) || `请求失败 (${response.status})`);
+    }
+    return data.data;
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, s => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[s]));
+  }
+
+  function fmtMoney(value) {
+    return '¥' + (Number(value || 0) || 0).toLocaleString('zh-CN', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: Number(value || 0) % 1 ? 2 : 0
+    });
+  }
+
+  function fmtMD(value) {
+    if (!value) return '--';
+    const text = String(value).replace('T', ' ');
+    const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? `${match[2]}.${match[3]}` : text.slice(5, 10);
+  }
+
+  function fmtDateTime(value) {
+    if (!value) return '--';
+    return String(value).slice(0, 16).replace('T', ' ');
+  }
+
+  function money(value) {
+    const num = Number(value || 0);
+    return Number.isFinite(num) ? Math.round(num * 100) / 100 : 0;
+  }
+
+  function normalizeCompany(value) {
+    const text = String(value || '').trim();
+    if (text.includes('兴利汽车模具')) return '兴利汽车模具';
+    if (text.includes('兴利模具')) return '兴利模具';
+    return text || '兴利汽车模具';
+  }
+
+  function cityCode(dest) {
+    const d = String(dest || '').trim();
+    if (!d) return 'XXX';
+    if (d.includes('上海浦东')) return 'PVG';
+    if (d.includes('上海')) return 'SHA';
+    if (d.includes('深圳')) return 'SZX';
+    if (d.includes('杭州')) return 'HGH';
+    if (d.includes('北京')) return 'BJS';
+    return d.slice(0, 3).toUpperCase();
+  }
+
+  function destMain(dest) {
+    return (String(dest || '').split(/[,，]/)[0] || '未填').trim();
+  }
+
+  function isInProgress(order) {
+    if (!order.start_time) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    const start = order.start_time.slice(0, 10);
+    const end = (order.end_time || order.start_time).slice(0, 10);
+    return start <= today && end >= today;
+  }
+
+  function statusLabel(order) {
+    if (order.status === 'cancelled') return '已取消';
+    if (order.status === 'completed' && order.reimbursement_status === 'reimbursed') return '已报销';
+    if (order.status === 'completed') return '待报销';
+    if (isInProgress(order)) return '进行中';
+    return '已记录';
+  }
+
+  function tripTheme(order) {
+    if (order.status === 'completed' && order.reimbursement_status === 'reimbursed') return '';
+    if (order.status === 'completed') return 'orange';
+    if (isInProgress(order)) return 'blue';
+    return '';
+  }
+
+  function parseAllocations(item) {
+    if (Array.isArray(item.traveler_allocations)) return item.traveler_allocations;
+    if (Array.isArray(item.allocations)) return item.allocations;
+    const raw = item.traveler_allocations_json;
+    if (!raw) return [];
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function itemTypeName(type) {
+    return { ticket: '票据 / 交通', hotel: '酒店', other: '其他费用' }[type] || '费用';
+  }
+
+  function goBack() {
+    window.location.href = 'mobile-travel.html';
+  }
+
+  function travelerMembers(order) {
+    if (Array.isArray(order.traveler_members) && order.traveler_members.length) return order.traveler_members;
+    return [{
+      name: order.staff_name_snapshot || '',
+      employee_id: order.employee_id_snapshot || '',
+      company: order.company_snapshot || '',
+      department: order.department_snapshot || '',
+      position: order.position_snapshot || ''
+    }].filter(item => item.name || item.employee_id);
+  }
+
+  function renderTravelers(order) {
+    const members = travelerMembers(order);
+    document.getElementById('travelerCount').textContent = `${members.length} 人`;
+    document.getElementById('travelerLine').textContent = '出差人：' + (members.map(item => item.name).filter(Boolean).join('、') || '--');
+    document.getElementById('travelerList').innerHTML = members.length ? members.map(item => `
+      <div class="traveler-chip">
+        <strong>${escapeHtml(item.name || '-')}</strong>
+        <span>${escapeHtml([item.employee_id, item.company, item.department].filter(Boolean).join(' · '))}</span>
+      </div>
+    `).join('') : '<div class="empty">暂无出差人员快照</div>';
+  }
+
+  function renderExpenses(order) {
+    const items = Array.isArray(order.items) ? order.items : [];
+    document.getElementById('itemCount').textContent = `${items.length} 条费用明细`;
+    if (!items.length) {
+      document.getElementById('expenseList').innerHTML = '<div class="empty">暂无费用明细</div>';
+      return;
+    }
+
+    document.getElementById('expenseList').innerHTML = items.map((item, index) => {
+      const allocations = parseAllocations(item);
+      const allocHtml = allocations.length ? allocations.map(person => `
+        <div class="alloc-row">
+          <div>
+            <strong>${escapeHtml(person.name || '-')}</strong>
+            <span>${escapeHtml([person.employee_id, normalizeCompany(person.company), person.department].filter(Boolean).join(' · '))}</span>
+          </div>
+          <b>${fmtMoney(person.amount)}</b>
+        </div>
+      `).join('') : '<div class="empty">未记录人员分摊</div>';
+      const cls = item.item_type === 'hotel' ? 'hotel' : (item.item_type === 'other' ? 'other' : 'ticket');
+      return `
+        <article class="expense-card ${cls}">
+          <div class="expense-head">
+            <div>
+              <strong>${escapeHtml(item.title || itemTypeName(item.item_type))}</strong>
+              <small>${escapeHtml(item.item_subtype || itemTypeName(item.item_type))} · 第 ${index + 1} 条</small>
+            </div>
+            <div class="expense-money">${fmtMoney(item.amount)}</div>
+          </div>
+          <div class="alloc-list">${allocHtml}</div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function renderLogs(order) {
+    const logs = Array.isArray(order.logs) ? order.logs : [];
+    document.getElementById('logCount').textContent = `${logs.length} 条`;
+    document.getElementById('logList').innerHTML = logs.length ? logs.map(log => `
+      <div class="log-row">
+        <strong>${escapeHtml(log.operator_name || '系统')} · ${escapeHtml(log.action_desc || log.action_type || '记录')}</strong>
+        <span>${escapeHtml(fmtDateTime(log.created_at))}</span>
+      </div>
+    `).join('') : '<div class="empty">暂无操作日志</div>';
+  }
+
+  function render(order) {
+    const total = money(order.total_amount);
+    const theme = tripTheme(order);
+    document.getElementById('tripHead').className = 'trip-head' + (theme ? ' ' + theme : '');
+    document.getElementById('statusText').textContent = statusLabel(order);
+    document.getElementById('destText').textContent = destMain(order.destination);
+    document.getElementById('cityCode').textContent = cityCode(order.destination);
+    document.getElementById('dateRange').textContent = `${fmtMD(order.start_time)} → ${order.end_time ? fmtMD(order.end_time) : '待补'}`;
+    document.getElementById('dateHint').textContent = order.end_time ? '已填写结束时间' : '结束时间可后补';
+    document.getElementById('headAmount').textContent = fmtMoney(total);
+    document.getElementById('mouldTotal').textContent = fmtMoney(order.xingli_mould_amount);
+    document.getElementById('autoTotal').textContent = fmtMoney(order.xingli_auto_amount);
+    document.getElementById('grandTotal').textContent = fmtMoney(total);
+
+    renderTravelers(order);
+    renderExpenses(order);
+    renderLogs(order);
+
+    if (order.remark) {
+      document.getElementById('remarkPanel').style.display = '';
+      document.getElementById('remarkText').textContent = order.remark;
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    document.getElementById('footer').style.display = '';
+    requestAnimationFrame(() => document.body.classList.add('detail-ready'));
+  }
+
+  async function init() {
+    const id = Number(new URLSearchParams(location.search).get('id') || 0);
+    if (!id) throw new Error('缺少差旅记录 ID');
+    if (!token) return;
+    const order = await fetchJson('/travel/orders/' + id);
+    render(order);
+  }
+
+  init().catch(err => {
+    document.getElementById('loading').style.display = 'none';
+    document.body.innerHTML = `<main class="shell"><section class="panel"><div class="section-head"><h2>加载失败</h2></div><div class="empty">${escapeHtml(err.message || '无法加载详情')}</div></section></main>`;
+  });
+</script>
+</body>
+</html>

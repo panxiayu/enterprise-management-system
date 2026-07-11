@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>费用录入 · 差旅管理</title>
+<script>
+  window.__AUTH_GUARD_MODE = 'employee';
+</script>
+<script src="/js/auth-guard.js"></script>
+<style>
+  :root {
+    --bg: #eef4fb;
+    --ink: #111d35;
+    --muted: #6d7a90;
+    --line: #dbe2ec;
+    --paper: #fffdfa;
+    --green: #087f78;
+    --green-2: #0fa093;
+    --blue: #0867c9;
+    --orange: #e17b0e;
+    --danger: #d94841;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 18% 0%, rgba(255, 255, 255, .98), transparent 30%),
+      radial-gradient(circle at 90% 8%, rgba(255, 255, 255, .82), transparent 24%),
+      linear-gradient(180deg, #f8fbff 0%, #edf3fb 78%, #e7eef8 100%);
+    font-family: Inter, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  .shell {
+    width: min(100%, 430px);
+    margin: 0 auto;
+    padding: 14px 14px 118px;
+  }
+
+  .trip-card,
+  .panel,
+  .expense-card,
+  .summary-card {
+    border: 1px solid rgba(210, 219, 231, .82);
+    border-radius: 26px;
+    background: var(--paper);
+    box-shadow: 0 18px 36px rgba(29, 43, 68, .10), 0 1px 0 rgba(255, 255, 255, .82) inset;
+  }
+
+  .trip-card {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: visible;
+    min-height: 146px;
+    margin-bottom: 10px;
+    padding: 18px 26px 14px;
+    color: #fff;
+    background:
+      radial-gradient(circle at 82% 20%, rgba(255, 255, 255, .16), transparent 28%),
+      linear-gradient(135deg, #0a8d83 0%, #087f78 55%, #0fa093 100%);
+  }
+
+  .trip-card::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    opacity: .55;
+    background-image:
+      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  .trip-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .eyebrow {
+    margin-top: 14px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .14em;
+    opacity: .9;
+  }
+
+  .destination-input {
+    min-width: 0;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, .30);
+    border-radius: 18px;
+    outline: 0;
+    color: #fff;
+    background: rgba(255, 255, 255, .13);
+    box-shadow: 0 10px 24px rgba(0, 58, 77, .10), inset 0 1px 0 rgba(255, 255, 255, .18);
+    padding: 11px 14px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: 950;
+    line-height: 1.12;
+    transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+  }
+
+  .destination-input::placeholder {
+    color: rgba(255, 255, 255, .88);
+    font-weight: 950;
+  }
+
+  .destination-input:focus {
+    border-color: rgba(255, 255, 255, .72);
+    background: rgba(255, 255, 255, .18);
+    box-shadow: 0 14px 28px rgba(0, 58, 77, .16), 0 0 0 4px rgba(255, 255, 255, .12);
+  }
+
+  .trip-grid {
+    position: relative;
+    display: block;
+    margin-top: 0;
+  }
+
+  .trip-suggest {
+    position: absolute;
+    top: 58px;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    pointer-events: none;
+    visibility: hidden;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 18px;
+    background: rgba(255, 253, 250, .98);
+    box-shadow: 0 18px 36px rgba(10, 46, 73, .18);
+    opacity: 0;
+    transform: translateY(-8px) scaleY(.94);
+    transform-origin: top center;
+    transition: opacity .18s ease, transform .22s cubic-bezier(.2, .8, .2, 1), visibility .18s ease;
+  }
+
+  .trip-suggest.show {
+    pointer-events: auto;
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+
+  .trip-option {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid #edf2f7;
+    color: var(--ink);
+    background: transparent;
+    padding: 11px 13px;
+    text-align: left;
+  }
+
+  .trip-option:last-child {
+    border-bottom: 0;
+  }
+
+  .trip-option strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .trip-option span {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .trip-selected {
+    position: relative;
+    z-index: 1;
+    min-height: 18px;
+    margin-top: 7px;
+    color: rgba(255, 255, 255, .9);
+    opacity: 0;
+    font-size: 12px;
+    font-weight: 850;
+    transform: translateY(-4px);
+    transition: opacity .18s ease, transform .18s ease;
+  }
+
+  .trip-selected.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .panel,
+  .summary-card {
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .section-head h2 {
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .section-head span {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .field {
+    margin-bottom: 10px;
+  }
+
+  .field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #728096;
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    border: 1px solid #dce5f1;
+    border-radius: 15px;
+    outline: 0;
+    color: var(--ink);
+    background: #f8fbff;
+    padding: 11px 12px;
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .field textarea {
+    min-height: 72px;
+    resize: none;
+    line-height: 1.55;
+  }
+
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: rgba(8, 127, 120, .45);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(8, 127, 120, .08);
+  }
+
+  .time-trigger {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #dce5f1;
+    border-radius: 15px;
+    color: var(--ink);
+    background: #f8fbff;
+    padding: 11px 12px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .time-trigger.empty {
+    color: #8a96a8;
+    font-weight: 750;
+  }
+
+  .expense-list {
+    display: grid;
+    gap: 14px;
+  }
+
+  .expense-card {
+    overflow: hidden;
+    transition: opacity .18s ease, filter .18s ease;
+  }
+
+  .entry-no-destination .summary-card,
+  .entry-no-destination .panel {
+    opacity: .48;
+    filter: grayscale(.35);
+  }
+
+  .expense-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px;
+    color: #fff;
+    background:
+      radial-gradient(circle at 88% 18%, rgba(255, 255, 255, .17), transparent 28%),
+      linear-gradient(135deg, #0a8d83, #087f78);
+  }
+
+  .expense-head strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .head-type-select {
+    width: 180px;
+    max-width: 100%;
+    border: 1px solid rgba(255, 255, 255, .34);
+    border-radius: 15px;
+    outline: 0;
+    color: #fff;
+    background: rgba(255, 255, 255, .14);
+    padding: 9px 12px;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .head-type-select option {
+    color: var(--ink);
+    background: #fff;
+  }
+
+  .remove-expense {
+    border: 1px solid rgba(255, 255, 255, .3);
+    border-radius: 999px;
+    color: #fff;
+    background: rgba(255, 255, 255, .12);
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .expense-body {
+    padding: 14px;
+    transition: opacity .18s ease, filter .18s ease;
+  }
+
+  .expense-card.body-locked .expense-body,
+  .expense-card.detail-locked .expense-detail-fields {
+    opacity: .42;
+    filter: grayscale(.35);
+  }
+
+  .expense-card.type-locked .expense-head {
+    opacity: .55;
+  }
+
+  .expense-card select:disabled,
+  .expense-card input:disabled,
+  .expense-card button:disabled,
+  .panel textarea:disabled,
+  .add-expense:disabled,
+  .footer button:disabled {
+    cursor: not-allowed;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .expense-main-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .field.full {
+    grid-column: 1 / -1;
+  }
+
+  .traveler-tools {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .traveler-search {
+    width: 100%;
+    border: 1px solid #dce5f1;
+    border-radius: 15px;
+    outline: 0;
+    color: var(--ink);
+    background: #f8fbff;
+    padding: 11px 12px;
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .traveler-pool-panel {
+    margin-top: -4px;
+  }
+
+  .traveler-pool-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .traveler-pool-title strong {
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .traveler-pool-title span {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .traveler-pool-list,
+  .traveler-pick-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .traveler-chip,
+  .traveler-pick {
+    border: 1px solid #dce5f1;
+    border-radius: 999px;
+    color: #17305f;
+    background: #f8fbff;
+    padding: 8px 11px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .traveler-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding-right: 7px;
+  }
+
+  .traveler-chip-remove {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: #6b778a;
+    background: #e8eef5;
+    font-size: 13px;
+    font-weight: 950;
+    line-height: 1;
+  }
+
+  .traveler-pick.selected {
+    border-color: rgba(8, 127, 120, .7);
+    color: #fff;
+    background: linear-gradient(135deg, #0c8d84, #087f78);
+    box-shadow: 0 10px 18px rgba(8, 127, 120, .16);
+  }
+
+  .traveler-pick.selected::before {
+    content: "✓";
+    margin-right: 4px;
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .traveler-pick-empty {
+    width: 100%;
+    padding: 13px;
+    border: 1px dashed #dce5f1;
+    border-radius: 16px;
+    color: var(--muted);
+    background: #f8fbff;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .add-expense {
+    border: 1px dashed rgba(8, 127, 120, .55);
+    border-radius: 15px;
+    color: var(--green);
+    background: #f5fffd;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .suggest {
+    position: absolute;
+    top: 46px;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: none;
+    padding: 8px;
+    border: 1px solid rgba(210, 219, 231, .94);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(29, 43, 68, .18);
+  }
+
+  .suggest.show {
+    display: block;
+  }
+
+  .suggest button {
+    width: 100%;
+    border: 0;
+    border-radius: 14px;
+    background: #fff;
+    padding: 10px;
+    text-align: left;
+  }
+
+  .suggest button:active {
+    background: #eef6ff;
+  }
+
+  .suggest strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .suggest span {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 750;
+  }
+
+  .allocation-list {
+    display: none;
+  }
+
+  .person-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 82px 30px;
+    gap: 8px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e0e8f2;
+    border-radius: 16px;
+    background: #fbfdff;
+  }
+
+  .person-main strong {
+    display: block;
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 950;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .person-main span {
+    display: block;
+    margin-top: 3px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .person-main {
+    min-width: 0;
+    padding-left: 1em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .person-fields {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 68px minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .transport-fields {
+    display: grid;
+    gap: 8px;
+  }
+
+  .transport-row {
+    display: grid;
+    gap: 7px;
+  }
+
+  .transport-row.route-row {
+    grid-template-columns: 78px minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .transport-row.meta-row {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, .9fr) minmax(0, .9fr);
+  }
+
+  .vehicle-select {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #dce5f1;
+    border-radius: 13px;
+    outline: 0;
+    color: #17305f;
+    background: #f8fbff;
+    padding: 8px 3px;
+    text-align: center;
+    text-align-last: center;
+    font-size: 11px;
+    font-weight: 850;
+  }
+
+  .vehicle-select option {
+    text-align: center;
+  }
+
+  .route-input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #dce5f1;
+    border-radius: 13px;
+    outline: 0;
+    color: #17305f;
+    background: #f8fbff;
+    padding: 8px 8px;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .trip-no-input,
+  .clock-input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #dce5f1;
+    border-radius: 13px;
+    outline: 0;
+    color: #17305f;
+    background: #f8fbff;
+    padding: 10px 10px;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .clock-input {
+    text-align: center;
+  }
+
+  .alloc-input {
+    width: 100%;
+    border: 1px solid #dce5f1;
+    border-radius: 13px;
+    outline: 0;
+    padding: 8px 5px;
+    color: var(--ink);
+    background: #fff;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .money-input {
+    position: relative;
+    display: block;
+  }
+
+  .money-input::before {
+    content: "¥";
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    z-index: 1;
+    color: #58708c;
+    font-size: 12px;
+    font-weight: 950;
+    line-height: 1;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .money-input input {
+    padding-left: 26px;
+  }
+
+  .money-input .alloc-input {
+    padding-left: 20px;
+  }
+
+  .remove-person {
+    width: 30px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    color: var(--danger);
+    background: #fff1f0;
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  .expense-subtotal {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .mini-total {
+    padding: 10px;
+    border: 1px solid rgba(8, 127, 120, .12);
+    border-radius: 15px;
+    background: rgba(8, 127, 120, .05);
+  }
+
+  .mini-total span {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .mini-total strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .add-expense {
+    width: 100%;
+    height: 46px;
+    margin-top: 14px;
+  }
+
+  .add-expense:disabled {
+    border-color: #d9e2ee;
+    color: #96a3b5;
+    background: #eef3f8;
+    opacity: 1;
+  }
+
+  .summary-card {
+    position: relative;
+    z-index: 2;
+    margin-bottom: 16px;
+    background: rgba(255, 253, 250, .96);
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .summary-item {
+    padding: 10px 8px;
+    border-radius: 16px;
+    background: #f5f8fc;
+    text-align: center;
+  }
+
+  .summary-item span {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .summary-item strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 16px;
+    font-weight: 950;
+  }
+
+  .summary-item.total {
+    color: #fff;
+    background: linear-gradient(135deg, #0a8d83, #087f78);
+  }
+
+  .summary-item.total span {
+    color: rgba(255,255,255,.8);
+  }
+
+  .footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    width: min(100%, 430px);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 112px 1fr;
+    gap: 10px;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(238,244,251,0), rgba(238,244,251,.96) 28%);
+    backdrop-filter: blur(12px);
+  }
+
+  .footer button {
+    height: 48px;
+    border: 0;
+    border-radius: 17px;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .ghost {
+    color: #5f6c82;
+    background: #eef3f9;
+  }
+
+  .draft-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(8, 127, 120, .18);
+    color: #087f78;
+    background: linear-gradient(180deg, rgba(245, 255, 253, .96), rgba(231, 247, 244, .96));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 10px 22px rgba(8, 127, 120, .08);
+  }
+
+  .ghost:disabled {
+    color: #9aa6b7;
+    background: #e8eef5;
+    border-color: transparent;
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  .primary {
+    color: #fff;
+    background: linear-gradient(135deg, #0c8d84, #087f78);
+    box-shadow: 0 16px 30px rgba(8, 127, 120, .25);
+  }
+
+  .primary:disabled {
+    color: #8f9bad;
+    background: #e8eef5;
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  .time-picker-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(18, 31, 48, .28);
+    backdrop-filter: blur(10px);
+  }
+
+  .time-picker-mask.show {
+    display: flex;
+  }
+
+  .time-picker {
+    width: min(calc(100% - 28px), 402px);
+    margin: 0 auto;
+    border-radius: 26px;
+    background: rgba(255, 253, 250, .98);
+    box-shadow: 0 -18px 44px rgba(29, 43, 68, .18);
+    padding: 16px 14px calc(16px + env(safe-area-inset-bottom));
+    margin-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .time-picker-head {
+    display: grid;
+    grid-template-columns: 72px 1fr 72px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .time-picker-head strong {
+    grid-column: 2;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .time-picker-close {
+    grid-column: 3;
+    border: 0;
+    border-radius: 999px;
+    color: #66758c;
+    background: #eef3f9;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .time-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr .8fr .8fr;
+    gap: 9px;
+  }
+
+  .time-picker-grid > div {
+    min-width: 0;
+  }
+
+  .time-picker-grid label {
+    display: block;
+    margin-bottom: 6px;
+    color: #728096;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .time-picker-grid select {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 46px;
+    border: 1px solid #dce5f1;
+    border-radius: 15px;
+    color: var(--ink);
+    background: #f8fbff;
+    padding: 0 10px;
+    text-align: center;
+    text-align-last: center;
+    font-size: 13px;
+    font-weight: 850;
+    line-height: 46px;
+  }
+
+  .time-picker-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .time-picker-actions button {
+    height: 44px;
+    border: 0;
+    border-radius: 16px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .empty-note {
+    padding: 16px;
+    color: var(--muted);
+    background: #f8fbff;
+    border: 1px dashed #dce5f1;
+    border-radius: 18px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 750;
+  }
+</style>
+</head>
+<body>
+  <main class="shell" id="app" style="display:none">
+    <section class="trip-card" aria-label="行程主信息">
+      <p class="eyebrow">TRAVEL EXPENSE</p>
+      <div class="trip-grid">
+        <input class="destination-input" id="destinationInput" placeholder="请输入出差地" autocomplete="off">
+        <div class="trip-selected" id="tripSelectedText"></div>
+        <div class="trip-suggest" id="tripSuggest"></div>
+      </div>
+    </section>
+
+    <section class="panel traveler-pool-panel" aria-label="出差人员">
+      <div class="traveler-pool-title">
+        <strong>出差人员</strong>
+        <span>先检索添加，费用里再点选</span>
+      </div>
+      <div class="traveler-tools">
+        <input class="traveler-search" id="globalTravelerSearch" placeholder="输入姓名 / 拼音 / 工号检索">
+        <div class="suggest" id="globalTravelerSuggest"></div>
+      </div>
+      <div class="traveler-pool-list" id="travelerPoolList">
+        <div class="traveler-pick-empty">请先添加出差人员</div>
+      </div>
+    </section>
+
+    <section class="summary-card" aria-label="费用汇总">
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span>兴利模具</span>
+          <strong id="mouldTotal">¥0</strong>
+        </div>
+        <div class="summary-item">
+          <span>兴利汽车模具</span>
+          <strong id="autoTotal">¥0</strong>
+        </div>
+        <div class="summary-item total">
+          <span>总计</span>
+          <strong id="grandTotal">¥0</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div id="expenseList" class="expense-list"></div>
+      <button class="add-expense" type="button" id="addExpenseBtn">+ 添加费用明细</button>
+    </section>
+
+    <section class="panel">
+      <div class="section-head">
+        <h2>备注</h2>
+        <span>非必填</span>
+      </div>
+      <div class="field">
+        <textarea id="remarkInput" placeholder="例如：酒店后续补票、返程时间待确认、费用说明等"></textarea>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="footer" id="footer" style="display:none">
+    <button class="ghost draft-action" type="button" id="draftBtn" onclick="saveDraftAndBack()">暂存</button>
+    <button class="primary" type="button" id="submitBtn">保存入账</button>
+  </div>
+
+  <div class="time-picker-mask" id="timePickerMask" aria-hidden="true">
+    <div class="time-picker" role="dialog" aria-modal="true" aria-label="选择费用时间">
+      <div class="time-picker-head">
+        <strong id="timePickerTitle">选择时间</strong>
+        <button class="time-picker-close" type="button" id="timePickerClose">取消</button>
+      </div>
+      <div class="time-picker-grid">
+        <div>
+          <label>年</label>
+          <select id="timePickerYear"></select>
+        </div>
+        <div>
+          <label>月</label>
+          <select id="timePickerMonth"></select>
+        </div>
+        <div>
+          <label>日</label>
+          <select id="timePickerDay"></select>
+        </div>
+      </div>
+      <div class="time-picker-actions">
+        <button class="ghost" type="button" id="timePickerClear">清空</button>
+        <button class="primary" type="button" id="timePickerConfirm">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin + '/api';
+    const token = localStorage.getItem('employee_token') || '';
+    const DRAFT_KEY = 'travel_entry_draft';
+    let expenseSeq = 0;
+    let activeSearchTimer = null;
+    let activeSuggestions = [];
+    let activeTimeCard = null;
+    let selectedTrip = null;
+    let tripSearchTimer = 0;
+    let travelerPool = [];
+
+    function authHeaders(extra = {}) {
+      return { Authorization: 'Bearer ' + token, ...extra };
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+
+    function fmtMoney(value) {
+      return '¥' + (Number(value || 0) || 0).toLocaleString('zh-CN', {
+        maximumFractionDigits: 2,
+        minimumFractionDigits: Number(value || 0) % 1 ? 2 : 0
+      });
+    }
+
+    function money(value) {
+      const num = Number(value || 0);
+      return Number.isFinite(num) ? Math.round(num * 100) / 100 : 0;
+    }
+
+    function nowLocalValue() {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    }
+
+    function dateToLocalValue(d) {
+      const copy = new Date(d);
+      copy.setMinutes(copy.getMinutes() - copy.getTimezoneOffset());
+      return copy.toISOString().slice(0, 16);
+    }
+
+    function formatTimeText(value) {
+      if (!value) return '选择日期';
+      const [date = ''] = String(value).split('T');
+      const [year, month, day] = date.split('-');
+      if (!year || !month || !day) return value;
+      return `${year}年${Number(month)}月${Number(day)}日`;
+    }
+
+    function normalizeCompany(value) {
+      const text = String(value || '').trim();
+      if (text.includes('兴利汽车模具')) return '兴利汽车模具';
+      if (text.includes('兴利模具')) return '兴利模具';
+      return text || '兴利汽车模具';
+    }
+
+    async function fetchJson(url, options = {}) {
+      const res = await fetch(url, {
+        ...options,
+        headers: authHeaders(options.headers || {})
+      });
+      let data = {};
+      try { data = await res.json(); } catch (err) {}
+      if (!res.ok || data.code !== 0) throw new Error(data.msg || `请求失败 (${res.status})`);
+      return data.data;
+    }
+
+    function goBack() {
+      window.location.href = 'mobile-travel.html';
+    }
+
+    function hasDraftContent(draft) {
+      if (!draft) return false;
+      if (String(draft.destination || '').trim()) return true;
+      if (String(draft.remark || '').trim()) return true;
+      return Array.isArray(draft.expenses) && draft.expenses.some(item => {
+        return item.item_type || item.amount || item.title || item.expense_time || (item.allocations || []).length;
+      });
+    }
+
+    function buildDraft() {
+      return {
+        destination: document.getElementById('destinationInput')?.value.trim() || '',
+        selectedTrip,
+        traveler_pool: travelerPool,
+        remark: document.getElementById('remarkInput')?.value || '',
+        expenses: Array.from(document.querySelectorAll('.expense-card')).map(card => ({
+          item_type: card.querySelector('.js-type')?.value || '',
+          amount: card.querySelector('.js-amount')?.value || '',
+          title: card.querySelector('.js-title')?.value || '',
+          expense_time: card.querySelector('.js-expense-time')?.value || '',
+          vehicle_type: card.querySelector('.js-vehicle')?.value || '',
+          from_location: card.querySelector('.js-route-from')?.value.trim() || '',
+          to_location: card.querySelector('.js-route-to')?.value.trim() || '',
+          trip_no: card.querySelector('.js-trip-no')?.value.trim() || '',
+          depart_clock: card.querySelector('.js-depart-clock')?.value || '',
+          arrive_clock: card.querySelector('.js-arrive-clock')?.value || '',
+          allocations: allocations(card)
+        })),
+        savedAt: Date.now()
+      };
+    }
+
+    function saveDraftAndBack() {
+      const draft = buildDraft();
+      if (hasDraftContent(draft)) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        alert('已暂存，稍后可从左下角 + 里返回暂存继续录入');
+      }
+      window.location.href = 'mobile-travel.html';
+    }
+
+    async function searchStaff(keyword) {
+      const value = String(keyword || '').trim();
+      if (!value) return [];
+      const data = await fetchJson(`${API}/staff?status=active&search=${encodeURIComponent(value)}`);
+      return Array.isArray(data) ? data.slice(0, 8) : [];
+    }
+
+    function compactDate(value) {
+      const [date = ''] = String(value || '').split('T');
+      const [year, month, day] = date.split('-');
+      if (!year || !month || !day) return '';
+      return `${Number(month)}月${Number(day)}日`;
+    }
+
+    function clearSelectedTrip() {
+      selectedTrip = null;
+      const selected = document.getElementById('tripSelectedText');
+      if (selected) {
+        selected.textContent = '';
+        selected.classList.remove('show');
+      }
+    }
+
+    function hideTripSuggest() {
+      const box = document.getElementById('tripSuggest');
+      if (!box) return;
+      box.classList.remove('show');
+      box.innerHTML = '';
+    }
+
+    function parseJsonArray(value) {
+      if (Array.isArray(value)) return value;
+      if (typeof value !== 'string' || !value.trim()) return [];
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function tripTravelerCandidates(trip) {
+      if (!trip) return [];
+      const rows = [
+        ...parseJsonArray(trip.traveler_members),
+        ...parseJsonArray(trip.traveler_members_json)
+      ];
+      parseJsonArray(trip.items).forEach(item => {
+        rows.push(
+          ...parseJsonArray(item.traveler_allocations),
+          ...parseJsonArray(item.traveler_allocations_json),
+          ...parseJsonArray(item.allocations)
+        );
+      });
+      if (!rows.length && (trip.staff_name_snapshot || trip.employee_id_snapshot || trip.staff_id)) {
+        rows.push({
+          staff_id: trip.staff_id,
+          name: trip.staff_name_snapshot,
+          employee_id: trip.employee_id_snapshot,
+          company: trip.company_snapshot,
+          department: trip.department_snapshot,
+          position: trip.position_snapshot
+        });
+      }
+      const seen = new Set();
+      return rows.filter(person => {
+        const key = travelerKey(person);
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    async function importTripTravelers(trip) {
+      let source = trip;
+      let rows = tripTravelerCandidates(source);
+      if (!rows.length && trip?.id) {
+        try {
+          source = await fetchJson(`${API}/travel/orders/${Number(trip.id)}`);
+          selectedTrip = { ...trip, ...source };
+          rows = tripTravelerCandidates(source);
+        } catch (err) {
+          rows = [];
+        }
+      }
+      ensureTravelersInPool(rows, { lockedByHistory: true, sourceTripId: source?.id || trip?.id || null });
+    }
+
+    function renderTripSuggest(rows) {
+      const box = document.getElementById('tripSuggest');
+      if (!box) return;
+      if (!rows.length) return hideTripSuggest();
+      box.innerHTML = rows.map(row => `
+        <button class="trip-option" type="button" data-id="${Number(row.id || 0)}">
+          <strong>${escapeHtml(row.destination || '未填写出差地')}</strong>
+          <span>进行中 · ${escapeHtml(compactDate(row.start_time) || '未记录时间')} · ${escapeHtml(row.order_no || '')} · ${fmtMoney(row.total_amount)}</span>
+        </button>
+      `).join('');
+      box.classList.add('show');
+      box.querySelectorAll('.trip-option').forEach(button => {
+        button.addEventListener('pointerdown', event => event.preventDefault());
+      button.addEventListener('click', async () => {
+          const trip = rows.find(row => Number(row.id) === Number(button.dataset.id));
+          if (!trip) return;
+          selectedTrip = trip;
+          document.getElementById('destinationInput').value = trip.destination || '';
+          const selected = document.getElementById('tripSelectedText');
+          selected.textContent = `已选择历史行程：${trip.destination || ''} · ${compactDate(trip.start_time) || '未记录时间'}`;
+          selected.classList.add('show');
+          hideTripSuggest();
+          await importTripTravelers(trip);
+          refreshEntryLockState();
+        });
+      });
+    }
+
+    async function applyTripContextDraft() {
+      let draft = null;
+      try {
+        draft = JSON.parse(sessionStorage.getItem('travel_entry_trip_context') || 'null');
+      } catch (err) {
+        draft = null;
+      }
+      if (!draft || !draft.id || Date.now() - Number(draft.createdAt || 0) > 30 * 60 * 1000) return;
+      sessionStorage.removeItem('travel_entry_trip_context');
+      selectedTrip = draft;
+      document.getElementById('destinationInput').value = draft.destination || '';
+      const selected = document.getElementById('tripSelectedText');
+      selected.textContent = `已选择历史行程：${draft.destination || ''} · ${compactDate(draft.start_time) || '未记录时间'}`;
+      selected.classList.add('show');
+      await importTripTravelers(draft);
+      refreshEntryLockState();
+    }
+
+    async function searchTrips(keyword) {
+      const value = String(keyword || '').trim();
+      const params = new URLSearchParams({ status: 'upcoming', limit: '8' });
+      if (value) params.set('destination', value);
+      const data = await fetchJson(`${API}/travel/orders?${params.toString()}`);
+      return Array.isArray(data) ? data : [];
+    }
+
+    function bindDestinationSearch() {
+      const input = document.getElementById('destinationInput');
+      const grid = input.closest('.trip-grid');
+      input.addEventListener('input', () => {
+        if (selectedTrip?.id) {
+          selectedTrip.destination = input.value.trim();
+          const selected = document.getElementById('tripSelectedText');
+          if (selected?.classList.contains('show')) {
+            selected.textContent = `已选择历史行程：${selectedTrip.destination || ''} · ${compactDate(selectedTrip.start_time) || '未记录时间'}`;
+          }
+        } else {
+          clearSelectedTrip();
+        }
+        refreshEntryLockState();
+        window.clearTimeout(tripSearchTimer);
+        const keyword = input.value.trim();
+        tripSearchTimer = window.setTimeout(async () => {
+          try {
+            renderTripSuggest(await searchTrips(keyword));
+          } catch (err) {
+            hideTripSuggest();
+          }
+        }, 220);
+      });
+      input.addEventListener('focus', () => {
+        const keyword = input.value.trim();
+        searchTrips(keyword).then(renderTripSuggest).catch(hideTripSuggest);
+      });
+      input.addEventListener('blur', () => {
+        window.setTimeout(() => {
+          if (!grid?.contains(document.activeElement)) hideTripSuggest();
+        }, 140);
+      });
+      document.addEventListener('click', event => {
+        if (!event.target.closest('.trip-grid')) hideTripSuggest();
+      });
+    }
+
+    function staffSnapshot(staff) {
+      return {
+        staff_id: Number(staff?.id || 0) || null,
+        name: String(staff?.name || '').trim(),
+        employee_id: String(staff?.employee_id || '').trim(),
+        company: normalizeCompany(staff?.company || staff?.company_name || staff?.company_snapshot),
+        department: String(staff?.department || '').trim(),
+        position: String(staff?.position || '').trim(),
+        locked_by_history: Number(staff?.locked_by_history || 0) === 1 ? 1 : 0,
+        source_trip_id: Number(staff?.source_trip_id || 0) || null
+      };
+    }
+
+    function travelerKey(person) {
+      const employeeId = String(person?.employee_id || '').trim();
+      if (employeeId) return `employee:${employeeId}`;
+      const staffId = Number(person?.staff_id || 0) || 0;
+      if (staffId) return `staff:${staffId}`;
+      const name = String(person?.name || '').trim();
+      return name ? `name:${name}` : '';
+    }
+
+    function addTravelerToPool(person, options = {}) {
+      const snapshot = staffSnapshot(person);
+      if (options.lockedByHistory) snapshot.locked_by_history = 1;
+      if (options.sourceTripId) snapshot.source_trip_id = Number(options.sourceTripId || 0) || null;
+      const key = travelerKey(snapshot);
+      if (!key) return;
+      const existing = travelerPool.find(item => travelerKey(item) === key);
+      if (existing) {
+        existing.staff_id = existing.staff_id || snapshot.staff_id;
+        existing.employee_id = existing.employee_id || snapshot.employee_id;
+        existing.name = existing.name || snapshot.name;
+        existing.company = existing.company || snapshot.company;
+        existing.department = existing.department || snapshot.department;
+        existing.position = existing.position || snapshot.position;
+        existing.locked_by_history = existing.locked_by_history || snapshot.locked_by_history || 0;
+        existing.source_trip_id = existing.source_trip_id || snapshot.source_trip_id || null;
+      } else {
+        travelerPool.push(snapshot);
+      }
+      renderTravelerPool();
+      renderAllExpenseTravelerPickers();
+    }
+
+    function ensureTravelersInPool(list, options = {}) {
+      (list || []).forEach(person => addTravelerToPool(person, options));
+    }
+
+    function renderTravelerPool() {
+      const box = document.getElementById('travelerPoolList');
+      if (!box) return;
+      if (!travelerPool.length) {
+        box.innerHTML = '<div class="traveler-pick-empty">请先添加出差人员</div>';
+        return;
+      }
+      box.innerHTML = travelerPool.map(person => `
+        <button class="traveler-chip" type="button" data-key="${escapeHtml(travelerKey(person))}">
+          ${escapeHtml(person.name || '-')}
+          ${Number(person.locked_by_history || 0) === 1
+            ? ''
+            : `<span class="traveler-chip-remove" data-key="${escapeHtml(travelerKey(person))}" aria-label="删除出差人员">×</span>`}
+        </button>
+      `).join('');
+      box.querySelectorAll('.traveler-chip-remove').forEach(btn => {
+        btn.addEventListener('pointerdown', event => {
+          event.preventDefault();
+          event.stopPropagation();
+          removeTravelerFromPool(btn.dataset.key);
+        });
+      });
+    }
+
+    function removeTravelerFromPool(key) {
+      const target = travelerPool.find(person => travelerKey(person) === key);
+      if (Number(target?.locked_by_history || 0) === 1) {
+        alert('该人员来自已选历史行程原始出差人，不能删除。');
+        return;
+      }
+      const used = Array.from(document.querySelectorAll('.person-row')).some(row => {
+        const rowKey = travelerKey({
+          staff_id: row.dataset.staffId,
+          employee_id: row.dataset.employeeId,
+          name: row.dataset.name
+        });
+        return rowKey === key;
+      });
+      if (used) {
+        alert('该人员已在费用明细中使用，不能从待用人员里删除。请先在对应费用明细中取消该人员。');
+        return;
+      }
+      travelerPool = travelerPool.filter(person => travelerKey(person) !== key);
+      renderAllExpenseTravelerPickers();
+      renderTravelerPool();
+      updateTotals();
+    }
+
+    function selectedTravelerKeys(card) {
+      return new Set(Array.from(card.querySelectorAll('.person-row')).map(row => travelerKey({
+        staff_id: row.dataset.staffId,
+        employee_id: row.dataset.employeeId,
+        name: row.dataset.name
+      })));
+    }
+
+    function renderExpenseTravelerPicker(card) {
+      const box = card.querySelector('.js-traveler-buttons');
+      if (!box) return;
+      const selected = selectedTravelerKeys(card);
+      if (!travelerPool.length) {
+        box.innerHTML = '';
+        return;
+      }
+      box.innerHTML = travelerPool.map(person => {
+        const key = travelerKey(person);
+        const isSelected = selected.has(key);
+        return `
+          <button class="traveler-pick${isSelected ? ' selected' : ''}" type="button" data-key="${escapeHtml(key)}">
+            ${escapeHtml(person.name || '-')}
+          </button>
+        `;
+      }).join('');
+      box.querySelectorAll('.traveler-pick').forEach(button => {
+        button.addEventListener('pointerdown', event => {
+          event.preventDefault();
+          const person = travelerPool.find(item => travelerKey(item) === button.dataset.key);
+          if (!person) return;
+          toggleAllocation(card, person);
+          renderExpenseTravelerPicker(card);
+        });
+      });
+    }
+
+    function renderAllExpenseTravelerPickers() {
+      document.querySelectorAll('.expense-card').forEach(renderExpenseTravelerPicker);
+    }
+
+    function refreshEntryLockState() {
+      const hasDestination = !!document.getElementById('destinationInput')?.value.trim();
+      document.body.classList.toggle('entry-no-destination', !hasDestination);
+
+      document.querySelectorAll('.expense-card').forEach(card => {
+        const typeSelect = card.querySelector('.js-type');
+        const hasType = !!typeSelect?.value;
+        const bodyLocked = !hasDestination || !hasType;
+        const hasTraveler = selectedTravelerKeys(card).size > 0;
+        const detailLocked = bodyLocked || !hasTraveler;
+        card.classList.toggle('type-locked', !hasDestination);
+        card.classList.toggle('body-locked', bodyLocked);
+        card.classList.toggle('detail-locked', detailLocked);
+
+        if (typeSelect) typeSelect.disabled = !hasDestination;
+        card.querySelectorAll('.expense-body input, .expense-body select, .expense-body button').forEach(control => {
+          control.disabled = bodyLocked;
+        });
+        card.querySelectorAll('.expense-detail-fields input, .expense-detail-fields select, .expense-detail-fields button').forEach(control => {
+          control.disabled = detailLocked;
+        });
+        card.querySelector('.remove-expense').disabled = !hasDestination;
+      });
+
+      const addBtn = document.getElementById('addExpenseBtn');
+      if (addBtn) addBtn.disabled = !hasDestination;
+      const travelerSearch = document.getElementById('globalTravelerSearch');
+      if (travelerSearch) travelerSearch.disabled = !hasDestination;
+      const remark = document.getElementById('remarkInput');
+      if (remark) remark.disabled = !hasDestination;
+      const draftBtn = document.getElementById('draftBtn');
+      if (draftBtn) draftBtn.disabled = !hasDestination;
+      const submit = document.getElementById('submitBtn');
+      if (submit) submit.disabled = !hasDestination;
+    }
+
+    function createExpenseCard(initial = {}) {
+      expenseSeq += 1;
+      const card = document.createElement('article');
+      card.className = 'expense-card';
+      card.dataset.seq = String(expenseSeq);
+      card.innerHTML = `
+        <div class="expense-head">
+          <div>
+            <select class="head-type-select js-type" aria-label="费用类型">
+              <option value="">请选择费用类型</option>
+              <option value="ticket">交通费用</option>
+              <option value="hotel">住宿费用</option>
+              <option value="other">其他费用</option>
+            </select>
+          </div>
+          <button class="remove-expense" type="button">删除</button>
+        </div>
+        <div class="expense-body">
+          <div class="field">
+            <label>出差人员</label>
+            <div class="expense-traveler-picker js-traveler-picker" tabindex="0">
+              <div class="traveler-pick-buttons js-traveler-buttons"></div>
+              <div class="allocation-list js-allocations"></div>
+            </div>
+          </div>
+          <div class="expense-detail-fields">
+          <div class="form-grid expense-main-row">
+            <div class="field">
+              <label class="js-time-label">出行时间</label>
+              <input class="js-expense-time" type="hidden">
+              <button class="time-trigger empty js-time-trigger" type="button">选择日期</button>
+            </div>
+            <div class="field">
+              <label>费用合计</label>
+              <div class="money-input">
+                <input class="js-amount" inputmode="decimal" placeholder="0.00" value="${escapeHtml(initial.amount || '')}">
+              </div>
+            </div>
+          </div>
+          <div class="field full">
+            <label>交通信息</label>
+            <div class="transport-fields">
+              <div class="transport-row route-row">
+                <select class="vehicle-select js-vehicle" aria-label="交通工具">
+                  <option value="火车">火车</option>
+                  <option value="飞机">飞机</option>
+                  <option value="汽车">汽车</option>
+                  <option value="其他">其他</option>
+                </select>
+                <input class="route-input route-from js-route-from" placeholder="出发地">
+                <input class="route-input route-to js-route-to" placeholder="目的地">
+              </div>
+              <div class="transport-row meta-row">
+                <input class="trip-no-input js-trip-no" placeholder="车次 / 航班">
+                <input class="clock-input js-depart-clock" type="time" aria-label="出发时刻">
+                <input class="clock-input js-arrive-clock" type="time" aria-label="到达时刻">
+              </div>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field full">
+              <label>费用说明</label>
+              <input class="js-title" placeholder="例如：高铁票 / 酒店 / 打车费" value="${escapeHtml(initial.title || '')}">
+            </div>
+          </div>
+          <div class="expense-subtotal">
+            <div class="mini-total"><span>兴利模具</span><strong class="js-mould">¥0</strong></div>
+            <div class="mini-total"><span>兴利汽车模具</span><strong class="js-auto-total">¥0</strong></div>
+          </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('expenseList').appendChild(card);
+      if (initial.item_type) card.querySelector('.js-type').value = initial.item_type;
+      const firstAllocation = Array.isArray(initial.allocations) ? initial.allocations.find(Boolean) : null;
+      card.querySelector('.js-vehicle').value = initial.vehicle_type || firstAllocation?.vehicle_type || '火车';
+      card.querySelector('.js-route-from').value = initial.from_location || firstAllocation?.from_location || '';
+      card.querySelector('.js-route-to').value = initial.to_location || firstAllocation?.to_location || '';
+      card.querySelector('.js-trip-no').value = initial.trip_no || initial.order_ref_no || firstAllocation?.trip_no || '';
+      card.querySelector('.js-depart-clock').value = initial.depart_clock || firstAllocation?.depart_clock || '';
+      card.querySelector('.js-arrive-clock').value = initial.arrive_clock || firstAllocation?.arrive_clock || '';
+      bindExpenseCard(card);
+      setExpenseTimeValue(card, initial.expense_time || nowLocalValue().slice(0, 10));
+      updateExpenseTimeLabel(card);
+      if (Array.isArray(initial.allocations)) applyAllocations(card, initial.allocations);
+      updateTotals();
+      refreshEntryLockState();
+      return card;
+    }
+
+    function applyReceiptOcrDraft(card) {
+      let draft = null;
+      try {
+        draft = JSON.parse(sessionStorage.getItem('travel_receipt_ocr_draft') || 'null');
+      } catch (err) {
+        draft = null;
+      }
+      if (!draft || Date.now() - Number(draft.createdAt || 0) > 30 * 60 * 1000) return;
+      sessionStorage.removeItem('travel_receipt_ocr_draft');
+
+      const amount = money(draft.amount);
+      if (amount > 0) card.querySelector('.js-amount').value = String(amount);
+      if (draft.item_type && card.querySelector(`.js-type option[value="${draft.item_type}"]`)) {
+        card.querySelector('.js-type').value = draft.item_type;
+      }
+      refreshEntryLockState();
+      updateExpenseTimeLabel(card);
+      if (draft.date) setExpenseTimeValue(card, draft.date);
+      const parts = [
+        draft.description,
+        Array.isArray(draft.order_items) && draft.order_items.length > 1 ? `${draft.order_items.length} 条订单` : '',
+        draft.route && draft.route.from && draft.route.to ? `${draft.route.from}-${draft.route.to}` : '',
+        draft.traffic_no,
+        draft.vendor_name,
+        draft.receipt_no ? `票据号 ${draft.receipt_no}` : '',
+        draft.date ? `日期 ${draft.date}` : ''
+      ].filter(Boolean);
+      card.querySelector('.js-title').value = parts.length ? parts.join(' / ') : '交通费用 / OCR待核对';
+      if (draft.raw_text || draft.image_url) {
+        const remark = document.getElementById('remarkInput');
+        const lines = [];
+        if (draft.image_url) lines.push(`票据图片：${draft.image_url}`);
+        if (draft.raw_text) lines.push(`OCR原文：${draft.raw_text.slice(0, 500)}`);
+        remark.value = [remark.value.trim(), lines.join('\n')].filter(Boolean).join('\n\n');
+      }
+      updateTotals();
+    }
+
+    function bindExpenseCard(card) {
+      card.querySelector('.remove-expense').addEventListener('click', () => {
+        if (document.querySelectorAll('.expense-card').length <= 1) {
+          alert('至少保留一条费用明细');
+          return;
+        }
+        card.remove();
+        updateTotals();
+      });
+
+      card.querySelector('.js-amount').addEventListener('input', () => {
+        updateTotals();
+      });
+      card.querySelector('.js-type').addEventListener('change', () => {
+        updateExpenseTimeLabel(card);
+        refreshEntryLockState();
+        updateTotals();
+      });
+      card.querySelector('.js-title').addEventListener('input', updateTotals);
+      card.querySelector('.js-vehicle').addEventListener('change', updateTotals);
+      card.querySelector('.js-route-from').addEventListener('input', updateTotals);
+      card.querySelector('.js-route-to').addEventListener('input', updateTotals);
+      card.querySelector('.js-trip-no').addEventListener('input', updateTotals);
+      card.querySelector('.js-depart-clock').addEventListener('input', updateTotals);
+      card.querySelector('.js-arrive-clock').addEventListener('input', updateTotals);
+      card.querySelector('.js-time-trigger').addEventListener('click', () => openTimePicker(card));
+      setExpenseTimeValue(card, card.querySelector('.js-expense-time').value);
+
+      renderExpenseTravelerPicker(card);
+    }
+
+    function renderGlobalTravelerSuggest(rows) {
+      activeSuggestions = Array.isArray(rows) ? rows : [];
+      const box = document.getElementById('globalTravelerSuggest');
+      if (!activeSuggestions.length) {
+        box.innerHTML = '<div class="empty-note">没有匹配到员工</div>';
+        box.classList.add('show');
+        return;
+      }
+      box.innerHTML = activeSuggestions.map((row, index) => `
+        <button type="button" data-index="${index}">
+          <strong>${escapeHtml(row.name || '-')} · ${escapeHtml(row.employee_id || '-')}</strong>
+          <span>${escapeHtml(row.department || '-')} · ${escapeHtml(row.position || '-')}</span>
+        </button>
+      `).join('');
+      box.classList.add('show');
+      box.querySelectorAll('button[data-index]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          addTravelerToPool(activeSuggestions[Number(btn.dataset.index)]);
+          document.getElementById('globalTravelerSearch').value = '';
+          hideGlobalTravelerSuggest();
+        });
+      });
+    }
+
+    function hideGlobalTravelerSuggest() {
+      document.getElementById('globalTravelerSuggest')?.classList.remove('show');
+    }
+
+    function bindGlobalTravelerSearch() {
+      const input = document.getElementById('globalTravelerSearch');
+      if (!input) return;
+      input.addEventListener('input', () => {
+        clearTimeout(activeSearchTimer);
+        const keyword = input.value.trim();
+        if (!keyword) {
+          hideGlobalTravelerSuggest();
+          return;
+        }
+        activeSearchTimer = setTimeout(() => {
+          searchStaff(keyword).then(renderGlobalTravelerSuggest).catch(() => renderGlobalTravelerSuggest([]));
+        }, 180);
+      });
+      input.addEventListener('focus', () => {
+        if (input.value.trim()) {
+          searchStaff(input.value.trim()).then(renderGlobalTravelerSuggest).catch(() => {});
+        }
+      });
+      input.addEventListener('blur', () => setTimeout(hideGlobalTravelerSuggest, 180));
+    }
+
+    function updateExpenseTimeLabel(card) {
+      const type = card.querySelector('.js-type')?.value;
+      const label = card.querySelector('.js-time-label');
+      if (!label) return;
+      label.textContent = type === 'hotel' ? '住宿时间' : (type === 'ticket' ? '出行时间' : '发生时间');
+    }
+
+    function setExpenseTimeValue(card, value) {
+      const input = card.querySelector('.js-expense-time');
+      const trigger = card.querySelector('.js-time-trigger');
+      input.value = value || '';
+      trigger.textContent = formatTimeText(input.value);
+      trigger.classList.toggle('empty', !input.value);
+    }
+
+    function daysInMonth(year, month) {
+      return new Date(Number(year), Number(month), 0).getDate();
+    }
+
+    function fillDatePickerParts(selectedValue) {
+      const currentYear = new Date().getFullYear();
+      const [year = currentYear, month = '01', day = '01'] = String(selectedValue || nowLocalValue().slice(0, 10)).split('-');
+      const yearSelect = document.getElementById('timePickerYear');
+      const monthSelect = document.getElementById('timePickerMonth');
+      const daySelect = document.getElementById('timePickerDay');
+      yearSelect.innerHTML = Array.from({ length: 5 }, (_, index) => {
+        const value = String(currentYear - 2 + index);
+        return `<option value="${value}">${value}年</option>`;
+      }).join('');
+      monthSelect.innerHTML = Array.from({ length: 12 }, (_, index) => {
+        const value = String(index + 1).padStart(2, '0');
+        return `<option value="${value}">${index + 1}月</option>`;
+      }).join('');
+      yearSelect.value = String(year);
+      monthSelect.value = String(month).padStart(2, '0');
+      fillDayOptions(String(day).padStart(2, '0'));
+    }
+
+    function fillDayOptions(selectedDay) {
+      const year = document.getElementById('timePickerYear').value;
+      const month = document.getElementById('timePickerMonth').value;
+      const totalDays = daysInMonth(year, month);
+      const safeDay = Math.min(Number(selectedDay || 1), totalDays);
+      const daySelect = document.getElementById('timePickerDay');
+      daySelect.innerHTML = Array.from({ length: totalDays }, (_, index) => {
+        const value = String(index + 1).padStart(2, '0');
+        return `<option value="${value}">${index + 1}日</option>`;
+      }).join('');
+      daySelect.value = String(safeDay).padStart(2, '0');
+    }
+
+    function openTimePicker(card) {
+      activeTimeCard = card;
+      const value = card.querySelector('.js-expense-time').value || nowLocalValue().slice(0, 10);
+      const mask = document.getElementById('timePickerMask');
+      const title = card.querySelector('.js-time-label')?.textContent || '选择时间';
+      document.getElementById('timePickerTitle').textContent = title;
+      fillDatePickerParts(value);
+      mask.classList.add('show');
+      mask.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeTimePicker() {
+      document.getElementById('timePickerMask').classList.remove('show');
+      document.getElementById('timePickerMask').setAttribute('aria-hidden', 'true');
+      activeTimeCard = null;
+    }
+
+    function sharedTransport(card) {
+      return {
+        vehicle_type: card.querySelector('.js-vehicle')?.value || '火车',
+        from_location: card.querySelector('.js-route-from')?.value.trim() || '',
+        to_location: card.querySelector('.js-route-to')?.value.trim() || '',
+        trip_no: card.querySelector('.js-trip-no')?.value.trim() || '',
+        depart_clock: card.querySelector('.js-depart-clock')?.value || '',
+        arrive_clock: card.querySelector('.js-arrive-clock')?.value || ''
+      };
+    }
+
+    function allocations(card) {
+      const transport = sharedTransport(card);
+      return Array.from(card.querySelectorAll('.person-row')).map(row => ({
+        staff_id: Number(row.dataset.staffId || 0) || null,
+        name: row.dataset.name || '',
+        employee_id: row.dataset.employeeId || '',
+        company: normalizeCompany(row.dataset.company),
+        department: row.dataset.department || '',
+        position: row.dataset.position || '',
+        vehicle_type: transport.vehicle_type,
+        from_location: transport.from_location,
+        to_location: transport.to_location,
+        trip_no: transport.trip_no,
+        depart_clock: transport.depart_clock,
+        arrive_clock: transport.arrive_clock,
+        amount: money(row.querySelector('.alloc-input')?.value)
+      }));
+    }
+
+    function toggleAllocation(card, person) {
+      const key = travelerKey(person);
+      const row = Array.from(card.querySelectorAll('.person-row')).find(node => travelerKey({
+        staff_id: node.dataset.staffId,
+        employee_id: node.dataset.employeeId,
+        name: node.dataset.name
+      }) === key);
+      if (row) {
+        const list = card.querySelector('.js-allocations');
+        row.remove();
+        if (!list.querySelector('.person-row')) list.innerHTML = '';
+        renderExpenseTravelerPicker(card);
+        refreshEntryLockState();
+        updateTotals();
+        return;
+      }
+      addAllocation(card, person);
+    }
+
+    function addAllocation(card, person) {
+      if (!person.name && !person.employee_id) return;
+      const exists = Array.from(card.querySelectorAll('.person-row')).some(row => {
+        return String(row.dataset.staffId || '') === String(person.staff_id || '') && row.dataset.employeeId === person.employee_id;
+      });
+      if (exists) return alert('该人员已在本条费用中');
+      const list = card.querySelector('.js-allocations');
+      const empty = list.querySelector('.empty-note');
+      if (empty) empty.remove();
+      if (list.querySelectorAll('.person-row').length >= 8) return alert('单条费用最多支持 8 人');
+
+      const row = document.createElement('div');
+      row.className = 'person-row';
+      row.dataset.staffId = person.staff_id || '';
+      row.dataset.name = person.name || '';
+      row.dataset.employeeId = person.employee_id || '';
+      row.dataset.company = person.company || '';
+      row.dataset.department = person.department || '';
+      row.dataset.position = person.position || '';
+      row.innerHTML = `
+        <div class="person-main">
+          <strong>${escapeHtml(person.name || '-')}</strong>
+          <span>${escapeHtml([person.company, person.department].filter(Boolean).join(' · '))}</span>
+        </div>
+        <div class="money-input">
+          <input class="alloc-input" inputmode="decimal" value="0">
+        </div>
+        <button class="remove-person" type="button">×</button>
+      `;
+      list.appendChild(row);
+      row.querySelector('.alloc-input').addEventListener('input', () => {
+        syncExpenseAmountFromManualRows(card);
+        updateTotals();
+      });
+      row.querySelector('.remove-person').addEventListener('click', () => {
+        row.remove();
+        if (!list.querySelector('.person-row')) list.innerHTML = '';
+        renderExpenseTravelerPicker(card);
+        refreshEntryLockState();
+        updateTotals();
+      });
+      renderExpenseTravelerPicker(card);
+      refreshEntryLockState();
+      updateTotals();
+    }
+
+    function applyAllocations(card, allocs) {
+      const rows = [];
+      (allocs || []).forEach(item => {
+        addAllocation(card, {
+          staff_id: item.staff_id,
+          name: item.name,
+          employee_id: item.employee_id,
+          company: item.company,
+          department: item.department,
+          position: item.position
+        });
+        const row = Array.from(card.querySelectorAll('.person-row')).find(node => {
+          return String(node.dataset.staffId || '') === String(item.staff_id || '') &&
+            String(node.dataset.employeeId || '') === String(item.employee_id || '');
+        });
+        if (row && !rows.includes(row)) rows.push(row);
+      });
+      rows.forEach((row, index) => {
+        const item = allocs[index] || {};
+        const amount = row.querySelector('.alloc-input');
+        if (amount) amount.value = item.amount ? String(item.amount) : '0';
+      });
+      const first = (allocs || []).find(Boolean);
+      if (first) {
+        if (first.vehicle_type) card.querySelector('.js-vehicle').value = first.vehicle_type;
+        card.querySelector('.js-route-from').value = first.from_location || '';
+        card.querySelector('.js-route-to').value = first.to_location || '';
+        card.querySelector('.js-trip-no').value = first.trip_no || '';
+        card.querySelector('.js-depart-clock').value = first.depart_clock || '';
+        card.querySelector('.js-arrive-clock').value = first.arrive_clock || '';
+      }
+      syncExpenseAmountFromManualRows(card);
+      updateTotals();
+    }
+
+    function syncExpenseAmountFromManualRows(card) {
+      const rows = Array.from(card.querySelectorAll('.person-row'));
+      if (!rows.length) return;
+      const total = rows.reduce((sum, row) => sum + money(row.querySelector('.alloc-input')?.value), 0);
+      if (total > 0) card.querySelector('.js-amount').value = String(money(total));
+    }
+
+    function composeDateTime(date, clock) {
+      if (!date) return '';
+      return clock ? `${date}T${clock}` : date;
+    }
+
+    function collectExpenses() {
+      return Array.from(document.querySelectorAll('.expense-card')).map((card, index) => {
+        const amount = money(card.querySelector('.js-amount').value);
+        const type = card.querySelector('.js-type').value;
+        const expenseTime = card.querySelector('.js-expense-time').value.trim();
+        const title = card.querySelector('.js-title').value.trim();
+        const transport = sharedTransport(card);
+        const allocs = allocations(card);
+        let mould = allocs.filter(a => a.company === '兴利模具').reduce((sum, a) => sum + money(a.amount), 0);
+        let auto = allocs.filter(a => a.company !== '兴利模具').reduce((sum, a) => sum + money(a.amount), 0);
+        const splitTotal = money(mould + auto);
+        if (amount > 0 && splitTotal === 0 && allocs.length) {
+          const share = Math.floor((amount / allocs.length) * 100) / 100;
+          let used = 0;
+          allocs.forEach((person, personIndex) => {
+            const value = personIndex === allocs.length - 1 ? money(amount - used) : share;
+            used += value;
+            if (person.company === '兴利模具') mould += value;
+            else auto += value;
+          });
+          mould = money(mould);
+          auto = money(auto);
+        }
+        return {
+          card,
+          index,
+          item_type: type,
+          item_subtype: type === 'ticket' ? '交通费用' : (type === 'hotel' ? '住宿费用' : '其他费用'),
+          title: title || (type === 'ticket' ? '交通费用' : (type === 'hotel' ? '住宿费用' : '其他费用')),
+          vehicle_type: transport.vehicle_type,
+          from_location: transport.from_location,
+          to_location: transport.to_location,
+          trip_no: transport.trip_no,
+          depart_clock: transport.depart_clock,
+          arrive_clock: transport.arrive_clock,
+          detail_start_time: composeDateTime(expenseTime, transport.depart_clock),
+          detail_end_time: composeDateTime(expenseTime, transport.arrive_clock),
+          expense_time: expenseTime,
+          amount,
+          allocations: allocs,
+          mould,
+          auto
+        };
+      });
+    }
+
+    function updateTotals() {
+      const expenses = collectExpenses();
+      let mould = 0;
+      let auto = 0;
+      let total = 0;
+      expenses.forEach(expense => {
+        total += expense.amount;
+        mould += expense.mould;
+        auto += expense.auto;
+        expense.card.querySelector('.js-mould').textContent = fmtMoney(expense.mould);
+        expense.card.querySelector('.js-auto-total').textContent = fmtMoney(expense.auto);
+      });
+      document.getElementById('mouldTotal').textContent = fmtMoney(mould);
+      document.getElementById('autoTotal').textContent = fmtMoney(auto);
+      document.getElementById('grandTotal').textContent = fmtMoney(total);
+    }
+
+    function uniqueTravelers(expenses) {
+      const map = new Map();
+      expenses.forEach(expense => {
+        expense.allocations.forEach(person => {
+          const key = person.staff_id || person.employee_id || person.name;
+          if (key && !map.has(key)) map.set(key, { ...person });
+        });
+      });
+      return Array.from(map.values());
+    }
+
+    function validateAndBuildPayload() {
+      const destination = document.getElementById('destinationInput').value.trim();
+      const endTime = document.getElementById('endTimeInput')?.value.trim() || '';
+      if (!destination) throw new Error('请填写出差地');
+
+      const expenses = collectExpenses().filter(item => item.amount > 0);
+      if (!expenses.length) throw new Error('至少录入一条费用');
+      const expenseDates = expenses.map(item => item.expense_time).filter(Boolean).sort();
+      const startTime = expenseDates[0] || nowLocalValue().slice(0, 10);
+
+      expenses.forEach((expense, index) => {
+        if (!expense.item_type) throw new Error(`费用 ${index + 1} 请选择费用类型`);
+        if (!expense.allocations.length) throw new Error(`费用 ${index + 1} 请选择出差人员`);
+        const splitTotal = money(expense.mould + expense.auto);
+        if (splitTotal > expense.amount + 0.01) {
+          throw new Error(`费用 ${index + 1} 的人员分摊合计不能大于费用合计`);
+        }
+      });
+
+      const travelers = uniqueTravelers(expenses);
+      if (!travelers.length || !travelers[0].staff_id) throw new Error('请选择有效的出差人员');
+      if (travelers.length > 8) throw new Error('一张差旅单最多支持 8 名出差人员');
+      const mouldTotal = expenses.reduce((sum, item) => sum + item.mould, 0);
+      const autoTotal = expenses.reduce((sum, item) => sum + item.auto, 0);
+      const primary = travelers[0];
+
+      return {
+        staff_id: primary.staff_id,
+        company_snapshot: primary.company,
+        department_snapshot: primary.department,
+        position_snapshot: primary.position,
+        traveler_members: travelers,
+        xingli_mould_amount: money(mouldTotal),
+        xingli_auto_amount: money(autoTotal),
+        trip_type: '出差',
+        start_time: startTime,
+        end_time: endTime,
+        destination,
+        trip_reason: '',
+        status: 'completed',
+        reimbursement_status: 'pending',
+        invoice_status: 'not_received',
+        remark: document.getElementById('remarkInput').value.trim(),
+        target_order_id: selectedTrip?.id || null,
+        items: expenses.map((expense, index) => ({
+          item_type: expense.item_type,
+          item_subtype: expense.item_subtype,
+          title: expense.title,
+          amount: expense.amount,
+          from_location: expense.from_location,
+          to_location: expense.to_location,
+          start_time: expense.detail_start_time || expense.expense_time,
+          end_time: expense.detail_end_time || null,
+          order_ref_no: expense.trip_no,
+          payment_method: 'company_paid',
+          item_status: '已记录',
+          invoice_status: 'not_received',
+          remark: expense.title,
+          traveler_allocations: expense.allocations,
+          sort_index: index + 1
+        }))
+      };
+    }
+
+    async function submitOrder() {
+      const payload = validateAndBuildPayload();
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '保存中...';
+      try {
+        const appendId = Number(payload.target_order_id || 0);
+        const data = await fetchJson(appendId ? `${API}/travel/orders/${appendId}/items` : `${API}/travel/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        alert(appendId ? `已汇总到：${data.order_no || '原差旅单'}` : `保存成功：${data.order_no || '已入账'}`);
+        localStorage.removeItem(DRAFT_KEY);
+        window.location.href = 'mobile-travel.html?v=' + Date.now();
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '保存入账';
+      }
+    }
+
+    function applySavedDraft() {
+      let draft = null;
+      try {
+        draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+      } catch (err) {
+        draft = null;
+      }
+      if (!hasDraftContent(draft)) return false;
+      selectedTrip = draft.selectedTrip || null;
+      document.getElementById('destinationInput').value = draft.destination || '';
+      document.getElementById('remarkInput').value = draft.remark || '';
+      if (selectedTrip?.destination) {
+        const selected = document.getElementById('tripSelectedText');
+        selected.textContent = `已选择历史行程：${selectedTrip.destination || ''} · ${compactDate(selectedTrip.start_time) || '未记录时间'}`;
+        selected.classList.add('show');
+      }
+      travelerPool = [];
+      ensureTravelersInPool(Array.isArray(draft.traveler_pool) ? draft.traveler_pool : []);
+      (Array.isArray(draft.expenses) ? draft.expenses : []).forEach(item => ensureTravelersInPool(item.allocations || []));
+      renderTravelerPool();
+      document.getElementById('expenseList').innerHTML = '';
+      (Array.isArray(draft.expenses) && draft.expenses.length ? draft.expenses : [{}]).forEach(item => createExpenseCard(item));
+      refreshEntryLockState();
+      updateTotals();
+      return true;
+    }
+
+    function initTimePicker() {
+      document.getElementById('timePickerClose').addEventListener('click', closeTimePicker);
+      document.getElementById('timePickerMask').addEventListener('click', event => {
+        if (event.target.id === 'timePickerMask') closeTimePicker();
+      });
+      document.getElementById('timePickerYear').addEventListener('change', () => fillDayOptions(document.getElementById('timePickerDay').value));
+      document.getElementById('timePickerMonth').addEventListener('change', () => fillDayOptions(document.getElementById('timePickerDay').value));
+      document.getElementById('timePickerClear').addEventListener('click', () => {
+        if (activeTimeCard) setExpenseTimeValue(activeTimeCard, '');
+        closeTimePicker();
+      });
+      document.getElementById('timePickerConfirm').addEventListener('click', () => {
+        if (!activeTimeCard) return closeTimePicker();
+        const date = [
+          document.getElementById('timePickerYear').value,
+          document.getElementById('timePickerMonth').value,
+          document.getElementById('timePickerDay').value
+        ].join('-');
+        setExpenseTimeValue(activeTimeCard, date);
+        closeTimePicker();
+      });
+    }
+
+    async function init() {
+      if (!token) return;
+      const access = await fetchJson(`${API}/travel/access`);
+      if (!access?.can_manage) throw new Error('当前账号没有差旅管理权限');
+      document.getElementById('app').style.display = '';
+      document.getElementById('footer').style.display = '';
+      bindDestinationSearch();
+      bindGlobalTravelerSearch();
+      renderTravelerPool();
+      const params = new URLSearchParams(window.location.search);
+      const restoredDraft = params.get('draft') === '1' && applySavedDraft();
+      if (!restoredDraft) await applyTripContextDraft();
+      initTimePicker();
+      const firstCard = restoredDraft ? document.querySelector('.expense-card') : createExpenseCard();
+      applyReceiptOcrDraft(firstCard);
+      document.getElementById('addExpenseBtn').addEventListener('click', () => createExpenseCard());
+      document.getElementById('submitBtn').addEventListener('click', () => submitOrder().catch(err => alert(err.message || '保存失败')));
+    }
+
+    init().catch(err => {
+      document.body.innerHTML = `<main class="shell"><section class="panel"><div class="section-head"><h2>无法进入费用录入</h2></div><div class="empty-note">${escapeHtml(err.message || '初始化失败')}</div></section></main>`;
+    });
+  </script>
+</body>
+</html>

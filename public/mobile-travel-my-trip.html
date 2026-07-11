@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>差旅管理</title>
+<style>
+  :root {
+    --bg: #eef4fb;
+    --ink: #111d35;
+    --muted: #6d7a90;
+    --line: #dbe2ec;
+    --paper: #fffdfa;
+    --blue: #0867c9;
+    --green: #087f78;
+    --indigo: #355fdd;
+    --orange: #e17b0e;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.98), transparent 30%),
+      radial-gradient(circle at 88% 3%, rgba(255, 255, 255, 0.96), transparent 20%),
+      radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.48), transparent 36%),
+      linear-gradient(180deg, #f8fbff 0%, #edf3fb 76%, #e7eef8 100%);
+    font-family:
+      Inter, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui,
+      sans-serif;
+    min-height: 100vh;
+  }
+
+  .phone-shell {
+    width: min(100%, 480px);
+    margin: 0 auto;
+    padding: 16px 16px 110px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .summary-block {
+    padding-top: 4px;
+  }
+
+  .month {
+    margin: 0 0 24px;
+    color: #14213b;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .04em;
+  }
+
+  .summary-label {
+    margin: 0 0 8px;
+    color: #707b8f;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  h1 {
+    margin: 0;
+    color: #16234d;
+    font-size: 46px;
+    line-height: 1;
+    letter-spacing: -.04em;
+  }
+
+  .topbar-side {
+    display: grid;
+    justify-items: end;
+    min-height: 126px;
+  }
+
+  .top-actions {
+    display: flex;
+    gap: 10px;
+    padding-top: 2px;
+  }
+
+  .icon-button {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    color: #17213b;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(201, 212, 228, 0.95);
+    border-radius: 50%;
+    box-shadow:
+      0 10px 26px rgba(31, 49, 82, 0.10),
+      0 1px 0 rgba(255, 255, 255, 0.85) inset;
+    cursor: pointer;
+  }
+
+  .icon-button svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .trip-count {
+    align-self: center;
+    margin-top: 18px;
+    color: #687589;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .filters {
+    display: flex;
+    gap: 10px;
+    padding: 4px 0 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chip {
+    flex: 0 0 auto;
+    height: 38px;
+    padding: 0 16px;
+    color: #172033;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(210, 218, 230, 0.95);
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(31, 49, 82, 0.04);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .filter-chip.active {
+    color: white;
+    background: linear-gradient(135deg, #0c8d84, #06766f);
+    border-color: transparent;
+    box-shadow: 0 14px 26px rgba(18, 124, 119, 0.18);
+  }
+
+  .tickets {
+    display: grid;
+    gap: 18px;
+  }
+
+  .ticket {
+    position: relative;
+    overflow: hidden;
+    background: var(--paper);
+    border: 1px solid rgba(210, 219, 231, 0.82);
+    border-radius: 28px;
+    box-shadow:
+      0 18px 36px rgba(29, 43, 68, 0.10),
+      0 1px 0 rgba(255, 255, 255, 0.82) inset;
+  }
+
+  .ticket-head {
+    position: relative;
+    display: flex;
+    min-height: 168px;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 18px 18px;
+    color: white;
+    box-shadow: inset 0 -1px rgba(255, 255, 255, 0.14);
+  }
+
+  .ticket-head::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    opacity: 1;
+    background-image:
+      radial-gradient(circle at 14% 20%, rgba(255, 238, 205, 0.18) 0 1.2px, transparent 1.6px),
+      radial-gradient(circle at 70% 34%, rgba(255, 228, 186, 0.14) 0 1.3px, transparent 1.8px),
+      radial-gradient(circle at 36% 76%, rgba(103, 67, 38, 0.14) 0 1.1px, transparent 2px),
+      linear-gradient(180deg, rgba(255, 244, 219, 0.14), rgba(255, 238, 208, 0.05) 48%, rgba(86, 57, 31, 0.14));
+    pointer-events: none;
+  }
+
+  .ticket-green .ticket-head {
+    background: linear-gradient(135deg, #18b886 0%, #17a96b 52%, #0c8d84 100%);
+  }
+
+  .ticket-blue .ticket-head {
+    background: linear-gradient(135deg, #5b93f0 0%, #447ee8 52%, #355fdd 100%);
+  }
+
+  .ticket-indigo .ticket-head {
+    background: linear-gradient(135deg, #6682f0 0%, #4f6de8 52%, #3d52d8 100%);
+  }
+
+  .ticket-orange .ticket-head {
+    background: linear-gradient(135deg, #f4a623 0%, #ef8a15 52%, #db6d11 100%);
+  }
+
+  .eyebrow {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 14px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+  }
+
+  .plane-mark {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,.16);
+  }
+
+  .plane-mark svg,
+  .route svg,
+  .meta span svg,
+  .footer-status svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .route {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .route strong {
+    font-size: 26px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: -.03em;
+  }
+
+  .route span,
+  .route em {
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 800;
+    opacity: .95;
+  }
+
+  .project {
+    position: relative;
+    z-index: 1;
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    opacity: .95;
+  }
+
+  .head-right {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    min-width: 88px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(10px);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .head-right small {
+    font-size: 11px;
+    font-weight: 700;
+    opacity: .9;
+  }
+
+  .flight-path {
+    position: absolute;
+    right: 18px;
+    top: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    opacity: .28;
+  }
+
+  .flight-path span {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: white;
+  }
+
+  .cityline {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,.45), rgba(255,255,255,.12));
+  }
+
+  .perforation {
+    position: relative;
+    height: 12px;
+    margin: 0 18px;
+  }
+
+  .perforation::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    border-top: 1px dashed rgba(189, 201, 220, 0.95);
+    transform: translateY(-50%);
+  }
+
+  .ticket-body {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 14px;
+    padding: 16px 18px 14px;
+    align-items: stretch;
+  }
+
+  .body-main {
+    display: grid;
+    gap: 12px;
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+    gap: 12px;
+  }
+
+  .meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .meta strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 14px;
+    color: #13234b;
+    font-weight: 900;
+    line-height: 1.2;
+  }
+
+  .meta small {
+    display: block;
+    margin-top: 4px;
+    color: #7a88a3;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .person-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6d72ff, #8c43ff);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+
+  .person-name-only strong {
+    margin-top: 0;
+  }
+
+  .amount {
+    min-width: 108px;
+    padding-left: 12px;
+    border-left: 1px dashed rgba(217, 225, 236, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .amount strong {
+    font-size: 28px;
+    letter-spacing: -.04em;
+    line-height: 1;
+  }
+
+  .amount small {
+    margin-top: 8px;
+  }
+
+  .chev {
+    font-size: 14px;
+    vertical-align: -1px;
+  }
+
+  .barcode {
+    height: 10px;
+    border-radius: 999px;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        rgba(17, 29, 53, 0.14) 0 3px,
+        transparent 3px 6px
+      );
+    opacity: .6;
+  }
+
+  .ticket-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px 18px;
+  }
+
+  .footer-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #64748b;
+  }
+
+  .footer-status.checked {
+    color: #0d8a63;
+  }
+
+  .footer-status.dot::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .8;
+  }
+
+  .ticket-cta {
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 16px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: .04em;
+    background: linear-gradient(135deg, #13234b, #223e7b);
+  }
+
+  .ticket-green .ticket-cta {
+    background: linear-gradient(135deg, #12a46a, #0b8d60);
+  }
+
+  .ticket-blue .ticket-cta,
+  .ticket-indigo .ticket-cta {
+    background: linear-gradient(135deg, #315fdb, #274ec4);
+  }
+
+  .ticket-orange .ticket-cta {
+    background: linear-gradient(135deg, #e48b18, #cf6a10);
+  }
+
+  .detail-panel,
+  .action-panel {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 22px;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(214, 223, 236, .98);
+    box-shadow: 0 12px 30px rgba(74,144,226,.08);
+  }
+
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--ink);
+  }
+
+  .permission {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #e8f3ff;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 800;
+    border: 1px solid #d7e9ff;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .detail-box,
+  .detail-item,
+  .expense-item {
+    padding: 12px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fcfeff 0%, #f5faff 100%);
+    border: 1px solid rgba(74,144,226,.08);
+  }
+
+  .detail-box span,
+  .expense-item span {
+    display: block;
+    font-size: 10px;
+    color: #8fa0bc;
+    font-weight: 900;
+    letter-spacing: .04em;
+  }
+
+  .detail-box strong,
+  .expense-item strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .detail-list,
+  .expense-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .detail-item-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .detail-item-name {
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--ink);
+  }
+
+  .detail-item-meta {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.65;
+    margin-top: 6px;
+  }
+
+  .ticket-amount {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--ink);
+  }
+
+  .detail-empty,
+  .empty {
+    padding: 24px 14px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .note {
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: #fff6e5;
+    border: 1px dashed #ffb54d;
+    color: #a66e00;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+  <main class="phone-shell" aria-label="差旅管理员工端">
+    <header class="topbar">
+      <div class="summary-block">
+        <p class="month" id="topbarMeta">2026 · 7月</p>
+        <p class="summary-label">本月差旅支出</p>
+        <h1 id="monthAmount">¥0</h1>
+      </div>
+      <div class="topbar-side">
+        <div class="top-actions" aria-label="页面操作">
+          <button class="icon-button" type="button" aria-label="搜索">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m21 21-4.35-4.35"></path>
+              <circle cx="11" cy="11" r="6"></circle>
+            </svg>
+          </button>
+          <button class="icon-button" type="button" aria-label="刷新" id="refreshBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+              <path d="M21 4v6h-6"></path>
+            </svg>
+          </button>
+        </div>
+        <span class="trip-count" id="tripCountText">0 单 · 0 人</span>
+      </div>
+    </header>
+
+    <nav class="filters" aria-label="行程状态筛选" id="filters"></nav>
+
+    <section class="tickets" aria-label="行程列表" id="ticketList">
+      <div class="empty">正在读取差旅数据...</div>
+    </section>
+
+    <section class="detail-panel">
+      <div class="section-head">
+        <div class="section-title">当前选中明细</div>
+        <div class="permission" id="detailStatusChip">待确认</div>
+      </div>
+      <div id="detailPanelBody" class="empty">请选择一张差旅票卡。</div>
+    </section>
+
+    <section class="action-panel">
+      <div class="note">员工端只读查看自己的差旅安排和费用记录。需要改签、补票或补录信息时，请线下联系差旅管理员处理。</div>
+    </section>
+  </main>
+
+  <script>window.__AUTH_GUARD_MODE = 'employee';</script>
+  <script src="/js/auth-guard.js"></script>
+  <script>
+    const API = window.location.origin + '/api';
+    const token = localStorage.getItem('employee_token') || '';
+    let currentOrders = [];
+    let currentFilter = 'all';
+
+    const FILTERS = [
+      { key: 'all', label: '全部' },
+      { key: 'draft', label: '待订票' },
+      { key: 'upcoming', label: '进行中' },
+      { key: 'completed', label: '待结算' },
+      { key: 'reimbursed', label: '已完成' }
+    ];
+
+    function money(value) {
+      return '¥' + Number(value || 0).toLocaleString('zh-CN', { maximumFractionDigits: 0 });
+    }
+
+    function statusLabel(status) {
+      return ({
+        draft: '待订票',
+        upcoming: '已订',
+        completed: '待结算',
+        cancelled: '已作废',
+        pending: '待报销',
+        processing: '报销中',
+        reimbursed: '已报销',
+        not_received: '未收到',
+        partial: '部分已收齐',
+        complete: '已收齐'
+      })[status] || status || '待确认';
+    }
+
+    function ticketTheme(order) {
+      if (order.reimbursement_status === 'reimbursed') return 'ticket-green';
+      if (order.status === 'completed') return 'ticket-indigo';
+      if (order.status === 'draft') return 'ticket-orange';
+      return 'ticket-blue';
+    }
+
+    function footerStatusClass(order) {
+      return order.reimbursement_status === 'reimbursed' ? 'footer-status checked' : 'footer-status dot';
+    }
+
+    function footerStatusText(order) {
+      if (order.reimbursement_status === 'reimbursed') return '已报销';
+      if (order.status === 'completed') return '待结算';
+      if (order.status === 'draft') return '待订票';
+      return '已订';
+    }
+
+    function actionLabel(order) {
+      if (order.reimbursement_status === 'reimbursed') return '查看详情';
+      if (order.status === 'completed') return '查看结算';
+      if (order.status === 'draft') return '查看记录';
+      return '查看行程';
+    }
+
+    function codeLabel(destination) {
+      const target = String(destination || 'TRIP');
+      if (target.includes('深圳')) return 'SZX';
+      if (target.includes('上海浦东')) return 'PVG';
+      if (target.includes('上海')) return 'SHA';
+      if (target.includes('杭州')) return 'HGH';
+      if (target.includes('北京')) return 'BJS';
+      return target.slice(0, 3).toUpperCase();
+    }
+
+    function shortDate(value) {
+      return String(value || '-').slice(5, 10).replace('-', '.');
+    }
+
+    function dateBadge(order) {
+      if (order.reimbursement_status === 'reimbursed') return '已回';
+      if (order.status === 'completed') return '待结算';
+      if (order.end_time) return `→ ${shortDate(order.end_time)}`;
+      return '待确认';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[s]));
+    }
+
+    async function fetchJson(url) {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      return res.json();
+    }
+
+    function renderEmpty(message) {
+      document.getElementById('ticketList').innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+      document.getElementById('detailPanelBody').innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
+      document.getElementById('monthAmount').textContent = '¥0';
+      document.getElementById('topbarMeta').textContent = '2026 · 7月';
+      document.getElementById('tripCountText').textContent = '0 单 · 0 人';
+      document.getElementById('filters').innerHTML = '';
+    }
+
+    function renderHeaderStats(orders) {
+      const now = new Date();
+      const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const monthOrders = orders.filter(order => String(order.start_time || '').slice(0, 7) === monthPrefix);
+      const monthTotal = monthOrders.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+      const people = new Set(orders.map(order => order.staff_id).filter(Boolean));
+      document.getElementById('monthAmount').textContent = money(monthTotal);
+      document.getElementById('topbarMeta').textContent = `${now.getFullYear()} · ${now.getMonth() + 1}月`;
+      document.getElementById('tripCountText').textContent = `${orders.length} 单 · ${people.size} 人`;
+    }
+
+    function filteredOrders() {
+      if (currentFilter === 'all') return currentOrders;
+      if (currentFilter === 'reimbursed') return currentOrders.filter(order => order.reimbursement_status === 'reimbursed');
+      return currentOrders.filter(order => order.status === currentFilter);
+    }
+
+    function renderFilters() {
+      const counts = {
+        all: currentOrders.length,
+        draft: currentOrders.filter(order => order.status === 'draft').length,
+        upcoming: currentOrders.filter(order => order.status === 'upcoming').length,
+        completed: currentOrders.filter(order => order.status === 'completed' && order.reimbursement_status !== 'reimbursed').length,
+        reimbursed: currentOrders.filter(order => order.reimbursement_status === 'reimbursed').length
+      };
+
+      document.getElementById('filters').innerHTML = FILTERS.map(filter => `
+        <button class="filter-chip ${currentFilter === filter.key ? 'active' : ''}" type="button" data-filter="${filter.key}">
+          ${filter.label} <b>${counts[filter.key] || 0}</b>
+        </button>
+      `).join('');
+
+      document.querySelectorAll('[data-filter]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentFilter = btn.dataset.filter;
+          renderFilters();
+          renderOrderList(currentOrders);
+        });
+      });
+    }
+
+    function renderOrderList(orders) {
+      const list = document.getElementById('ticketList');
+      const rows = filteredOrders();
+      if (!rows.length) {
+        list.innerHTML = '<div class="empty">当前筛选下没有差旅安排</div>';
+        return;
+      }
+
+      list.innerHTML = rows.map(order => `
+        <article class="ticket ${ticketTheme(order)}" data-order-id="${order.id}">
+          <div class="ticket-head">
+            <div>
+              <p class="eyebrow">
+                <span class="plane-mark">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M21 16.5v-2L13 10V3.5C13 2.7 12.3 2 11.5 2S10 2.7 10 3.5V10l-8 4.5v2l8-2.5v4.5L8 20v1.5l3.5-1 3.5 1V20l-2-1.5V14l8 2.5Z"></path>
+                  </svg>
+                </span>
+                ${order.status === 'completed' ? 'SETTLEMENT' : 'BOARDING PASS'}
+              </p>
+              <div class="route">
+                <strong>${escapeHtml(order.destination || '差旅')}</strong>
+                <span>${escapeHtml(codeLabel(order.destination))}</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14"></path>
+                  <path d="m13 6 6 6-6 6"></path>
+                </svg>
+                <em>兴利</em>
+              </div>
+              <p class="project">${escapeHtml(order.trip_reason || '差旅安排')}</p>
+            </div>
+            <div class="head-right">
+              <span class="status">${escapeHtml(order.reimbursement_status === 'reimbursed' ? '已报销' : statusLabel(order.status))}</span>
+              <small>${escapeHtml(order.order_no || ('TRIP-' + String(order.id).padStart(4, '0')))}</small>
+            </div>
+            <div class="flight-path" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="cityline" aria-hidden="true"></div>
+          </div>
+          <div class="perforation" aria-hidden="true"></div>
+          <div class="ticket-body">
+            <div class="body-main">
+              <div class="meta-grid">
+                <div class="meta person">
+                  <span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M20 21a8 8 0 0 0-16 0"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    出差人
+                  </span>
+                  <div class="person-line">
+                    <i class="avatar">${escapeHtml(String(order.staff_name_snapshot || '差').slice(0, 1))}</i>
+                    <div>
+                      <strong>${escapeHtml(order.staff_name_snapshot || '-')}</strong>
+                      <small>${escapeHtml(order.employee_id_snapshot || '-')}</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="meta">
+                  <span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M8 2v4"></path>
+                      <path d="M16 2v4"></path>
+                      <rect x="3" y="4" width="18" height="18" rx="3"></rect>
+                      <path d="M3 10h18"></path>
+                    </svg>
+                    日期
+                  </span>
+                  <strong>${escapeHtml(shortDate(order.start_time || '-'))}</strong>
+                  <small>${escapeHtml(dateBadge(order))}</small>
+                </div>
+              </div>
+              <div class="barcode" aria-hidden="true"></div>
+            </div>
+            <div class="amount">
+              <span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 7h16v12H4z"></path>
+                  <path d="M16 7V5H8v2"></path>
+                  <path d="M8 13h8"></path>
+                </svg>
+                金额
+              </span>
+              <strong>${escapeHtml(money(order.total_amount || 0))}</strong>
+              <small>${Number(order.item_count || 0)} 条票据明细 <b class="chev">›</b></small>
+            </div>
+          </div>
+          <div class="ticket-footer">
+            <span class="${footerStatusClass(order)}">
+              ${order.reimbursement_status === 'reimbursed' ? `
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 7 9 18l-5-5"></path>
+                </svg>` : ''}
+              ${escapeHtml(footerStatusText(order))}
+            </span>
+            <button class="ticket-cta" type="button" data-view-id="${order.id}">${escapeHtml(actionLabel(order))} <b>→</b></button>
+          </div>
+        </article>
+      `).join('');
+
+      list.querySelectorAll('[data-view-id]').forEach(btn => {
+        btn.addEventListener('click', () => loadOrderDetail(btn.dataset.viewId));
+      });
+    }
+
+    function renderDetail(order) {
+      const items = Array.isArray(order.items) ? order.items : [];
+      document.getElementById('detailStatusChip').textContent = statusLabel(order.status);
+      document.getElementById('detailPanelBody').innerHTML = `
+        <div class="detail-grid">
+          <div class="detail-box"><span>出发时间</span><strong>${escapeHtml(order.start_time || '-')}</strong></div>
+          <div class="detail-box"><span>返程时间</span><strong>${escapeHtml(order.end_time || '-')}</strong></div>
+          <div class="detail-box"><span>报销状态</span><strong>${escapeHtml(statusLabel(order.reimbursement_status))}</strong></div>
+          <div class="detail-box"><span>发票状态</span><strong>${escapeHtml(statusLabel(order.invoice_status))}</strong></div>
+        </div>
+        <div class="detail-list">
+          ${items.length ? items.map(item => `
+            <div class="detail-item">
+              <div class="detail-item-top">
+                <div class="detail-item-name">${escapeHtml(item.title || item.item_subtype || item.item_type || '费用明细')}</div>
+                <div class="ticket-amount">${escapeHtml(money(item.amount || 0))}</div>
+              </div>
+              <div class="detail-item-meta">
+                ${escapeHtml(item.from_location || '')}${item.to_location ? ' → ' + escapeHtml(item.to_location) : ''}${item.vendor_name ? ' · ' + escapeHtml(item.vendor_name) : ''}<br>
+                ${item.start_time ? '时间：' + escapeHtml(item.start_time) : ''}${item.order_ref_no ? ' · 订单号：' + escapeHtml(item.order_ref_no) : ''}
+              </div>
+            </div>
+          `).join('') : '<div class="detail-empty">暂无费用明细</div>'}
+        </div>
+        <div class="expense-list">
+          <div class="expense-item"><span>票务费用</span><strong>${escapeHtml(money(order.ticket_amount || 0))}</strong></div>
+          <div class="expense-item"><span>住宿费用</span><strong>${escapeHtml(money(order.hotel_amount || 0))}</strong></div>
+          <div class="expense-item"><span>其他费用</span><strong>${escapeHtml(money(order.other_amount || 0))}</strong></div>
+        </div>
+      `;
+    }
+
+    async function loadOrderDetail(id) {
+      const detail = await fetchJson(`${API}/travel/orders/${id}`);
+      if (detail.code !== 0 || !detail.data) {
+        document.getElementById('detailPanelBody').innerHTML = `<div class="empty">${escapeHtml(detail.msg || '加载详情失败')}</div>`;
+        return;
+      }
+      renderDetail(detail.data);
+    }
+
+    async function init() {
+      const access = await fetchJson(`${API}/travel/my/has-permission`);
+      if (access.code !== 0 || !access.data || !access.data.has_permission) {
+        renderEmpty('暂无差旅查看权限');
+        return;
+      }
+
+      const data = await fetchJson(`${API}/travel/my/orders`);
+      if (data.code !== 0) {
+        renderEmpty(data.msg || '加载失败');
+        return;
+      }
+
+      const orders = (Array.isArray(data.data) ? data.data : []).filter(order => order.status !== 'cancelled');
+      currentOrders = orders;
+      if (!orders.length) {
+        renderEmpty('当前没有差旅安排');
+        return;
+      }
+
+      renderHeaderStats(orders);
+      renderFilters();
+      renderOrderList(orders);
+      await loadOrderDetail(orders[0].id);
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      init().catch(err => renderEmpty(err.message || '加载失败'));
+    });
+
+    init().catch(err => renderEmpty(err.message || '加载失败'));
+  </script>
+</body>
+</html>

@@ -186,6 +186,7 @@
             <button class="perm-tab" onclick="switchTab('exam')" data-tab="exam">考试权限</button>
             <button class="perm-tab" onclick="switchTab('meal')" data-tab="meal">报餐权限</button>
             <button class="perm-tab" onclick="switchTab('s6')" data-tab="s6">6S权限</button>
+            <button class="perm-tab" onclick="switchTab('travel')" data-tab="travel">差旅权限</button>
             <button class="perm-tab" onclick="switchTab('workwear')" data-tab="workwear">工服权限</button>
             <button class="perm-tab" onclick="switchTab('task')" data-tab="task">个人待办分派</button>
             <button class="perm-tab" onclick="switchTab('file')" data-tab="file">文件权限</button>
@@ -244,6 +245,11 @@
             <!-- 工服权限 -->
             <div id="section-workwear" class="perm-section">
                 <div id="workwearStaffList" class="s6-list"></div>
+            </div>
+
+            <!-- 差旅权限 -->
+            <div id="section-travel" class="perm-section">
+                <div id="travelStaffList"></div>
             </div>
 
             <!-- 个人待办分派岗位级别 -->
@@ -370,6 +376,9 @@
                 <div class="form-group">
                     <label>姓名</label>
                     <input type="text" id="workwearEmployeeName" class="form-control" placeholder="输入姓名或工号自动匹配" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label class="perm-checkbox"><input type="checkbox" id="workwearSpecialPerm" value="1"> 开启特殊领用权限</label>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="closeWorkwearModal()">取消</button>
@@ -499,7 +508,7 @@ A002,李四,1,1,0"></textarea>
         let allStaff = [];
         let actionLogs = [];
 
-        const tabNames = { admin: '管理员', exam: '考试权限', meal: '报餐权限', s6: '6S权限', task: '个人待办分派', file: '文件权限' };
+        const tabNames = { admin: '管理员', exam: '考试权限', meal: '报餐权限', s6: '6S权限', travel: '差旅权限', workwear: '工服权限', task: '个人待办分派', file: '文件权限' };
 
         function logAction(action, status = 'success') {
             fetch(`${API_URL}/admin/log`, {
@@ -703,6 +712,7 @@ A002,李四,1,1,0"></textarea>
                 ['meal', loadGuestMealPerms],
                 ['s6', loadS6Perms],
                 ['workwear', loadWorkwearPerms],
+                ['travel', loadTravelPerms],
                 ['task', loadTaskPositionLevels],
                 ['file-public', loadFilePublicPerms],
                 ['file-personal', loadFilePersonalPerms]
@@ -1605,10 +1615,11 @@ A002,李四,1,1,0"></textarea>
                             <div class="s6-avatar">${(s.name || '服').charAt(0)}</div>
                             <div>
                                 <div class="s6-name">${s.name || s.employee_id}</div>
-                                <div class="s6-meta">工号: ${s.employee_id || '-'} | 部门: ${s.department || '-'}</div>
+                                <div class="s6-meta">工号: ${s.employee_id || '-'} | 部门: ${s.department || '-'} | 特殊领用: ${Number(s.has_special_perm || 0) === 1 ? '已开启' : '未开启'}</div>
                             </div>
                         </div>
                         <div class="s6-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="toggleWorkwearSpecialPerm(${s.id}, ${Number(s.has_special_perm || 0) === 1 ? 0 : 1})">${Number(s.has_special_perm || 0) === 1 ? '关闭特殊领用' : '开启特殊领用'}</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteWorkwearPerm(${s.id})">删除</button>
                         </div>
                     </div>
@@ -1619,6 +1630,7 @@ A002,李四,1,1,0"></textarea>
         function showAddWorkwearModal() {
             document.getElementById('workwearEmployeeId').value = '';
             document.getElementById('workwearEmployeeName').value = '';
+            document.getElementById('workwearSpecialPerm').checked = false;
             document.getElementById('workwearModal').classList.add('active');
         }
 
@@ -1691,7 +1703,10 @@ A002,李四,1,1,0"></textarea>
                 const res = await fetch(`${API_URL}/permissions/workwear`, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ staff_id: staffId })
+                    body: JSON.stringify({
+                        staff_id: staffId,
+                        special_permission: document.getElementById('workwearSpecialPerm').checked ? 1 : 0
+                    })
                 });
                 const data = await res.json();
                 if (data.code === 0) {
@@ -1716,11 +1731,13 @@ A002,李四,1,1,0"></textarea>
             const staffName = staff?.name || staff?.employee_id || staffId;
             try {
                 const currentIds = allWorkwearStaff.filter(s => s.has_perm == 1).map(s => s.id);
+                const currentSpecialIds = allWorkwearStaff.filter(s => s.has_perm == 1 && s.has_special_perm == 1).map(s => s.id);
                 const newIds = currentIds.filter(id => id !== staffId);
+                const newSpecialIds = currentSpecialIds.filter(id => id !== staffId);
                 const res = await fetch(`${API_URL}/permissions/workwear`, {
                     method: 'PUT',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ staff_ids: newIds })
+                    body: JSON.stringify({ staff_ids: newIds, special_staff_ids: newSpecialIds })
                 });
                 const data = await res.json();
                 if (data.code === 0) {
@@ -1734,6 +1751,114 @@ A002,李四,1,1,0"></textarea>
             } catch (err) {
                 logAction('删除工服权限失败：网络错误', 'fail');
                 alert('删除失败');
+            }
+        }
+
+        async function toggleWorkwearSpecialPerm(staffId, nextValue) {
+            const currentIds = allWorkwearStaff.filter(s => s.has_perm == 1).map(s => s.id);
+            const currentSpecialIds = new Set(allWorkwearStaff.filter(s => s.has_perm == 1 && s.has_special_perm == 1).map(s => s.id));
+            if (nextValue) currentSpecialIds.add(staffId);
+            else currentSpecialIds.delete(staffId);
+            try {
+                const res = await fetch(`${API_URL}/permissions/workwear`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ staff_ids: currentIds, special_staff_ids: Array.from(currentSpecialIds) })
+                });
+                const data = await res.json();
+                if (data.code === 0) {
+                    loadWorkwearPerms();
+                } else {
+                    alert(data.msg || '保存失败');
+                }
+            } catch (err) {
+                alert('保存失败');
+            }
+        }
+
+        // ============ 差旅权限 ============
+        let allTravelStaff = [];
+
+        async function loadTravelPerms() {
+            try {
+                const res = await fetch(`${API_URL}/permissions/travel`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.code === 0) {
+                    allTravelStaff = data.data || [];
+                    renderTravelPerms();
+                }
+            } catch (err) {
+                console.error('加载差旅权限失败:', err);
+            }
+        }
+
+        function renderTravelPerms() {
+            const list = document.getElementById('travelStaffList');
+            if (!allTravelStaff.length) {
+                list.innerHTML = '<div class="empty-state">暂无员工数据</div>';
+                return;
+            }
+            list.innerHTML = `
+                <div class="toolbar" style="margin-bottom: 12px;">
+                    <div style="font-size: 13px; color: var(--text-secondary);">查看权限用于显示员工端“我的差旅安排”，管理权限用于录入和管理差旅单。</div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>工号</th><th>姓名</th><th>部门</th><th>岗位</th><th>查看权限</th><th>管理权限</th></tr></thead>
+                        <tbody>
+                            ${allTravelStaff.map(s => `
+                                <tr>
+                                    <td>${s.employee_id || '-'}</td>
+                                    <td>${s.name || '-'}</td>
+                                    <td>${s.department || '-'}</td>
+                                    <td>${s.position || '-'}</td>
+                                    <td><input type="checkbox" class="travel-view-check" value="${s.id}" ${Number(s.travel_view_permission || 0) === 1 ? 'checked' : ''} onchange="updateTravelPerm(${s.id})"></td>
+                                    <td><input type="checkbox" class="travel-manage-check" value="${s.id}" ${Number(s.travel_manage_permission || 0) === 1 ? 'checked' : ''} onchange="updateTravelPerm(${s.id})"></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function updateTravelPerm(staffId) {
+            const permissions = allTravelStaff.map(item => {
+                const viewEl = document.querySelector(`.travel-view-check[value="${item.id}"]`);
+                const manageEl = document.querySelector(`.travel-manage-check[value="${item.id}"]`);
+                const canView = viewEl?.checked ? 1 : 0;
+                const canManage = manageEl?.checked ? 1 : 0;
+                return {
+                    staff_id: item.id,
+                    travel_view_permission: canView,
+                    travel_manage_permission: canManage
+                };
+            });
+
+            try {
+                const res = await fetch(`${API_URL}/permissions/travel`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ permissions })
+                });
+                const data = await res.json();
+                if (data.code === 0) {
+                    const target = allTravelStaff.find(s => s.id === staffId);
+                    if (target) {
+                        const viewEl = document.querySelector(`.travel-view-check[value="${staffId}"]`);
+                        const manageEl = document.querySelector(`.travel-manage-check[value="${staffId}"]`);
+                        target.travel_view_permission = viewEl?.checked ? 1 : 0;
+                        target.travel_manage_permission = manageEl?.checked ? 1 : 0;
+                    }
+                } else {
+                    alert(data.msg || '保存失败');
+                    loadTravelPerms();
+                }
+            } catch (err) {
+                alert('保存失败');
+                loadTravelPerms();
             }
         }
 

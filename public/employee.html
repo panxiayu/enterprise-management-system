@@ -332,7 +332,8 @@
                 </div>
                 <div class="module-arrow">›</div>
             </a>
-            <a class="module-card card-task fade-item" id="cardTasks" href="employee-module-auth.html?scope=admin-linked&title=%E6%88%91%E7%9A%84%E5%BE%85%E5%8A%9E&target=mobile-my-tasks.html">
+            <!-- 暂时停用个人待办入口（2026-07-06 起对所有人隐藏），恢复时移除 style="display:none" -->
+            <a class="module-card card-task fade-item" id="cardTasks" href="employee-module-auth.html?scope=admin-linked&title=%E6%88%91%E7%9A%84%E5%BE%85%E5%8A%9E&target=mobile-my-tasks.html" style="display:none">
                 <div class="module-icon"><img src="icons/icon-personal-todo.svg?v=20260602" alt="待办"></div>
                 <div class="module-info">
                     <div class="module-name">我的待办</div>
@@ -359,7 +360,7 @@
             <a class="module-card card-task fade-item" id="cardWorkwearQuery" href="mobile-workwear-query.html" style="display:none">
                 <div class="module-icon"><img src="icons/icon-workwear.svg" alt="工服"></div>
                 <div class="module-info">
-                    <div class="module-name">工服查询</div>
+                    <div class="module-name">工服查询（测试版）</div>
                     <div class="module-desc">查看本人可领用工服和历史记录</div>
                 </div>
                 <div class="module-arrow">›</div>
@@ -369,6 +370,14 @@
                 <div class="module-info">
                     <div class="module-name">工服管理</div>
                     <div class="module-desc">人工盘点结转，处理库存差异</div>
+                </div>
+                <div class="module-arrow">›</div>
+            </a>
+            <a class="module-card card-6s fade-item" id="cardTravel" href="mobile-travel-my-trip.html" style="display:none">
+                <div class="module-icon"><img src="icons/icon-travel.svg" alt="差旅管理"></div>
+                <div class="module-info">
+                    <div class="module-name">差旅管理</div>
+                    <div class="module-desc" id="cardTravelDesc">查看自己的差旅安排和费用记录</div>
                 </div>
                 <div class="module-arrow">›</div>
             </a>
@@ -440,12 +449,20 @@
                 document.getElementById('card6STasks').style.display = '';
                 hasAny = true;
             }
-            if (perms.hasWorkwearQuery) {
-                document.getElementById('cardWorkwearQuery').style.display = '';
-                hasAny = true;
-            }
+            document.getElementById('cardWorkwearQuery').style.display = '';
+            hasAny = true;
             if (perms.hasWorkwearManage) {
                 document.getElementById('cardWorkwearManage').style.display = '';
+                hasAny = true;
+            }
+            if (perms.hasTravelManage || perms.hasTravelView) {
+                const travelCard = document.getElementById('cardTravel');
+                const travelDesc = document.getElementById('cardTravelDesc');
+                travelCard.href = perms.hasTravelManage ? 'mobile-travel.html' : 'mobile-travel-my-trip.html';
+                travelDesc.textContent = perms.hasTravelManage
+                    ? '代订票务、住宿并记录差旅费用'
+                    : '查看自己的差旅安排和费用记录';
+                travelCard.style.display = '';
                 hasAny = true;
             }
 
@@ -468,22 +485,24 @@
 
         async function checkGranularPermissions(token, staffId) {
             try {
-                const [examRes, mealRes, s6Res, taskRes, votingRes, workwearRes] = await Promise.all([
+                const [examRes, mealRes, s6Res, taskRes, votingRes, workwearRes, travelRes] = await Promise.all([
                     fetch(`${API}/permissions/exams`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${API}/permissions/meals`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${API}/permissions/s6`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${API}/6s/my-tasks`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${API}/voting/list`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${API}/workwear/access`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    fetch(`${API}/workwear/access`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${API}/travel/access`, { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
 
-                const [examData, mealData, s6Data, taskData, votingData, workwearData] = await Promise.all([
+                const [examData, mealData, s6Data, taskData, votingData, workwearData, travelData] = await Promise.all([
                     examRes.json(),
                     mealRes.json(),
                     s6Res.json(),
                     taskRes.json(),
                     votingRes.json(),
-                    workwearRes.json()
+                    workwearRes.json(),
+                    travelRes.json()
                 ]);
 
                 const hasExam = examData.code === 0 && examData.data.some(e => e.perm_count > 0);
@@ -493,12 +512,14 @@
                 // 有投票任务才显示投票入口
                 const hasVoting = votingData.code === 0 && votingData.data && votingData.data.length > 0;
                 const hasWorkwearManage = workwearData.code === 0 && workwearData.data && Number(workwearData.data.can_manage) === 1;
-                const hasWorkwearQuery = hasWorkwearManage;
+                const hasWorkwearQuery = workwearData.code === 0 && workwearData.data && workwearData.data.can_query === true;
+                const hasTravelView = travelData.code === 0 && travelData.data && travelData.data.can_view === true;
+                const hasTravelManage = travelData.code === 0 && travelData.data && Number(travelData.data.can_manage) === 1;
 
-                return { hasExam, hasMeal, has6S, has6STasks, hasVoting, hasWorkwearManage, hasWorkwearQuery };
+                return { hasExam, hasMeal, has6S, has6STasks, hasVoting, hasWorkwearManage, hasWorkwearQuery, hasTravelView, hasTravelManage };
             } catch (err) {
                 console.error('检查权限失败:', err);
-                return { hasExam: false, hasMeal: false, has6S: false, has6STasks: false, hasVoting: false, hasWorkwearManage: false, hasWorkwearQuery: false };
+                return { hasExam: false, hasMeal: false, has6S: false, has6STasks: false, hasVoting: false, hasWorkwearManage: false, hasWorkwearQuery: false, hasTravelView: false, hasTravelManage: false };
             }
         }
 
@@ -510,6 +531,8 @@
                 has6STasks: perms.has6STasks ? 1 : 0,
                 hasWorkwearManage: perms.hasWorkwearManage ? 1 : 0,
                 hasWorkwearQuery: perms.hasWorkwearQuery ? 1 : 0,
+                hasTravelView: perms.hasTravelView ? 1 : 0,
+                hasTravelManage: perms.hasTravelManage ? 1 : 0,
                 hasVoting: perms.hasVoting ? 1 : 0,
                 timestamp: Date.now()
             }));

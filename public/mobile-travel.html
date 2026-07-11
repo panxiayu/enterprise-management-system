@@ -1,0 +1,2649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>差旅管理 · 移动端</title>
+<script>
+  window.__AUTH_GUARD_MODE = 'employee';
+</script>
+<script src="/js/auth-guard.js"></script>
+<style>
+  :root {
+    --bg: #eef4fb;
+    --ink: #111d35;
+    --muted: #6d7a90;
+    --line: #dbe2ec;
+    --paper: #fffdfa;
+    --blue: #0867c9;
+    --green: #087f78;
+    --indigo: #355fdd;
+    --orange: #e17b0e;
+  }
+
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: .22s;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    overflow-x: hidden;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.98), transparent 30%),
+      radial-gradient(circle at 88% 3%, rgba(255, 255, 255, 0.96), transparent 20%),
+      radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.48), transparent 36%),
+      linear-gradient(180deg, #f8fbff 0%, #edf3fb 76%, #e7eef8 100%);
+    font-family:
+      Inter, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui,
+      sans-serif;
+    min-height: 100vh;
+  }
+
+  .phone-shell {
+    width: min(100%, 480px);
+    margin: 0 auto;
+    padding: 16px 16px 110px;
+  }
+
+  .phone-shell::before {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    content: "";
+    opacity: 0.08;
+    background-image:
+      linear-gradient(rgba(44, 77, 128, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(44, 77, 128, 0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(180deg, #000 0 28%, transparent 72%);
+  }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .summary-block {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    padding-top: 4px;
+    text-align: right;
+  }
+
+  .month {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0 0 24px;
+    color: #14213b;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .04em;
+  }
+
+  .summary-label {
+    margin: 0 0 8px;
+    color: #707b8f;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  h1 {
+    margin: 0;
+    color: #16234d;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .topbar-side {
+    display: none;
+  }
+
+  .top-actions {
+    display: none;
+    gap: 10px;
+    padding-top: 2px;
+  }
+
+  .icon-button {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    color: #17213b;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(201, 212, 228, 0.95);
+    border-radius: 50%;
+    box-shadow:
+      0 10px 26px rgba(31, 49, 82, 0.10),
+      0 1px 0 rgba(255, 255, 255, 0.85) inset;
+    cursor: pointer;
+  }
+
+  .icon-button svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .trip-count {
+    display: none;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 4px 0 18px;
+    overflow: visible;
+  }
+
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chip {
+    width: 100%;
+    height: 38px;
+    padding: 0 10px;
+    color: #172033;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(210, 218, 230, 0.95);
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(31, 49, 82, 0.04);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .filter-chip.active {
+    color: white;
+    background: linear-gradient(135deg, #0c8d84, #06766f);
+    border-color: transparent;
+    box-shadow: 0 14px 26px rgba(18, 124, 119, 0.18);
+  }
+
+  .tickets {
+    display: grid;
+    gap: 18px;
+  }
+
+  .topbar,
+  .filters,
+  .tickets .ticket,
+  .fab {
+    transition:
+      opacity .44s cubic-bezier(.2, .8, .2, 1),
+      transform .54s cubic-bezier(.2, .8, .2, 1),
+      filter .44s cubic-bezier(.2, .8, .2, 1);
+  }
+
+  body.travel-transitioning {
+    overflow: hidden;
+  }
+
+  body.travel-transitioning .topbar.travel-hide,
+  body.travel-transitioning .filters.travel-hide {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(-26px) scale(.98);
+    pointer-events: none;
+  }
+
+  body.travel-transitioning .fab.travel-hide,
+  body.travel-transitioning #feedback-fab {
+    opacity: 0;
+    transform: translateY(18px) scale(.84);
+    pointer-events: none;
+  }
+
+  .tickets.travel-focus .ticket:not(.morph-source) {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(34px) scale(.965);
+    pointer-events: none;
+  }
+
+  .ticket.morph-source {
+    opacity: 1;
+  }
+
+  .ticket.morph-active {
+    position: fixed !important;
+    z-index: 120;
+    margin: 0 !important;
+    pointer-events: none;
+    transform-origin: top left;
+    will-change: transform;
+    transition: transform .62s cubic-bezier(.18, .9, .2, 1);
+  }
+
+  .ticket-morph-placeholder {
+    border-radius: 28px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .transition-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    pointer-events: none;
+    opacity: 0;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255,255,255,.72), transparent 38%),
+      linear-gradient(180deg, rgba(248,251,255,.72), rgba(237,243,251,.52));
+    transition: opacity .46s cubic-bezier(.2, .8, .2, 1);
+  }
+
+  .transition-scrim.show {
+    opacity: .86;
+  }
+
+  .ticket {
+    position: relative;
+    overflow: hidden;
+    background: var(--paper);
+    border: 1px solid rgba(210, 219, 231, 0.82);
+    border-radius: 28px;
+    box-shadow:
+      0 18px 36px rgba(29, 43, 68, 0.10),
+      0 1px 0 rgba(255, 255, 255, 0.82) inset;
+    cursor: pointer;
+  }
+
+  .ticket::marker {
+    display: none;
+  }
+
+  .ticket-head {
+    position: relative;
+    display: flex;
+    height: 150px;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 16px 18px;
+    color: white;
+    box-shadow: inset 0 -1px rgba(255, 255, 255, 0.14);
+  }
+
+  .ticket-head > div:first-child {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .ticket-head::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    opacity: 1;
+    background-image:
+      radial-gradient(circle at 14% 20%, rgba(255, 238, 205, 0.18) 0 1.2px, transparent 1.6px),
+      radial-gradient(circle at 70% 34%, rgba(255, 228, 186, 0.14) 0 1.3px, transparent 1.8px),
+      radial-gradient(circle at 36% 76%, rgba(103, 67, 38, 0.14) 0 1.1px, transparent 2px),
+      radial-gradient(circle at 86% 18%, rgba(115, 76, 44, 0.10) 0 1px, transparent 1.8px),
+      repeating-linear-gradient(12deg, rgba(247, 229, 198, 0.10) 0 1px, transparent 1px 8px),
+      repeating-linear-gradient(102deg, rgba(255, 244, 221, 0.07) 0 1px, transparent 1px 11px),
+      repeating-linear-gradient(78deg, rgba(105, 70, 40, 0.06) 0 1px, transparent 1px 15px),
+      radial-gradient(circle at 82% 72%, rgba(255, 231, 188, 0.16), transparent 24%),
+      radial-gradient(circle at 24% 62%, rgba(95, 61, 35, 0.14), transparent 30%),
+      radial-gradient(circle at 52% 44%, rgba(90, 56, 30, 0.12), transparent 34%),
+      radial-gradient(circle at 64% 58%, rgba(255, 229, 183, 0.10), transparent 26%),
+      linear-gradient(180deg, rgba(255, 244, 219, 0.14), rgba(255, 238, 208, 0.05) 48%, rgba(86, 57, 31, 0.14)),
+      linear-gradient(90deg, rgba(82, 53, 28, 0.14), transparent 8%, transparent 90%, rgba(255, 240, 210, 0.10)),
+      linear-gradient(180deg, rgba(68, 43, 21, 0.10), transparent 9%, transparent 88%, rgba(255, 240, 210, 0.06));
+    background-size:
+      24px 24px,
+      30px 30px,
+      38px 38px,
+      42px 42px,
+      96px 96px,
+      128px 128px,
+      168px 168px,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%;
+    background-position:
+      0 0,
+      12px 10px,
+      10px 20px,
+      18px 8px,
+      0 0,
+      22px 10px,
+      18px 28px,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0;
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+  }
+
+  .ticket-green .ticket-head {
+    background:
+      radial-gradient(circle at 88% 74%, rgba(255, 255, 255, 0.11), transparent 14%),
+      linear-gradient(135deg, #15978f 0%, #0b7f77 100%);
+  }
+
+  .ticket-blue .ticket-head {
+    background:
+      radial-gradient(circle at 86% 73%, rgba(255, 255, 255, 0.12), transparent 14%),
+      linear-gradient(135deg, #1986dd 0%, #0c6fce 100%);
+  }
+
+  .ticket-indigo .ticket-head {
+    background:
+      radial-gradient(circle at 86% 73%, rgba(255, 255, 255, 0.12), transparent 14%),
+      linear-gradient(135deg, #5472de 0%, #3857c2 100%);
+  }
+
+  .ticket-orange .ticket-head {
+    background:
+      radial-gradient(circle at 86% 73%, rgba(255, 255, 255, 0.12), transparent 14%),
+      linear-gradient(135deg, #f4a623 0%, #db6d11 100%);
+  }
+
+  .ticket-grey .ticket-head {
+    background:
+      radial-gradient(circle at 86% 73%, rgba(255, 255, 255, 0.12), transparent 14%),
+      linear-gradient(135deg, #8997ae 0%, #5f7287 100%);
+  }
+
+  .route svg,
+  .meta span svg,
+  .footer-status svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .route {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: baseline;
+    margin-top: 12px;
+    padding-left: 2ch;
+    min-width: 0;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .route strong {
+    min-width: 0;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: 0;
+  }
+
+  .route span {
+    font-size: 13px;
+    font-weight: 900;
+    opacity: .9;
+  }
+
+  .route em {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 900;
+    opacity: .95;
+    background: transparent;
+  }
+
+  .route svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.8;
+  }
+
+  .project {
+    position: relative;
+    z-index: 1;
+    margin: 10px 0 0;
+    max-width: 230px;
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 850;
+    opacity: .96;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .head-date {
+    position: relative;
+    z-index: 1;
+    margin: 8px 0 0;
+    font-size: 13px;
+    font-weight: 850;
+    opacity: .92;
+    white-space: nowrap;
+  }
+
+  .head-person {
+    position: absolute;
+    left: 42px;
+    right: 24px;
+    top: 68%;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: .5ch;
+    align-items: start;
+    margin: 0;
+    padding-left: 0;
+    font-size: 17px;
+    font-family: "SimHei", "STHeiti", "Microsoft YaHei", sans-serif;
+    font-weight: 900;
+    line-height: 1.35;
+    max-width: none;
+    transform: translateY(-50%);
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .head-person-label {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .head-person-lines {
+    min-width: 0;
+  }
+
+  .head-person-line {
+    display: block;
+    white-space: nowrap;
+  }
+
+  .head-right {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    justify-items: end;
+    gap: 8px;
+    align-self: flex-start;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.06));
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(10px);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .head-right small {
+    display: none;
+    letter-spacing: .8px;
+  }
+
+  .flight-path {
+    position: absolute;
+    z-index: 1;
+    left: 19px;
+    right: 19px;
+    bottom: 2px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  .flight-path::before {
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    top: 7px;
+    height: 1px;
+    content: "";
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.16));
+  }
+
+  .flight-path span {
+    position: absolute;
+    top: 3px;
+    width: 8px;
+    height: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .flight-path span:nth-child(1) { left: 0; }
+  .flight-path span:nth-child(2) { left: 48%; opacity: .44; }
+  .flight-path span:nth-child(3) { right: 0; opacity: .28; }
+
+  .cityline {
+    display: none;
+  }
+
+  .perforation {
+    position: relative;
+    height: 10px;
+    margin: -5px 18px -5px;
+    background-image:
+      radial-gradient(circle, #eef4fb 0 4.2px, transparent 4.4px),
+      linear-gradient(90deg, rgba(151, 170, 199, 0.15) 0 7px, transparent 7px 14px);
+    background-position: center, center;
+    background-repeat: repeat-x;
+    background-size: 12px 12px, 14px 1px;
+  }
+
+  .perforation::before {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    content: "";
+    border-top: 1px dashed rgba(189, 201, 220, 0.95);
+    transform: translateY(-50%);
+  }
+
+  .ticket-body {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    column-gap: 14px;
+    row-gap: 8px;
+    min-height: 92px;
+    height: auto;
+    padding: 15px 16px 13px;
+    align-items: start;
+    background:
+      radial-gradient(circle at 14% 18%, rgba(255, 255, 255, 0.95), transparent 22%),
+      linear-gradient(180deg, #fffefd 0%, #fffdfa 100%);
+  }
+
+  .ticket-body::before,
+  .ticket-body::after {
+    position: absolute;
+    top: 16px;
+    bottom: 14px;
+    width: 1px;
+    content: "";
+    background-image: linear-gradient(#cfd8e6 48%, transparent 0);
+    background-size: 1px 6px;
+    background-repeat: repeat-y;
+    opacity: .95;
+  }
+
+  .ticket-body::before {
+    left: calc(40% - .5px);
+  }
+
+  .ticket-body::after {
+    display: none;
+  }
+
+  .meta:not(.person)::before {
+    position: absolute;
+    top: 10px;
+    bottom: 8px;
+    width: 1px;
+    content: "";
+    background: #d7dde7;
+    transform: translateX(-10px);
+  }
+
+  .meta {
+    position: relative;
+  }
+
+  .ticket-label {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 5px;
+    color: #69778b;
+    font-size: 10px;
+    font-weight: 850;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .date-label,
+  .date-value,
+  .amount-label,
+  .amount-value {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .date-label,
+  .date-value {
+    grid-column: 1 / span 2;
+  }
+
+  .amount-label,
+  .amount-value {
+    grid-column: 3 / span 3;
+  }
+
+  .ticket-label svg {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .ticket-value {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #17305f;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.15;
+    min-height: 38px;
+    padding-top: 4px;
+  }
+
+  .date-value,
+  .amount-value {
+    text-align: center;
+  }
+
+  .date-value {
+    justify-self: stretch;
+    justify-content: center;
+    font-size: 17px;
+    font-family: "SimHei", "STHeiti", "Microsoft YaHei", sans-serif;
+    font-weight: 950;
+    transform: translateY(-2px);
+    padding: 0 12px 0 0;
+  }
+
+  .amount-value > div {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+    align-items: start;
+    transform: translateY(-4px);
+  }
+
+  .amount-value > div::before {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 50%;
+    width: 1px;
+    content: "";
+    background: rgba(207, 216, 230, 0.9);
+    transform: translateX(-50%);
+  }
+
+  .amount-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 0 6px;
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .amount-value strong {
+    display: inline-block;
+    color: #10224d;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .amount-company {
+    color: #526279;
+    font-size: 10px;
+    font-weight: 760;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .amount-hint {
+    display: block;
+    margin-top: 4px;
+    color: #526279;
+    font-size: 10px;
+    font-weight: 760;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .meta span,
+  .amount span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 8px;
+    color: #69778b;
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .meta span svg,
+  .amount span svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .meta strong {
+    display: block;
+    overflow: hidden;
+    margin-top: 0;
+    font-size: 14px;
+    color: #17305f;
+    font-weight: 900;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .meta small {
+    display: block;
+    margin-top: 4px;
+    color: #66748a;
+    font-size: 11px;
+    font-weight: 760;
+    white-space: nowrap;
+  }
+
+  .amount {
+    position: relative;
+    z-index: 1;
+    text-align: right;
+  }
+
+  .amount strong {
+    display: block;
+    color: #10224d;
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .amount small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    max-width: 112px;
+    overflow: hidden;
+    margin-top: 8px;
+    color: #526279;
+    font-size: 10px;
+    font-weight: 760;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .chev {
+    font-size: 14px;
+    vertical-align: -1px;
+  }
+
+  .barcode {
+    display: none;
+  }
+
+  .ticket-footer {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    align-items: center;
+    height: 62px;
+    padding: 0 16px;
+    background: linear-gradient(180deg, #f8fbfd 0%, #f2f6fa 100%);
+    border-top: 1px solid rgba(218, 225, 235, 0.92);
+  }
+
+  .ticket-footer::before {
+    justify-self: center;
+    width: 1px;
+    height: 34px;
+    content: "";
+    background-image: linear-gradient(#9cb9d6 45%, transparent 0);
+    background-size: 1px 7px;
+    grid-column: 2;
+  }
+
+  .footer-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #087f78;
+    font-size: 12px;
+    font-weight: 900;
+    grid-column: 1;
+  }
+
+  .footer-status.dot::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .8;
+  }
+
+  .ticket-blue .footer-status,
+  .ticket-blue .ticket-cta {
+    color: #0868ca;
+  }
+
+  .ticket-indigo .footer-status,
+  .ticket-indigo .ticket-cta {
+    color: #3151bb;
+  }
+
+  .ticket-orange .footer-status,
+  .ticket-orange .ticket-cta {
+    color: #cf6a10;
+  }
+
+  .ticket-grey .footer-status,
+  .ticket-grey .ticket-cta {
+    color: #5f7287;
+  }
+
+  .ticket-cta {
+    justify-self: end;
+    color: #087f78;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0;
+    grid-column: 3;
+  }
+
+  .ticket-cta::after {
+    content: "";
+  }
+
+  .ticket-cta:hover,
+  .filter-chip:hover,
+  .icon-button:hover {
+    filter: brightness(1.03);
+    transform: translateY(-1px);
+  }
+
+  .ticket-cta:active,
+  .filter-chip:active,
+  .icon-button:active {
+    transform: translateY(0);
+  }
+
+  .empty {
+    padding: 32px 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    border-radius: 22px;
+    background: rgba(255,255,255,.78);
+    border: 1px dashed rgba(210, 219, 231, 0.92);
+  }
+
+  .fab {
+    position: fixed;
+    left: 18px;
+    bottom: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: 0;
+    background: linear-gradient(135deg, #4A90E2, #2563eb);
+    color: #fff;
+    display: block;
+    padding: 0;
+    box-shadow: 0 12px 32px rgba(74,144,226,.5), inset 0 1px 0 rgba(255,255,255,.25);
+    cursor: pointer;
+    z-index: 50;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .fab span {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+    transform: translateY(-1px);
+  }
+
+  .fab-menu-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 18px;
+    background: rgba(15, 26, 46, 0.18);
+    backdrop-filter: blur(8px);
+  }
+
+  .fab-menu-mask.show {
+    display: flex;
+  }
+
+  .fab-menu {
+    width: min(100%, 430px);
+    padding: 12px;
+    border: 1px solid rgba(211, 222, 238, 0.9);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 24px 60px rgba(20, 38, 66, 0.22);
+  }
+
+  .fab-menu-title {
+    padding: 6px 10px 12px;
+    color: #657188;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .fab-menu-option {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 42px 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 10px;
+    color: #14213b;
+    background: transparent;
+    border: 0;
+    border-radius: 16px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .fab-menu-option:active {
+    background: #eef5ff;
+  }
+
+  .fab-menu-option:disabled {
+    color: #8d99aa;
+    background: #edf2f8;
+    cursor: not-allowed;
+  }
+
+  .fab-menu-option:disabled .fab-menu-icon {
+    background: #c8d2df;
+  }
+
+  .fab-menu-icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    color: #fff;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #0c8d84, #087f78);
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  .fab-menu-option + .fab-menu-option .fab-menu-icon {
+    background: linear-gradient(135deg, #4A90E2, #2563eb);
+  }
+
+  .fab-menu-main {
+    display: block;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .fab-menu-sub {
+    display: block;
+    margin-top: 3px;
+    color: #758097;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .fab-menu-cancel {
+    width: 100%;
+    height: 44px;
+    margin-top: 8px;
+    color: #5f6c82;
+    background: #f2f5f9;
+    border: 0;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  #_authGuardHome, [class*="auth-home"], [id*="auth-home"], button[onclick*="home"] { display:none !important; }
+
+  .loading {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .loading::before {
+    content: "";
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(210, 219, 231, 0.96);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .detail-view {
+    display: none;
+    width: min(100%, 430px);
+    margin: 0 auto;
+    padding: 12px 14px 108px;
+  }
+
+  body.travel-detail-mode .detail-view {
+    display: block;
+  }
+
+  body.travel-detail-mode #app {
+    display: none !important;
+  }
+
+  body.travel-detail-mode #feedback-fab {
+    display: none !important;
+  }
+
+  .detail-card-slot {
+    margin-bottom: 16px;
+  }
+
+  .detail-card-slot .ticket {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .detail-content {
+    display: grid;
+    gap: 14px;
+    min-height: 1px;
+    transform-origin: top center;
+  }
+
+  .detail-content:not(.reveal) > .detail-panel {
+    opacity: 0;
+  }
+
+  .detail-content.reveal > .detail-panel {
+    animation: detailRise .58s cubic-bezier(.18, .9, .2, 1) both;
+  }
+
+  .detail-content.reveal > .detail-panel:nth-child(2) { animation-delay: .06s; }
+  .detail-content.reveal > .detail-panel:nth-child(3) { animation-delay: .12s; }
+  .detail-content.reveal > .detail-panel:nth-child(4) { animation-delay: .18s; }
+
+  .detail-content.reveal .detail-panel-head {
+    animation: detailHeaderIn .48s cubic-bezier(.2, .8, .2, 1) .10s both;
+  }
+
+  .detail-content.reveal .detail-expense-card {
+    animation: detailItemIn .58s cubic-bezier(.2, .8, .2, 1) both;
+  }
+
+  .detail-content.reveal .detail-expense-card:nth-child(1) { animation-delay: .12s; }
+  .detail-content.reveal .detail-expense-card:nth-child(2) { animation-delay: .22s; }
+  .detail-content.reveal .detail-expense-card:nth-child(3) { animation-delay: .32s; }
+  .detail-content.reveal .detail-expense-card:nth-child(n+4) { animation-delay: .42s; }
+
+  @keyframes detailRise {
+    from {
+      opacity: 0;
+      filter: blur(6px);
+      transform: translateY(22px) scale(.985);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes detailHeaderIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes detailItemIn {
+    from {
+      opacity: 0;
+      filter: blur(7px);
+      transform: translateY(26px) scale(.972);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .detail-panel {
+    border: 1px solid rgba(210, 219, 231, .86);
+    border-radius: 24px;
+    background: rgba(255, 253, 250, .96);
+    box-shadow: 0 16px 34px rgba(29, 43, 68, .09), inset 0 1px 0 rgba(255,255,255,.8);
+    padding: 16px;
+  }
+
+  .detail-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .detail-panel-head h2 {
+    color: #111d35;
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .detail-panel-head span {
+    color: #66758c;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .detail-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .detail-summary-item {
+    padding: 12px 8px;
+    border-radius: 16px;
+    background: #f3f7fc;
+    text-align: center;
+  }
+
+  .detail-summary-item.total {
+    color: #fff;
+    background: linear-gradient(135deg, #0c8d84, #087f78);
+  }
+
+  .detail-summary-item span {
+    display: block;
+    margin-bottom: 6px;
+    color: inherit;
+    opacity: .78;
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .detail-summary-item strong {
+    font-size: 18px;
+    font-weight: 950;
+  }
+
+  .detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .detail-tag {
+    padding: 8px 10px;
+    border: 1px solid #dbe5f2;
+    border-radius: 13px;
+    background: #f8fbff;
+    color: #17305f;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .detail-expense-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .detail-expense-card {
+    overflow: hidden;
+    border: 1px solid rgba(210, 219, 231, .82);
+    border-radius: 20px;
+    background: #fff;
+    transform-origin: top center;
+  }
+
+  .detail-expense-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 14px;
+    color: #fff;
+    background: linear-gradient(135deg, #1986dd, #0c6fce);
+  }
+
+  .detail-expense-card.hotel .detail-expense-head {
+    background: linear-gradient(135deg, #15978f, #0b7f77);
+  }
+
+  .detail-expense-card.other .detail-expense-head {
+    background: linear-gradient(135deg, #f4a623, #db6d11);
+  }
+
+  .detail-expense-head strong {
+    display: block;
+    font-size: 16px;
+    font-weight: 950;
+  }
+
+  .detail-expense-head small {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    opacity: .9;
+  }
+
+  .detail-expense-money {
+    flex: none;
+    font-size: 20px;
+    font-weight: 950;
+  }
+
+  .detail-category-card {
+    overflow: hidden;
+    border: 1px solid rgba(210, 219, 231, .82);
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 12px 24px rgba(29, 43, 68, .06);
+    transform-origin: top center;
+  }
+
+  .detail-category-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 14px;
+    color: #fff;
+    background: linear-gradient(135deg, #1986dd, #0c6fce);
+  }
+
+  .detail-category-card.hotel .detail-category-head {
+    background: linear-gradient(135deg, #15978f, #0b7f77);
+  }
+
+  .detail-category-card.other .detail-category-head {
+    background: linear-gradient(135deg, #f4a623, #db6d11);
+  }
+
+  .detail-category-head strong {
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .detail-category-head span {
+    font-size: 12px;
+    font-weight: 900;
+    opacity: .92;
+    white-space: nowrap;
+  }
+
+  .detail-person-groups {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .detail-person-group {
+    overflow: hidden;
+    border: 1px solid rgba(220, 228, 239, .92);
+    border-radius: 16px;
+    background: #f8fbff;
+  }
+
+  .detail-person-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    color: #10224a;
+    background: rgba(255, 255, 255, .78);
+    border-bottom: 1px dashed rgba(198, 210, 228, .92);
+  }
+
+  .detail-person-head span {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 950;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .detail-person-head strong {
+    flex: none;
+    font-size: 16px;
+    font-weight: 950;
+  }
+
+  .detail-ledger-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .detail-ledger-row + .detail-ledger-row {
+    border-top: 1px solid rgba(224, 231, 241, .86);
+  }
+
+  .detail-ledger-row b {
+    display: block;
+    color: #17264a;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .detail-ledger-row small {
+    display: block;
+    margin-top: 5px;
+    color: #6e7d93;
+    font-size: 10px;
+    font-weight: 850;
+    line-height: 1.45;
+  }
+
+  .detail-ledger-row strong {
+    align-self: center;
+    color: #10224a;
+    font-size: 16px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .detail-ledger-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 12px 14px 6px;
+  }
+
+  .detail-ledger-cell {
+    min-width: 0;
+  }
+
+  .detail-ledger-label {
+    display: block;
+    color: #7a879c;
+    font-size: 10px;
+    font-weight: 900;
+  }
+
+  .detail-ledger-value {
+    display: block;
+    margin-top: 3px;
+    color: #10224a;
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .detail-ledger-status {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    padding: 8px 14px 12px;
+  }
+
+  .ledger-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 28px;
+    border-radius: 999px;
+    background: #f3f8ff;
+    color: #415371;
+    font-size: 11px;
+    font-weight: 900;
+  }
+
+  .ledger-pill.done {
+    background: rgba(20, 154, 140, .12);
+    color: #0a8f80;
+  }
+
+  .ledger-pill.pending {
+    background: rgba(244, 166, 35, .13);
+    color: #bc6908;
+  }
+
+  .detail-ledger-dates {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px dashed rgba(198, 210, 228, .92);
+  }
+
+  .detail-ledger-dates .detail-ledger-cell {
+    padding: 10px 14px 12px;
+  }
+
+  .detail-ledger-dates .detail-ledger-cell + .detail-ledger-cell {
+    border-left: 1px dashed rgba(198, 210, 228, .92);
+  }
+
+  .detail-alloc-list {
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .detail-alloc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: #f7faff;
+    color: #17305f;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .detail-back {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 70;
+    display: none;
+    width: min(100%, 430px);
+    margin: 0 auto;
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(238,244,251,0), rgba(238,244,251,.96) 28%);
+    backdrop-filter: blur(12px);
+  }
+
+  body.travel-detail-mode .detail-back {
+    display: block;
+  }
+
+  .detail-back button {
+    width: 100%;
+    height: 48px;
+    border: 0;
+    border-radius: 17px;
+    color: #fff;
+    background: linear-gradient(135deg, #0c8d84, #087f78);
+    box-shadow: 0 16px 30px rgba(8, 127, 120, .25);
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  /* Native phone sizing: same boarding-pass visual language, no page-level scaling. */
+  .phone-shell {
+    width: min(100%, 430px);
+    margin: 0 auto;
+    padding: 16px 14px 108px;
+  }
+
+  .topbar {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .month {
+    margin: 0 0 22px;
+    font-size: 14px;
+    letter-spacing: .04em;
+  }
+
+  .summary-block {
+    padding-top: 2px;
+  }
+
+  .summary-label {
+    margin: 0 0 8px;
+    font-size: 12px;
+  }
+
+  h1 {
+    font-size: 32px;
+  }
+
+  .topbar-side {
+    display: none;
+  }
+
+  .icon-button {
+    width: 42px;
+    height: 42px;
+    box-shadow:
+      0 10px 26px rgba(31, 49, 82, 0.10),
+      0 1px 0 rgba(255, 255, 255, 0.85) inset,
+      0 0 0 4px rgba(255, 255, 255, 0.16);
+  }
+
+  .icon-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .trip-count {
+    margin-top: 18px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .filters {
+    gap: 10px;
+    padding: 4px 0 18px;
+  }
+
+  .filter-chip {
+    height: 38px;
+    padding: 0 16px;
+    font-size: 12px;
+  }
+
+  .tickets {
+    gap: 18px;
+  }
+
+  .ticket {
+    border-radius: 24px;
+  }
+
+  .ticket::before,
+  .ticket::after {
+    position: absolute;
+    z-index: 2;
+    top: 142px;
+    width: 28px;
+    height: 28px;
+    content: "";
+    background: var(--bg);
+    border-radius: 50%;
+    box-shadow:
+      inset 0 0 0 1px rgba(190, 209, 232, 0.9),
+      0 0 0 6px rgba(255, 255, 255, 0.18);
+  }
+
+  .ticket::before {
+    left: -14px;
+  }
+
+  .ticket::after {
+    right: -14px;
+  }
+
+  .ticket-head {
+    height: auto;
+    min-height: 156px;
+    padding: 18px 16px 18px;
+  }
+
+  .route {
+    margin-top: 12px;
+    padding-left: 2ch;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .route strong {
+    min-width: 0;
+    max-width: 150px;
+    overflow: hidden;
+    font-size: 31px;
+    text-overflow: ellipsis;
+  }
+
+  .route span {
+    font-size: 13px;
+  }
+
+  .route em {
+    font-size: 13px;
+  }
+
+  .route svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .project {
+    margin: 10px 0 0;
+    max-width: 230px;
+    font-size: 13px;
+  }
+
+  .head-date {
+    margin: 8px 0 0;
+    font-size: 13px;
+  }
+
+  .head-person {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: .5ch;
+    align-items: start;
+    left: 42px;
+    right: 24px;
+    top: 68%;
+    margin: 0;
+    padding-left: 0;
+    font-size: 17px;
+    line-height: 1.35;
+    max-width: none;
+    transform: translateY(-50%);
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .head-person-label {
+    white-space: nowrap;
+  }
+
+  .head-person-lines {
+    min-width: 0;
+  }
+
+  .status {
+    min-width: 70px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .perforation {
+    height: 10px;
+    margin: -5px 18px -5px;
+  }
+
+  .ticket-body {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    column-gap: 14px;
+    row-gap: 6px;
+    height: auto;
+    min-height: 86px;
+    padding: 16px 16px 14px;
+    align-items: start;
+  }
+
+  .ticket-body::before,
+  .ticket-body::after {
+    top: 16px;
+    bottom: 14px;
+  }
+
+  .meta:not(.person)::before {
+    top: 10px;
+    bottom: 8px;
+    transform: translateX(-10px);
+  }
+
+  .meta span,
+  .amount span {
+    margin-bottom: 8px;
+    font-size: 10px;
+  }
+
+  .meta span svg,
+  .amount span svg,
+  .footer-status svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .meta strong {
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .meta small {
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  .amount strong {
+    font-size: 25px;
+  }
+
+  .amount small {
+    max-width: 112px;
+    overflow: hidden;
+    margin-top: 8px;
+    font-size: 10px;
+    text-overflow: ellipsis;
+  }
+
+  .ticket-footer {
+    height: auto;
+    min-height: 62px;
+    padding: 0 16px;
+  }
+
+  .ticket-footer::before {
+    height: 34px;
+  }
+
+  .footer-status {
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .footer-status.dot::before {
+    width: 8px;
+    height: 8px;
+  }
+
+  .ticket-cta {
+    font-size: 13px;
+  }
+
+  .ticket-footer::before {
+    height: 40px;
+  }
+
+  .footer-status,
+  .ticket-cta {
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+</style>
+</head>
+<body>
+<div id="bootLoading" class="loading" style="padding-top:60px">正在加载...</div>
+
+<main class="phone-shell" id="app" style="display:none" aria-label="差旅管理">
+  <header class="topbar">
+    <p class="month" id="monthLabel">2026 · 7月</p>
+    <div class="summary-block">
+      <p class="summary-label">本月差旅支出</p>
+      <h1 id="heroAmount">¥0</h1>
+    </div>
+    <div class="topbar-side">
+      <div class="top-actions" aria-label="页面操作">
+        <button class="icon-button" type="button" aria-label="搜索" onclick="alert('搜索暂未启用')">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m21 21-4.35-4.35"></path>
+            <circle cx="11" cy="11" r="6"></circle>
+          </svg>
+        </button>
+        <button class="icon-button" type="button" aria-label="刷新" id="refreshBtn">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+            <path d="M21 4v6h-6"></path>
+          </svg>
+        </button>
+      </div>
+      <span class="trip-count" id="heroMeta">0 单 · 0 人</span>
+    </div>
+  </header>
+
+  <nav class="filters" aria-label="行程状态筛选" id="filters"></nav>
+
+  <section class="tickets" aria-label="行程列表" id="passList">
+    <div class="loading">加载中...</div>
+  </section>
+</main>
+
+<main class="detail-view" id="travelDetailView" aria-label="差旅费用详情">
+  <section class="detail-card-slot" id="detailCardSlot"></section>
+  <section class="detail-content" id="detailContent"></section>
+</main>
+
+<div class="detail-back" id="detailBack">
+  <button type="button" onclick="closeInlineDetail()">返回差旅管理</button>
+</div>
+
+<button class="fab" id="fabAdd" style="display:none" type="button" onclick="openFabMenu()"><span aria-hidden="true">+</span></button>
+<div class="fab-menu-mask" id="fabMenuMask" aria-hidden="true">
+  <div class="fab-menu" role="dialog" aria-modal="true" aria-label="新增差旅操作">
+    <p class="fab-menu-title">请选择操作</p>
+    <button class="fab-menu-option" type="button" onclick="goCreate()">
+      <span class="fab-menu-icon">¥</span>
+      <span>
+        <span class="fab-menu-main">费用录入</span>
+        <span class="fab-menu-sub">打开出差费用录入页面</span>
+      </span>
+    </button>
+    <button class="fab-menu-option" type="button" onclick="openReceiptPicker()">
+      <span class="fab-menu-icon">票</span>
+      <span>
+        <span class="fab-menu-main">票据识别</span>
+        <span class="fab-menu-sub">从相册选择或打开相机拍照</span>
+      </span>
+    </button>
+    <button class="fab-menu-option" id="resumeDraftBtn" type="button" onclick="resumeTravelDraft()">
+      <span class="fab-menu-icon">存</span>
+      <span>
+        <span class="fab-menu-main">返回暂存</span>
+        <span class="fab-menu-sub">继续编辑上次暂存的费用录入</span>
+      </span>
+    </button>
+    <button class="fab-menu-cancel" type="button" onclick="closeFabMenu()">取消</button>
+  </div>
+</div>
+<input id="receiptImageInput" type="file" accept="image/*" style="display:none">
+
+<script>
+  const API = window.location.origin + '/api';
+  const token = localStorage.getItem('employee_token') || '';
+  const TRAVEL_ENTRY_DRAFT_KEY = 'travel_entry_draft';
+  let ALL_ORDERS = [];
+  let CURRENT_FILTER = 'all';
+  let openingOrder = false;
+  let inlineDetailOpen = false;
+  let CURRENT_DETAIL_ORDER = null;
+
+  const FILTERS = [
+    { key: 'all', label: '全部' },
+    { key: 'ongoing', label: '进行中' },
+    { key: 'pending', label: '待报销' },
+    { key: 'completed', label: '已完成' }
+  ];
+
+  function getToken() {
+    return token;
+  }
+
+  function authHeaders() {
+    return { Authorization: 'Bearer ' + getToken() };
+  }
+
+  async function fetchJson(path, opts = {}) {
+    const response = await fetch(API + path, {
+      ...opts,
+      headers: { ...authHeaders(), 'Content-Type': 'application/json', ...(opts.headers || {}) }
+    });
+    let data = {};
+    try { data = await response.json(); } catch (e) {}
+    if (!response.ok || data.code !== 0) {
+      throw new Error((data && data.msg) || `请求失败 (${response.status})`);
+    }
+    return data.data;
+  }
+
+  function isInProgress(o) {
+    if (!o.start_time) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    const start = o.start_time.slice(0, 10);
+    const end = (o.end_time || o.start_time).slice(0, 10);
+    return start <= today && end >= today;
+  }
+
+  function filterKey(o) {
+    if (o.status === 'cancelled') return 'cancelled';
+    if (o.status === 'completed' && o.reimbursement_status === 'reimbursed') return 'completed';
+    if (o.status === 'completed') return 'pending';
+    if (isInProgress(o)) return 'ongoing';
+    return 'upcoming';
+  }
+
+  function statusLabel(o) {
+    if (o.status === 'cancelled') return '已取消';
+    if (o.status === 'completed' && o.reimbursement_status === 'reimbursed') return '已报销';
+    if (o.status === 'completed') return '待报销';
+    if (isInProgress(o)) return '进行中';
+    if (!o.item_count || o.item_count === 0) return '待订票';
+    return '已订';
+  }
+
+  function footerStatusText(o) {
+    if (o.reimbursement_status === 'reimbursed') return '已报销';
+    if (o.status === 'completed') return '待报销';
+    if (isInProgress(o)) return '进行中';
+    if (!o.item_count || o.item_count === 0) return '待订票';
+    return '已订';
+  }
+
+  function ticketTheme(o) {
+    if (o.status === 'cancelled') return 'ticket-grey';
+    if (o.reimbursement_status === 'reimbursed') return 'ticket-green';
+    if (o.status === 'completed') return 'ticket-orange';
+    if (!o.item_count || o.item_count === 0) return 'ticket-orange';
+    return 'ticket-blue';
+  }
+
+  function cityCode(dest) {
+    const d = String(dest || '').trim();
+    if (!d) return 'XXX';
+    if (d.includes('上海浦东')) return 'PVG';
+    if (d.includes('上海')) return 'SHA';
+    if (d.includes('深圳')) return 'SZX';
+    if (d.includes('杭州')) return 'HGH';
+    if (d.includes('北京')) return 'BJS';
+    return d.slice(0, 3).toUpperCase();
+  }
+
+  function fmtMoney(n) {
+    if (n == null || n === 0) return '¥0';
+    return '¥' + Number(n).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+  }
+
+  function fmtMD(s) {
+    if (!s) return '--';
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[2]}.${m[3]}` : s.slice(5);
+  }
+
+  function fmtYMD(s) {
+    if (!s) return '未填写';
+    const text = String(s).trim().replace(/\//g, '-');
+    const m = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    return m ? `${m[1]}/${Number(m[2])}/${Number(m[3])}` : s;
+  }
+
+  function normalizeCompanyName(value) {
+    const text = String(value || '').trim();
+    if (!text) return '';
+    if (text.includes('兴利汽车模具')) return '兴利汽车模具';
+    if (text.includes('兴利模具')) return '兴利模具';
+    return text;
+  }
+
+  function travelerMembers(order) {
+    if (Array.isArray(order?.traveler_members) && order.traveler_members.length) return order.traveler_members;
+    try {
+      const parsed = JSON.parse(order?.traveler_members_json || '[]');
+      if (Array.isArray(parsed) && parsed.length) return parsed;
+    } catch (err) {}
+    return [{
+      name: order?.staff_name_snapshot || '',
+      employee_id: order?.employee_id_snapshot || '',
+      company: normalizeCompanyName(order?.company_snapshot),
+      department: order?.department_snapshot || '',
+      position: order?.position_snapshot || ''
+    }].filter(item => item.name || item.department);
+  }
+
+  function splitAmounts(order) {
+    let mould = Number(order?.xingli_mould_amount || 0) || 0;
+    let auto = Number(order?.xingli_auto_amount || 0) || 0;
+    if (mould === 0 && auto === 0) {
+      const company = normalizeCompanyName(order?.company_snapshot);
+      const total = Number(order?.total_amount || 0) || 0;
+      if (company === '兴利模具') mould = total;
+      else auto = total;
+    }
+    return { mould, auto };
+  }
+
+  function parseAllocations(item) {
+    if (Array.isArray(item?.traveler_allocations)) return item.traveler_allocations;
+    if (Array.isArray(item?.allocations)) return item.allocations;
+    const raw = item?.traveler_allocations_json;
+    if (!raw) return [];
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function itemTypeName(type) {
+    return { ticket: '交通费用', hotel: '酒店', other: '其他费用' }[type] || '费用';
+  }
+
+  function normalizeText(value) {
+    return String(value == null ? '' : value).trim();
+  }
+
+  function expenseDisplayName(value, type) {
+    const text = normalizeText(value);
+    if (type === 'ticket' && (!text || /票据\s*\/?\s*交通/.test(text))) return '交通费用';
+    return text || itemTypeName(type);
+  }
+
+  function excelMockRows() {
+    return [
+      { traveler: '金海峰', paid_at: '2026/3/30', title: '4.6火车票', amount: 751.5, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true },
+      { traveler: '金宜平', paid_at: '2026/3/31', title: '4.6机票', amount: 840, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true },
+      { traveler: '王能军/赫发云', paid_at: '2026/3/31', title: '4.6机票', amount: 1680, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true },
+      { traveler: '金海峰', paid_at: '2026/3/31', title: '4.6高铁票', amount: 69, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true },
+      { traveler: '王能军', paid_at: '2026/4/12', title: '4.14机票', amount: 850, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true },
+      { traveler: '赫发云', paid_at: '2026/4/13', title: '4.14机票', amount: 940, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true },
+      { traveler: '金宜平', paid_at: '2026/4/15', title: '4.20火车票', amount: 718.5, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true },
+      { traveler: '金海峰', paid_at: '2026/4/15', title: '4.20火车票', amount: 751.5, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true },
+      { traveler: '金宜平', paid_at: '2026/4/15', title: '4.21高铁票', amount: 91, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true, apply_at: '2026/5/28', reimburse_at: '2026/5/28' },
+      { traveler: '金海峰', paid_at: '2026/4/15', title: '4.21高铁票', amount: 91, item_type: 'ticket', order_done: true, payment_done: true, invoice_done: true, apply_at: '2026/5/28', reimburse_at: '2026/5/28' },
+      { traveler: '金宜平', paid_at: '2026/4/17', title: '4.17-4.18住宿费', amount: 400, item_type: 'hotel', order_done: false, payment_done: true, invoice_done: true, apply_at: '2026/5/28', reimburse_at: '2026/5/28' },
+      { traveler: '金海峰', paid_at: '2026/4/19', title: '4.19住宿费', amount: 200, item_type: 'hotel', order_done: false, payment_done: true, invoice_done: true, apply_at: '2026/5/28', reimburse_at: '2026/5/28' }
+    ];
+  }
+
+  function detailLedgerRows(order, items) {
+    if (String(order?.id || '') === '4') return excelMockRows();
+    return items.map((item, index) => {
+      const allocations = parseAllocations(item);
+      return {
+        traveler: allocations.map(person => person.name).filter(Boolean).join('、') || order?.staff_name_snapshot || '未记录',
+        paid_at: item.start_time || item.created_at || order?.start_time,
+        title: expenseDisplayName(item.title, item.item_type),
+        amount: item.amount,
+        item_type: item.item_type,
+        order_done: !!item.order_ref_no,
+        payment_done: item.payment_method !== 'unpaid',
+        invoice_done: item.invoice_status !== 'not_received',
+        apply_at: order?.application_date,
+        reimburse_at: order?.reimbursement_date
+      };
+    });
+  }
+
+  function ledgerTypeMeta(type) {
+    const key = type === 'hotel' ? 'hotel' : (type === 'other' ? 'other' : 'ticket');
+    return {
+      ticket: { key: 'ticket', label: '交通费用', cls: 'ticket' },
+      hotel: { key: 'hotel', label: '酒店费用', cls: 'hotel' },
+      other: { key: 'other', label: '其他费用', cls: 'other' }
+    }[key];
+  }
+
+  function groupLedgerRows(rows) {
+    const order = ['ticket', 'hotel', 'other'];
+    return order.map(type => {
+      const meta = ledgerTypeMeta(type);
+      const typeRows = rows.filter(row => ledgerTypeMeta(row.item_type).key === type);
+      const people = [];
+      typeRows.forEach(row => {
+        const name = normalizeText(row.traveler) || '未记录';
+        let group = people.find(item => item.name === name);
+        if (!group) {
+          group = { name, rows: [], total: 0 };
+          people.push(group);
+        }
+        group.rows.push(row);
+        group.total += Number(row.amount || 0) || 0;
+      });
+      return {
+        ...meta,
+        rows: typeRows,
+        people,
+        total: typeRows.reduce((sum, row) => sum + (Number(row.amount || 0) || 0), 0)
+      };
+    }).filter(group => group.rows.length);
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function formatTravelerName(name) {
+    const text = String(name || '').trim();
+    if (text.length === 2) return `${text[0]} ${text[1]}`;
+    return text;
+  }
+
+  function formatTravelerLines(names) {
+    const list = Array.isArray(names) ? names.filter(Boolean) : [];
+    if (!list.length) return '?';
+    const lines = [];
+    for (let i = 0; i < list.length; i += 4) {
+      lines.push(`<span class="head-person-line">${list.slice(i, i + 4).map(formatTravelerName).map(escapeHtml).join('、')}</span>`);
+    }
+    return lines.join('');
+  }
+
+  function renderHero() {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthRows = ALL_ORDERS.filter(row => String(row.start_time || '').slice(0, 7) === currentMonth);
+    const total = monthRows.reduce((sum, row) => sum + Number(row.total_amount || 0), 0);
+    const peopleSet = new Set(ALL_ORDERS.map(row => row.staff_id).filter(Boolean));
+    document.getElementById('monthLabel').textContent = `${now.getFullYear()} · ${now.getMonth() + 1}月`;
+    document.getElementById('heroAmount').textContent = fmtMoney(total);
+    document.getElementById('heroMeta').textContent = `${ALL_ORDERS.length} 单 · ${peopleSet.size} 人`;
+  }
+
+  function renderFilters() {
+    const visibleRows = visibleTravelRows(ALL_ORDERS);
+    const counts = {
+      all: visibleRows.length,
+      ongoing: visibleRows.filter(row => filterKey(row) === 'ongoing').length,
+      pending: visibleRows.filter(row => filterKey(row) === 'pending').length,
+      completed: visibleRows.filter(row => filterKey(row) === 'completed').length
+    };
+    document.getElementById('filters').innerHTML = FILTERS.map(filter => `
+      <button class="filter-chip ${CURRENT_FILTER === filter.key ? 'active' : ''}" type="button" data-filter="${filter.key}">
+        ${filter.label} <b>${counts[filter.key] || 0}</b>
+      </button>
+    `).join('');
+    document.querySelectorAll('#filters [data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        CURRENT_FILTER = btn.dataset.filter;
+        renderFilters();
+        renderPasses();
+      });
+    });
+  }
+
+  function visibleTravelRows(rows) {
+    const visibleKeys = new Set(['pending', 'ongoing', 'completed']);
+    return rows.filter(row => visibleKeys.has(filterKey(row)));
+  }
+
+  function sortTravelRows(rows) {
+    const order = { pending: 0, ongoing: 1, completed: 2 };
+    return rows.slice().sort((a, b) => {
+      const diff = (order[filterKey(a)] ?? 99) - (order[filterKey(b)] ?? 99);
+      if (diff) return diff;
+      return String(b.start_time || '').localeCompare(String(a.start_time || ''));
+    });
+  }
+
+  function filteredRows() {
+    const visibleRows = visibleTravelRows(ALL_ORDERS);
+    const rows = CURRENT_FILTER === 'all'
+      ? visibleRows
+      : visibleRows.filter(row => filterKey(row) === CURRENT_FILTER);
+    return sortTravelRows(rows);
+  }
+
+  function renderPasses() {
+    const rows = filteredRows();
+    const list = document.getElementById('passList');
+    if (!rows.length) {
+      list.innerHTML = `<div class="empty">当前筛选下没有差旅记录</div>`;
+      return;
+    }
+
+    list.innerHTML = rows.map((o, index) => {
+      const theme = ticketTheme(o);
+      const label = statusLabel(o);
+      const code = cityCode(o.destination);
+      const destMain = (o.destination || '').split(/[,，]/)[0] || '未填';
+      const members = travelerMembers(o);
+      const rawNames = members.map(item => item.name).filter(Boolean);
+      const demoNames = ['陈兵', '胡爱玲', '李军', '王小兰', '张涛', '刘志强', '周敏', '赵晓峰', '吴建华'];
+      const leadName = index === 0 && String(destMain).includes('深圳')
+        ? formatTravelerLines(demoNames)
+        : formatTravelerLines(rawNames.length ? rawNames : [o.staff_name_snapshot || '?']);
+      const split = splitAmounts(o);
+      const reason = o.trip_reason || o.trip_type || '出差';
+      const orderNo = o.order_no || ('TRIP-' + String(o.id).padStart(4, '0'));
+
+      return `
+        <article class="ticket ${theme}" data-view-id="${o.id}">
+          <div class="ticket-head">
+            <div>
+              <div class="route">
+                <strong>${escapeHtml(destMain)}</strong>
+                <span>${escapeHtml(code)}</span>
+              </div>
+              <p class="head-person"><span class="head-person-label">出差人:</span><span class="head-person-lines">${leadName}</span></p>
+            </div>
+            <div class="head-right">
+              <span class="status">${escapeHtml(label)}</span>
+              <small>${escapeHtml(orderNo)}</small>
+            </div>
+            <div class="flight-path" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="cityline" aria-hidden="true"></div>
+          </div>
+          <div class="perforation" aria-hidden="true"></div>
+          <div class="ticket-body">
+            <div class="ticket-label date-label">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 2v4"></path>
+                <path d="M16 2v4"></path>
+                <rect x="3" y="4" width="18" height="18" rx="3"></rect>
+                <path d="M3 10h18"></path>
+              </svg>
+              日期
+            </div>
+            <div class="ticket-label amount-label">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16v12H4z"></path>
+                <path d="M16 7V5H8v2"></path>
+                <path d="M8 13h8"></path>
+              </svg>
+              金额
+            </div>
+            <div class="ticket-value date-value">${escapeHtml(fmtMD(o.start_time))}${o.end_time ? ' → ' + escapeHtml(fmtMD(o.end_time)) : ''}</div>
+            <div class="ticket-value amount-value">
+              <div>
+                <div class="amount-line"><span class="amount-company">兴利模具</span><strong>${escapeHtml(fmtMoney(split.mould))}</strong></div>
+                <div class="amount-line"><span class="amount-company">兴利汽车模具</span><strong>${escapeHtml(fmtMoney(split.auto))}</strong></div>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    list.querySelectorAll('[data-view-id]').forEach(card => {
+      card.addEventListener('click', () => openOrder(card.dataset.viewId, card));
+    });
+  }
+
+  function openOrder(id, card) {
+    if (openingOrder) return;
+    if (!card || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      openInlineDetailWithoutMotion(id, card);
+      return;
+    }
+    openingOrder = true;
+    closeFabMenu();
+    const detailPromise = fetchJson('/travel/orders/' + id).then(
+      data => ({ data }),
+      error => ({ error })
+    );
+    const transition = playOpenTransition(card);
+    showInlineDetail(id, card, detailPromise, transition);
+  }
+
+  function playOpenTransition(card) {
+    const rect = card.getBoundingClientRect();
+    const targetWidth = Math.min(window.innerWidth, 430);
+    const targetLeft = Math.max(14, (window.innerWidth - targetWidth) / 2 + 14);
+    const targetTop = 12;
+
+    const scrim = document.createElement('div');
+    scrim.className = 'transition-scrim';
+    document.body.appendChild(scrim);
+
+    const placeholder = document.createElement('div');
+    placeholder.className = 'ticket-morph-placeholder';
+    placeholder.style.height = rect.height + 'px';
+    card.parentNode.insertBefore(placeholder, card);
+
+    document.body.classList.add('travel-transitioning');
+    document.querySelector('.topbar')?.classList.add('travel-hide');
+    document.getElementById('filters')?.classList.add('travel-hide');
+    document.getElementById('fabAdd')?.classList.add('travel-hide');
+    document.getElementById('passList')?.classList.add('travel-focus');
+    card.classList.add('morph-source', 'morph-active');
+    const transitionName = 'travel-card-' + String(card.dataset.viewId || 'active');
+    card.style.viewTransitionName = transitionName;
+    card.style.left = rect.left + 'px';
+    card.style.top = rect.top + 'px';
+    card.style.width = rect.width + 'px';
+    card.style.height = rect.height + 'px';
+    requestAnimationFrame(() => {
+      scrim.classList.add('show');
+      const dx = targetLeft - rect.left;
+      const dy = targetTop - rect.top;
+      card.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+    });
+
+    const done = new Promise(resolve => {
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        resolve();
+      };
+      card.addEventListener('transitionend', event => {
+        if (event.propertyName === 'transform') finish();
+      }, { once: true });
+      setTimeout(finish, 760);
+    });
+
+    return { placeholder, scrim, done };
+  }
+
+  async function openInlineDetailWithoutMotion(id, card) {
+    openingOrder = true;
+    closeFabMenu();
+    const detailPromise = fetchJson('/travel/orders/' + id).then(
+      data => ({ data }),
+      error => ({ error })
+    );
+    await showInlineDetail(id, card, detailPromise, {});
+  }
+
+  async function showInlineDetail(id, card, detailPromise, transition = {}) {
+    inlineDetailOpen = true;
+    const slot = document.getElementById('detailCardSlot');
+    const content = document.getElementById('detailContent');
+    const app = document.getElementById('app');
+
+    content.classList.remove('reveal');
+    content.innerHTML = '';
+    slot.innerHTML = '';
+    CURRENT_DETAIL_ORDER = null;
+    if (card && transition.done) {
+      slot.style.height = card.getBoundingClientRect().height + 'px';
+      document.body.appendChild(card);
+    }
+    document.body.classList.add('travel-detail-mode');
+    document.getElementById('fabAdd').style.display = '';
+    app.style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    history.pushState({ travelInlineDetail: String(id) }, '', 'mobile-travel.html?detail=' + encodeURIComponent(id));
+    const settlePromise = settleInlineCard(id, card, transition);
+
+    try {
+      const result = await detailPromise;
+      if (result.error) throw result.error;
+      const order = result.data;
+      CURRENT_DETAIL_ORDER = order;
+      await renderInlineDetail(order, settlePromise);
+    } catch (err) {
+      settlePromise.finally(() => {
+        content.innerHTML = `<div class="empty">${escapeHtml(err.message || '详情加载失败')}</div>`;
+      });
+    } finally {
+      openingOrder = false;
+    }
+  }
+
+  async function settleInlineCard(id, card, transition = {}) {
+    const slot = document.getElementById('detailCardSlot');
+    if (transition.done) await transition.done;
+    if (card) {
+      card.classList.remove('morph-source', 'morph-active');
+      card.removeAttribute('style');
+      card.style.viewTransitionName = 'travel-card-inline-' + id;
+      slot.innerHTML = '';
+      slot.appendChild(card);
+      slot.style.height = '';
+    }
+    transition.placeholder?.remove();
+    transition.scrim?.remove();
+    document.body.classList.remove('travel-transitioning');
+  }
+
+  function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function renderInlineDetail(order, settlePromise = Promise.resolve()) {
+    const content = document.getElementById('detailContent');
+    const revealToken = String(Date.now());
+    content.dataset.revealToken = revealToken;
+    content.classList.remove('reveal');
+    content.innerHTML = buildInlineDetailHtml(order);
+    await settlePromise;
+    await delay(50);
+    if (content.dataset.revealToken !== revealToken || !inlineDetailOpen) return;
+    requestAnimationFrame(() => content.classList.add('reveal'));
+  }
+
+  function buildInlineDetailHtml(order) {
+    const items = Array.isArray(order.items) ? order.items : [];
+    const ledgerRows = detailLedgerRows(order, items);
+    const ledgerGroups = groupLedgerRows(ledgerRows);
+    return `
+      <section class="detail-panel">
+        <div class="detail-expense-list">
+          ${ledgerGroups.map(group => renderLedgerCategory(group)).join('') || '<div class="empty">暂无费用明细</div>'}
+        </div>
+      </section>
+      ${order.remark ? `
+        <section class="detail-panel">
+          <div class="detail-panel-head"><h2>备注</h2><span>记录说明</span></div>
+          <div class="detail-alloc-row">${escapeHtml(order.remark)}</div>
+        </section>
+      ` : ''}
+    `;
+  }
+
+  function renderLedgerCategory(group) {
+    return `
+      <article class="detail-category-card ${group.cls}">
+        <div class="detail-category-head">
+          <strong>${escapeHtml(group.label)}</strong>
+          <span>${group.rows.length} 条 · ${escapeHtml(fmtMoney(group.total))}</span>
+        </div>
+        <div class="detail-person-groups">
+          ${group.people.map(person => renderLedgerPersonGroup(person)).join('')}
+        </div>
+      </article>
+    `;
+  }
+
+  function renderLedgerPersonGroup(person) {
+    return `
+      <div class="detail-person-group">
+        <div class="detail-person-head">
+          <span>${escapeHtml(person.name)}</span>
+          <strong>${escapeHtml(fmtMoney(person.total))}</strong>
+        </div>
+        ${person.rows.map(row => renderLedgerRow(row)).join('')}
+      </div>
+    `;
+  }
+
+  function renderLedgerRow(item) {
+    const title = expenseDisplayName(item.title, item.item_type);
+    const orderDone = !!item.order_done;
+    const paymentDone = !!item.payment_done;
+    const invoiceDone = !!item.invoice_done;
+    return `
+      <div class="detail-ledger-row">
+        <div>
+          <b>${escapeHtml(title)}</b>
+          <small>
+            支付 ${escapeHtml(fmtYMD(item.paid_at))} ·
+            订单${orderDone ? '✓' : '/'} ·
+            付款${paymentDone ? '✓' : '/'} ·
+            发票${invoiceDone ? '✓' : '/'}
+            ${item.apply_at || item.reimburse_at ? `<br>申请 ${escapeHtml(fmtYMD(item.apply_at))} · 报销 ${escapeHtml(fmtYMD(item.reimburse_at))}` : ''}
+          </small>
+        </div>
+        <strong>${escapeHtml(fmtMoney(item.amount))}</strong>
+      </div>
+    `;
+  }
+
+  function closeInlineDetail() {
+    CURRENT_DETAIL_ORDER = null;
+    if (!inlineDetailOpen) {
+      window.location.href = 'mobile-travel.html';
+      return;
+    }
+    window.location.href = 'mobile-travel.html';
+  }
+
+  window.addEventListener('popstate', () => {
+    if (inlineDetailOpen) {
+      window.location.href = 'mobile-travel.html';
+    }
+  });
+
+  function openFabMenu() {
+    const mask = document.getElementById('fabMenuMask');
+    const resumeBtn = document.getElementById('resumeDraftBtn');
+    if (resumeBtn) resumeBtn.disabled = !localStorage.getItem(TRAVEL_ENTRY_DRAFT_KEY);
+    mask.classList.add('show');
+    mask.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeFabMenu() {
+    const mask = document.getElementById('fabMenuMask');
+    mask.classList.remove('show');
+    mask.setAttribute('aria-hidden', 'true');
+  }
+
+  function rememberCurrentDetailTrip() {
+    if (!inlineDetailOpen || !CURRENT_DETAIL_ORDER?.id) return false;
+    sessionStorage.setItem('travel_entry_trip_context', JSON.stringify({
+      id: CURRENT_DETAIL_ORDER.id,
+      destination: CURRENT_DETAIL_ORDER.destination || '',
+      start_time: CURRENT_DETAIL_ORDER.start_time || '',
+      order_no: CURRENT_DETAIL_ORDER.order_no || '',
+      total_amount: CURRENT_DETAIL_ORDER.total_amount || 0,
+      createdAt: Date.now()
+    }));
+    return true;
+  }
+
+  function goCreate() {
+    closeFabMenu();
+    const hasContext = rememberCurrentDetailTrip();
+    window.location.href = 'mobile-travel-entry.html' + (hasContext ? '?from_detail=1' : '');
+  }
+
+  function resumeTravelDraft() {
+    if (!localStorage.getItem(TRAVEL_ENTRY_DRAFT_KEY)) return;
+    closeFabMenu();
+    window.location.href = 'mobile-travel-entry.html?draft=1';
+  }
+
+  function openReceiptPicker() {
+    closeFabMenu();
+    rememberCurrentDetailTrip();
+    document.getElementById('receiptImageInput').click();
+  }
+
+  async function handleReceiptFiles(files) {
+    const file = files && files[0];
+    if (!file) return;
+    try {
+      const result = await uploadReceiptOcr(file);
+      sessionStorage.setItem('travel_receipt_ocr_draft', JSON.stringify({
+        ...result,
+        createdAt: Date.now()
+      }));
+      const amountText = result.amount ? `金额 ${fmtMoney(result.amount)}` : '金额未识别';
+      const vendorText = result.vendor_name ? `，${result.vendor_name}` : '';
+      alert(`票据识别完成：${amountText}${vendorText}`);
+      const hasContext = rememberCurrentDetailTrip();
+      window.location.href = 'mobile-travel-entry.html?ocr=1' + (hasContext ? '&from_detail=1' : '');
+    } catch (err) {
+      alert(err.message || '票据识别失败，请稍后再试');
+    }
+  }
+
+  async function loadOrders() {
+    document.getElementById('passList').innerHTML = '<div class="loading">加载中...</div>';
+    const data = await fetchJson('/travel/orders?limit=50');
+    ALL_ORDERS = Array.isArray(data) ? data : (data && data.list) || [];
+    renderHero();
+    renderFilters();
+    renderPasses();
+  }
+
+  async function init() {
+    if (!getToken()) return;
+    await fetchJson('/travel/access');
+    document.getElementById('bootLoading').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    document.getElementById('fabAdd').style.display = '';
+    await loadOrders();
+  }
+
+  async function uploadReceiptOcr(file) {
+    const form = new FormData();
+    form.append('image', file);
+    const response = await fetch(API + '/travel/receipts/ocr', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + getToken() },
+      body: form
+    });
+    let data = {};
+    try { data = await response.json(); } catch (err) {}
+    if (!response.ok || data.code !== 0) {
+      throw new Error((data && data.msg) || `识别失败 (${response.status})`);
+    }
+    return data.data || {};
+  }
+
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    loadOrders().catch(err => {
+      document.getElementById('passList').innerHTML = `<div class="empty">${escapeHtml(err.message || '加载失败')}</div>`;
+    });
+  });
+
+  document.getElementById('fabMenuMask').addEventListener('click', event => {
+    if (event.target.id === 'fabMenuMask') closeFabMenu();
+  });
+
+  document.getElementById('receiptImageInput').addEventListener('change', event => {
+    handleReceiptFiles(event.target.files);
+    event.target.value = '';
+  });
+
+  init().catch(err => {
+    console.error(err);
+    document.getElementById('bootLoading').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    document.getElementById('passList').innerHTML = `<div class="empty">${escapeHtml(err.message || '加载失败')}</div>`;
+  });
+</script>
+</body>
+</html>
